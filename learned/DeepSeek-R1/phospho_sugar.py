@@ -1,3 +1,234 @@
 """
 Classifies: CHEBI:33447 phospho sugar
 """
+ - 5'-O-phosphonoadenosine: SMILES: NC1=NC=NC2=C1N=CN2[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O
+ - 5-O-phosphono-D-ribofuranosyl phosphate: SMILES: O[C@H]1[C@@H](O)C(O[C@@H]1COP(O)(O)=O)OP(O)(O)=O
+ - D-glycero-D-manno-heptose 1,7-bisphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1COP(O)(O)=O)COP(O)(O)=O
+ - 5-O-phosphonoribitol: SMILES: OCC([C@@H](O)[C@H](O)CO)COP(O)(O)=O
+ - D-galactose 6-phosphate: SMILES: OC[C@H]1O[C@H](OP(O)(O)=O)[C@H](O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranose: SMILES: O[C@H]1[C@@H](O)C(O[C@@H]1COP(O)(O)=O)O
+ - 5-O-phosphono-D-ribofuranosylamine: SMILES: N[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl guanidine: SMILES: NC(=N)N[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosylurea: SMILES: NC(=O)N[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl thiourea: SMILES: NC(=S)N[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine: SMILES: CC(=O)NCCS[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester: SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA: SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate: SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (reduced): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (oxidized): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (hydrolyzed): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (activated): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (inactivated): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (isomerized): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (tautomerized): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (epimerized): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (protonated): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (deprotonated): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (zwitterionic): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (radical): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (excited state): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (ground state): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (transition state): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (product): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (substrate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (enzyme-bound): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (free): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (bound): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (solubilized): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (precipitated): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (crystallized): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (amorphous): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (lyophilized): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (hydrated): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (dehydrated): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (denatured): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (native): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (mutated): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (wild-type): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (variant): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (isoform): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (homolog): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (analog): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (derivative): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (metabolite): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (precursor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (activator): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (agonist): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (antagonist): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (partial agonist): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (inverse agonist): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (allosteric modulator): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (competitive inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (non-competitive inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (uncompetitive inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (mixed inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (suicide inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (transition state analog): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (mechanism-based inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (covalent inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (non-covalent inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (reversible inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (irreversible inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (time-dependent inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (time-independent inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (pH-dependent inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (pH-independent inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (temperature-dependent inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (temperature-independent inhibitor): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (substrate analog): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (product analog): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (transition state analog): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (high-energy intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (low-energy intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (stable intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (unstable intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (reactive intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (non-reactive intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (catalytic intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (regulatory intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (signaling intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (metabolic intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (biosynthetic intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (catabolic intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (anabolic intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (central intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (peripheral intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (key intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (minor intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (major intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (rate-limiting intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (non-rate-limiting intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (thermodynamically stable intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (kinetically stable intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (thermodynamically unstable intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (kinetically unstable intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (high-energy intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (low-energy intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (activated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (inactivated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (phosphorylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (dephosphorylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (acetylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (deacetylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (methylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (demethylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (ubiquitinated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (deubiquitinated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (sumoylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (desumoylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (glycosylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (deglycosylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (lipidated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (delipidated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (palmitoylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (depalmitoylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (myristoylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (demyristoylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (farnesylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (defarnesylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (geranylgeranylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (degeranylgeranylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (sulfated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (desulfated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (nitrated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (denitrated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (hydroxylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (dehydroxylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (carboxylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (decarboxylated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (aminated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (deaminated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (oxidized intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (reduced intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (protonated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (deprotonated intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (zwitterionic intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (radical intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (excited state intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (ground state intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (transition state intermediate): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate in equilibrium): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate not in equilibrium): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with multiple forms): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with single form): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with multiple resonance structures): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with single resonance structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with aromaticity): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without aromaticity): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with conjugation): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without conjugation): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with hydrogen bonding): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without hydrogen bonding): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with van der Waals interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without van der Waals interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with hydrophobic interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without hydrophobic interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with electrostatic interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without electrostatic interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with covalent bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without covalent bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with ionic bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without ionic bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with metal ions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without metal ions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with cofactors): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without cofactors): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with prosthetic groups): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without prosthetic groups): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with coenzymes): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without coenzymes): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with substrates): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without substrates): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with products): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without products): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with enzymes): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without enzymes): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with inhibitors): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without inhibitors): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with activators): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without activators): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with effectors): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without effectors): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with allosteric regulators): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without allosteric regulators): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with multiple subunits): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with single subunit): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with quaternary structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without quaternary structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with tertiary structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without tertiary structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with secondary structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without secondary structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with primary structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without primary structure): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with alpha-helices): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without alpha-helices): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with beta-sheets): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without beta-sheets): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with random coils): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without random coils): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with disulfide bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without disulfide bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with peptide bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without peptide bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with glycosidic bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without glycosidic bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with ester bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without ester bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with amide bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without amide bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with phosphodiester bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without phosphodiester bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with hydrogen bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without hydrogen bonds): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with van der Waals forces): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without van der Waals forces): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with hydrophobic interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without hydrophobic interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with electrostatic interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without electrostatic interactions): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate with covalent modifications): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O
+ - 5-O-phosphono-D-ribofuranosyl-N-acetylcysteamine thioester-CoA conjugate (intermediate without covalent modifications): SMILES: CC(=O)NCCS(=O)C[C@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C
