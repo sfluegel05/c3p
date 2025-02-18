@@ -6,35 +6,36 @@ from rdkit import Chem
 def is_glucosylceramide(smiles: str):
     """
     Determines if a molecule is a glucosylceramide based on its SMILES string.
-    A glucosylceramide is characterized by a β-D-glucose moiety, a sphingosine-like backbone,
-    and an amide-linked long fatty acid chain.
+    A glucosylceramide contains a glucose moiety, a sphingosine backbone, and a long fatty acid chain.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a glucosylceramide, False otherwise
+        bool: True if molecule is a glucosylceramide, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (False, "Invalid SMILES string")
+        return False, "Invalid SMILES string"
 
-    # Refined SMARTS pattern for β-D-glucose moiety
-    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O[C@H]1O)CO")
+    # Check for β-D-glucose moiety using revised pattern
+    glucose_pattern = Chem.MolFromSmarts("C(O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)")
     if not mol.HasSubstructMatch(glucose_pattern):
-        return (False, "No β-D-glucose moiety found")
+        return False, "No β-D-glucose moiety found"
 
-    # Refined SMARTS pattern for an amide bond to a long fatty acid chain
-    amide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](C=O)C[C;R0][C;R0]")  # Broadened pattern for the fatty chain
+    # Check for amide linkage attached to a long chain (not precise but helps identify linkage point)
+    amide_pattern = Chem.MolFromSmarts("NC(=O)CCCCCCCCCCCCCCCCCCC")
     if not mol.HasSubstructMatch(amide_pattern):
-        return (False, "No amide linkage to a long fatty acid chain found")
+        return False, "No amide linkage to a long fatty acid chain found"
 
-    # Refined pattern for a sphingosine-like backbone; allows flexibility and common functional groups
-    sphingosine_pattern = Chem.MolFromSmarts("[N;R0][CX4]-[CX4]-[CX4](-[CX4])[O]")
-    if not mol.HasSubstructMatch(sphingosine_pattern):
-        return (False, "No sphingosine backbone found")
+    # Check for sphingosine backbone pattern (N-alkylated amine with long chain and specific OH groups)
+    sphingosine_patterns = [
+        Chem.MolFromSmarts("[NX3]C[C@H](O)CO"), # Basic pattern to identify the common N-linkage
+    ]
+    if not any(mol.HasSubstructMatch(pat) for pat in sphingosine_patterns):
+        return False, "No sphingosine backbone found"
 
-    return (True, "Contains glucose moiety linked to a sphingosine-like backbone with a fatty acid chain")
+    return True, "Contains glucose moiety linked to a sphingosine-like backbone with a fatty acid chain"
