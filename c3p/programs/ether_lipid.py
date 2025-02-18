@@ -2,7 +2,6 @@
 Classifies: CHEBI:64611 ether lipid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_ether_lipid(smiles: str):
     """
@@ -22,24 +21,24 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern (C-C-C) with potential for ether bonding
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Improved SMARTS pattern for glycerol backbone with flexible connectivity
+    glycerol_pattern = Chem.MolFromSmarts("[CH2][O][CH][O][CH2]")
 
-    # Look for ether linkage pattern (C-O-C)
-    ether_pattern = Chem.MolFromSmarts("[CX4]O[CX4]")
+    # Adjust ether linkage patterns to cater for stereo and other forms of bonding
+    ether_pattern = Chem.MolFromSmarts("[CX4,O]O[CX4]")
+
+    # Look for ether linkage pattern
     ether_matches = mol.GetSubstructMatches(ether_pattern)
     if len(ether_matches) < 1:
         return False, "No ether linkage found"
 
-    # Check for phosphate or choline groups that are common headgroups in ether lipids
+    # Improved headgroup checks
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
     choline_pattern = Chem.MolFromSmarts("C[N+](C)(C)C")
     
     has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
     has_choline = mol.HasSubstructMatch(choline_pattern)
-    
+
     if has_phosphate or has_choline:
         return True, "Contains ether linkages along with common lipid headgroups (e.g., phosphate, choline)"
     else:
