@@ -50,6 +50,22 @@ def is_chalcones(smiles: str):
     if not mol.HasSubstructMatch(ketone_group):
         return False, "No ketone group (C=O) found"
 
+    # Additional checks to filter out non-chalcone molecules
+    # Check molecular weight (chalcones typically have MW > 200)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200:
+        return False, "Molecular weight too low for chalcone"
+
+    # Check number of carbons (chalcones typically have > 10 carbons)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 10:
+        return False, "Too few carbons for chalcone"
+
+    # Check number of oxygens (chalcones typically have 1-3 oxygens)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 1 or o_count > 3:
+        return False, "Incorrect number of oxygens for chalcone"
+
     return True, "Contains the core chalcone structure (Ar-CH=CH-C(=O)-Ar or Ar-CH2-CH2-C(=O)-Ar) with possible substitutions on the aromatic rings"
 
 
