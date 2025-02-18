@@ -29,56 +29,64 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str) -> tuple[bool, str]:
     
     # Look for thioester group (C(=O)S)
     thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
-    if not mol.HasSubstructMatches(thioester_pattern):
+    if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester group found"
 
-    # Look for phosphate groups
+    # Look for phosphate groups (need at least 3 for CoA)
     phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
     if len(mol.GetSubstructMatches(phosphate_pattern)) < 3:
         return False, "Missing phosphate groups characteristic of CoA"
 
-    # Count carbons in the fatty acid chain
-    # First, find the thioester carbon
+    # Count carbons in the main chain
+    # First get the carbon atoms in the thioester group
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    if not thioester_matches:
-        return False, "Could not identify thioester group"
+    thioester_carbon = thioester_matches[0][0]  # First carbon of the thioester group
     
-    # Create a copy of the molecule to work with
-    mol_copy = Chem.RWMol(mol)
+    # Get all carbon atoms
+    carbon_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     
-    # Break the molecule at the thioester sulfur to isolate the fatty acid portion
-    thioester_carbon = thioester_matches[0][0]
-    bonds_to_break = []
-    for bond in mol_copy.GetBonds():
-        if bond.GetBeginAtomIdx() == thioester_carbon and bond.GetEndAtom().GetAtomicNum() == 16:  # Sulfur
-            bonds_to_break.append(bond.GetIdx())
-        elif bond.GetEndAtomIdx() == thioester_carbon and bond.GetBeginAtom().GetAtomicNum() == 16:  # Sulfur
-            bonds_to_break.append(bond.GetIdx())
-    
-    # Break bonds in reverse order to maintain indices
-    for bond_idx in sorted(bonds_to_break, reverse=True):
-        mol_copy.RemoveBond(mol_copy.GetBondWithIdx(bond_idx).GetBeginAtomIdx(),
-                           mol_copy.GetBondWithIdx(bond_idx).GetEndAtomIdx())
-    
-    # Get the fragment containing the fatty acid
-    fragments = Chem.GetMolFrags(mol_copy, asMols=True)
-    fatty_acid = None
-    for frag in fragments:
-        if frag.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=[OX1])")):
-            fatty_acid = frag
-            break
-    
-    if fatty_acid is None:
-        return False, "Could not isolate fatty acid portion"
-    
-    # Count carbons in fatty acid portion
-    carbon_count = sum(1 for atom in fatty_acid.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    if carbon_count <= 22:
-        return False, f"Fatty acid chain length (C{carbon_count}) not greater than C22"
-    
-    # Additional checks for fatty acid characteristics
-    if carbon_count > 40:
-        return False, f"Fatty acid chain length (C{carbon_count}) unreasonably long"
+    # Find the longest carbon chain starting from the thioester carbon
+    visited = set()
+    def dfs_carbon_chain(atom_idx, depth=0):
+        if atom_idx not in carbon_atoms or atom_idx in visited:
+            return depth
+        visited.add(atom_idx)
+        max_depth = depth
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Only follow carbon atoms
+                max_depth = max(max_depth, dfs_carbon_chain(neighbor.GetIdx(), depth + 1))
+        return max_depth
 
-    return True, f"Very long-chain fatty acyl-CoA with C{carbon_count} fatty acid chain"
+    # Get chain length starting from thioester carbon
+    chain_length = dfs_carbon_chain(thioester_carbon)
+    
+    if chain_length <= 22:
+        return False, f"Fatty acid chain length (C{chain_length}) not greater than C22"
+    
+    if chain_length > 40:
+        return False, f"Fatty acid chain length (C{chain_length}) unreasonably long"
+
+    # Check for characteristic functional groups that may be present
+    modifications = []
+    
+    # Check for double bonds
+    double_bond_pattern = Chem.MolFromSmarts("CC=CC")
+    if mol.HasSubstructMatch(double_bond_pattern):
+        modifications.append("unsaturated")
+    
+    # Check for hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("CC(O)C")
+    if mol.HasSubstructMatch(hydroxyl_pattern):
+        modifications.append("hydroxylated")
+    
+    # Check for oxo groups
+    oxo_pattern = Chem.MolFromSmarts("CC(=O)C")
+    if mol.HasSubstructMatch(oxo_pattern):
+        modifications.append("oxo")
+
+    modification_str = " and ".join(modifications)
+    if modification_str:
+        modification_str = f" ({modification_str})"
+    
+    return True, f"Very long-chain fatty acyl-CoA with C{chain_length} fatty acid chain{modification_str}"
