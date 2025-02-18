@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_diol(smiles: str):
     """
     Determines if a molecule is a diol based on its SMILES string.
-    A diol is a compound that contains two hydroxy groups.
+    A diol is a compound that contains two hydroxy groups, generally assumed to be, but not necessarily, alcoholic.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,8 +24,8 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for hydroxyl groups (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    # Define a SMARTS pattern for hydroxyl groups (-OH) that are not part of carboxylic acids or sulfonic acids
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H;!$(O[C,S]=O)]")
     
     # Find all matches for the hydroxyl pattern
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
