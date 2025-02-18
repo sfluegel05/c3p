@@ -13,8 +13,8 @@ def is_mineral_nutrient(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool, str: True, reason if classified as a mineral nutrient;
-                    False, reason otherwise
+        bool, str: True and reason if classified as a mineral nutrient;
+                   False and reason otherwise
     """
     
     # Parse SMILES
@@ -22,20 +22,40 @@ def is_mineral_nutrient(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for metal cations in essential mineral nutrients
-    metal_cations_smarts = "[K+],[Na+],[Ca+2],[Mg+2],[Fe+3],[Zn+2],[Al+3],[Ba+2],[Cs+],[La+3],[Sb+5]"
-    metal_cations_pattern = Chem.MolFromSmarts(metal_cations_smarts)
+    # Define valid SMARTS patterns for metal cations
+    metal_cations_patterns = [
+        Chem.MolFromSmarts("[K+]"),
+        Chem.MolFromSmarts("[Na+]"),
+        Chem.MolFromSmarts("[Ca+2]"),
+        Chem.MolFromSmarts("[Mg+2]"),
+        Chem.MolFromSmarts("[Fe+3]"),
+        Chem.MolFromSmarts("[Zn+2]"),
+        Chem.MolFromSmarts("[Al+3]"),
+        Chem.MolFromSmarts("[Ba+2]"),
+        Chem.MolFromSmarts("[Cs+]"),
+        Chem.MolFromSmarts("[La+3]"),
+        Chem.MolFromSmarts("[Sb+5]")
+    ]
     
-    # Define SMARTS patterns for common anionic groups (sulfates, chlorides, etc.)
-    anions_smarts = "[Cl-],[F-],[P]([O-])([O-])([O-])=O,[S]([O-])([O-])=O,[C]([O-])([O-])=O,[N]([O-])([O-])=O,[Si]([O-])([O-])([O-])"
-    anions_pattern = Chem.MolFromSmarts(anions_smarts)
+    # Define valid SMARTS patterns for common anionic groups
+    anions_patterns = [
+        Chem.MolFromSmarts("[Cl-]"),
+        Chem.MolFromSmarts("[F-]"),
+        Chem.MolFromSmarts("[O-]S(=O)(=O)[O-]"),  # sulfate
+        Chem.MolFromSmarts("[O-]P(=O)([O-])[O-]"),  # phosphate
+        Chem.MolFromSmarts("[O-]C(=O)[O-]"),  # carbonate
+        Chem.MolFromSmarts("[O-]N(=O)[O-]"),  # nitrate
+        Chem.MolFromSmarts("[Si]([O-])([O-])([O-])[O-]")  # silicate
+    ]
     
     # Check for presence of at least one metal cation
-    if not mol.HasSubstructMatch(metal_cations_pattern):
+    cation_found = any(mol.HasSubstructMatch(pattern) for pattern in metal_cations_patterns)
+    if not cation_found:
         return False, "No essential metal cations found"
     
     # Check for presence of at least one anion or inorganic group
-    if not mol.HasSubstructMatch(anions_pattern):
+    anion_found = any(mol.HasSubstructMatch(pattern) for pattern in anions_patterns)
+    if not anion_found:
         return False, "No recognizable anionic groups found"
     
     # If both components are present, classify as a potential mineral nutrient
