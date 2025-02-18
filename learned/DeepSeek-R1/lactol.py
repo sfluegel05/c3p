@@ -22,39 +22,32 @@ def is_lactol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Check all rings for lactol pattern: adjacent ring oxygen and hydroxyl-bearing carbon
+    # SMARTS pattern for a cyclic hemiacetal: hydroxyl group attached to a carbon adjacent to ring oxygen
+    # Matches [OH]-C-O in a ring structure
+    lactol_pattern = Chem.MolFromSmarts('[OH]-C-O-*')
+    if not mol.HasSubstructMatch(lactol_pattern):
+        return False, "No hydroxyl adjacent to ring oxygen"
+    
+    # Verify that the oxygen is part of a ring
     rings = mol.GetRingInfo().AtomRings()
     for ring in rings:
         ring_atoms = set(ring)
-        for i in range(len(ring)):
-            atom_idx1 = ring[i]
-            atom_idx2 = ring[(i+1) % len(ring)]  # Next atom in the ring
-            
-            atom1 = mol.GetAtomWithIdx(atom_idx1)
-            atom2 = mol.GetAtomWithIdx(atom_idx2)
-            
-            # Check for O-C(OH) adjacency in the ring
-            if (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6):
-                # Check if atom2 has exactly one hydroxyl group and total two oxygen neighbors
-                hydroxyls = 0
-                oxygen_neighbors = 0
-                for nbr in atom2.GetNeighbors():
-                    if nbr.GetAtomicNum() == 8:
-                        oxygen_neighbors += 1
-                        if nbr.GetTotalNumHs() >= 1:
-                            hydroxyls += 1
-                if hydroxyls == 1 and oxygen_neighbors == 2:
-                    return True, "Adjacent ring oxygen and hydroxyl-bearing carbon (lactol)"
-            elif (atom2.GetAtomicNum() == 8 and atom1.GetAtomicNum() == 6):
-                # Check atom1 similarly
-                hydroxyls = 0
-                oxygen_neighbors = 0
-                for nbr in atom1.GetNeighbors():
-                    if nbr.GetAtomicNum() == 8:
-                        oxygen_neighbors += 1
-                        if nbr.GetTotalNumHs() >= 1:
-                            hydroxyls += 1
-                if hydroxyls == 1 and oxygen_neighbors == 2:
-                    return True, "Adjacent ring oxygen and hydroxyl-bearing carbon (lactol)"
+        # Check for oxygen in the ring
+        oxygen_in_ring = any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring)
+        if not oxygen_in_ring:
+            continue
+        # Check for a carbon in the ring with hydroxyl group adjacent to the ring oxygen
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() == 8:  # Oxygen atom in the ring
+                # Get neighboring atoms in the ring
+                neighbors = [n for n in atom.GetNeighbors() if n.GetIdx() in ring_atoms]
+                for neighbor in neighbors:
+                    if neighbor.GetAtomicNum() == 6:  # Carbon adjacent to ring oxygen
+                        # Check if this carbon has a hydroxyl group
+                        for bond in neighbor.GetBonds():
+                            other = bond.GetOtherAtom(neighbor)
+                            if other.GetAtomicNum() == 8 and other.GetTotalNumHs() >= 1:
+                                return True, "Cyclic hemiacetal structure detected"
     
-    return False, "No lactol structure detected"
+    return False, "No lactol structure found"
