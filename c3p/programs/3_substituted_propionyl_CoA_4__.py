@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_3_substituted_propionyl_CoA_4__(smiles: str):
     """
     Determines if a molecule is a 3-substituted propionyl-CoA(4-) based on its SMILES string.
-    Must have: thioester group, CoA backbone with diphosphate groups, adenine moiety, and total charge -4.
+    Must have: CoA backbone with thioester-linked hydrocarbon chain (no heteroatoms), diphosphate groups, adenine, and charge -4.
     """
     
     # Parse SMILES
@@ -20,7 +20,8 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
 
     # Check for thioester group (S-C(=O)-)
     thioester_pattern = Chem.MolFromSmarts("[SX2]-[CX3](=[OX1])")
-    if not mol.HasSubstructMatch(thioester_pattern):
+    thio_matches = mol.GetSubstructMatches(thioester_pattern)
+    if not thio_matches:
         return False, "No thioester group found"
 
     # Check for diphosphate group (O-P-O-P-O with two [O-] charges)
@@ -43,4 +44,32 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if total_charge != -4:
         return False, f"Total charge {total_charge} ≠ -4"
 
-    return True, "Contains CoA backbone with thioester, diphosphate groups, and correct charge"
+    # Check acyl group structure (hydrocarbon chain without heteroatoms)
+    try:
+        # Get thioester sulfur atom
+        sulfur = thio_matches[0][0]
+        sulfur_atom = mol.GetAtomWithIdx(sulfur)
+        
+        # Get connected carbonyl carbon
+        carbonyl_c = [x for x in sulfur_atom.GetNeighbors() if x.GetAtomicNum() == 6 and x.GetTotalNumHs() < 3][0]
+        
+        # Get R-group starting carbon (non-oxygen neighbor of carbonyl)
+        r_group_start = [x for x in carbonyl_c.GetNeighbors() if x.GetAtomicNum() != 8][0]
+        
+        # Traverse R-group to check for heteroatoms
+        visited = set()
+        stack = [r_group_start]
+        while stack:
+            atom = stack.pop()
+            if atom.GetIdx() in visited:
+                continue
+            visited.add(atom.GetIdx())
+            # Check for non-carbon atoms (excluding hydrogen)
+            if atom.GetAtomicNum() != 6:
+                return False, f"Non-carbon atom {atom.GetSymbol()} in acyl chain"
+            # Add neighbors to stack
+            stack.extend([n for n in atom.GetNeighbors() if n.GetIdx() not in visited])
+    except IndexError:
+        return False, "Could not analyze acyl group structure"
+
+    return True, "Contains CoA backbone with thioester, diphosphate groups, and hydrocarbon acyl chain"
