@@ -1,312 +1,42 @@
 """
 Classifies: CHEBI:75874 para-terphenyl
 """
- - 4''-deoxyterprenin: SMILES: O(C1=C(O)C(=C(OC)C=C1C2=CC=CC=C2)C3=CC(=C(O)C=C3)CC=C(C)C)C
- - 3,3''-dihydroxy-6'-O-desmethylterphenyllin: SMILES: COc1c(O)c(c(O)cc1-c1ccc(O)c(O)c1)-c1ccc(O)c(O)c1
- - 3,3''-di-O-methylterphenyllin: SMILES: COc1cc(-c2ccc(O)cc2)c(OC)c(O)c1-c1ccc(OC)cc1
- - 3-hydroxyterprenin: SMILES: O(C1=C(O)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylterprenin: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 4''-deoxyterprenin: SMILES: O(C1=C(O)C(=C(OC)C=C1C2=CC=CC=C2)C3=CC(=C(O)C=C3)CC=C(C)C)C
- - 3-O-methylterphenyllin: SMILES: COc1cc(-c2ccc(OC)cc2)c(OC)c(O)c1-c1ccc(O)cc1
- - 3,3''-di-O-methylterprenin: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(OC)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3,3''-dihydroxyterprenin: SMILES: O(C1=C(O)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside A: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside B: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside C: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside D: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside E: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside F: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside G: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside H: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside I: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside J: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside K: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside L: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside M: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside N: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside O: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside P: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside Q: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside R: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside S: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside T: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside U: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside V: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside W: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside X: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside Y: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside Z: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside AZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside BZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside CZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside DZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside ED: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside ER: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside ES: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside ET: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside EZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside FZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside GZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside HZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside ID: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside II: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside IZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JO: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JP: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JQ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JR: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JS: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JT: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JU: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JV: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JW: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JX: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JY: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside JZ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KA: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KB: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KC: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KD: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KE: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KF: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KG: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KH: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KI: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KJ: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KK: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KL: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KM: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C2OC)C=C1)CC=C(C)C
- - 3-O-methylechoside KN: SMILES: O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=C(O)C=C3)C=C
+"""
+Classifies: para-terphenyl (CHEBI:XXXXX)
+"""
+from rdkit import Chem
+
+def is_para_terphenyl(smiles: str):
+    """
+    Determines if a molecule is a para-terphenyl based on its SMILES string.
+    A para-terphenyl has a 1,4-diphenylbenzene skeleton, which is three benzene rings connected in a linear para fashion.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a para-terphenyl, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define SMARTS pattern for the para-terphenyl core
+    # Core is a central benzene with two benzene rings attached at para positions (1 and 4)
+    # The pattern allows any substitution on the benzene rings
+    para_terphenyl_core = Chem.MolFromSmarts('c1ccc(-c2ccccc2)cc1-c3ccccc3')
+    
+    # Check if the core structure is present
+    if mol.HasSubstructMatch(para_terphenyl_core):
+        return True, "Contains 1,4-diphenylbenzene skeleton"
+    
+    # Alternative SMARTS pattern to account for possible substitutions on the benzene rings
+    # This pattern uses 'c' (aromatic) and allows any substitution on the attached benzene rings
+    para_terphenyl_flex = Chem.MolFromSmarts('c1(-c2:c:c:c:c:c:2)ccc(-c3:c:c:c:c:c:3)cc1')
+    if mol.HasSubstructMatch(para_terphenyl_flex):
+        return True, "Contains 1,4-diphenylbenzene skeleton with possible substitutions"
+    
+    # If neither pattern matches
+    return False, "No para-terphenyl core structure found"
