@@ -28,22 +28,24 @@ def is_monoamine(smiles: str):
         return False, "No aromatic ring found"
 
     # SMARTS pattern for amino group connected via two-carbon chain to aromatic ring
-    # Pattern: aromatic carbon -> any carbon -> nitrogen with at least one H (primary, secondary amine)
-    # Excludes tertiary amines (no H) and quaternary ammonium
-    monoamine_pattern = Chem.MolFromSmarts("[a;r]:[#6](-[#6]-[N&!H0&!$(N-[-0])])")  # Two-carbon chain, amino with H
+    # Pattern: aromatic atom -> any carbon -> any carbon -> nitrogen (any substitution except nitro/amide)
+    # Excludes nitro groups and amides by not matching those patterns
+    monoamine_pattern = Chem.MolFromSmarts("[a]~[#6]~[#6]~[N]")
     matches = mol.GetSubstructMatches(monoamine_pattern)
 
     # Check for exactly one amino group meeting criteria
     if len(matches) != 1:
         return False, f"Found {len(matches)} amino groups with two-carbon chain to aromatic ring"
 
-    # Verify the connecting chain is exactly two carbons
-    for match in matches:
-        aromatic_idx, carbon1, carbon2, nitrogen_idx = match
-        # Ensure the two carbons are in a chain without branching
-        atom1 = mol.GetAtomWithIdx(carbon1)
-        atom2 = mol.GetAtomWithIdx(carbon2)
-        if atom1.GetDegree() != 2 or atom2.GetDegree() != 2:
-            return False, "Branched chain detected"
+    # Additional check to exclude nitro groups and amides
+    # Nitro pattern: [N+](=O)[O-]
+    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
+    if mol.HasSubstructMatch(nitro_pattern):
+        return False, "Nitro group present"
+
+    # Amide pattern: [NX3][CX3](=O)
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Amide group present"
 
     return True, "Amino group connected to aromatic ring via two-carbon chain"
