@@ -23,11 +23,22 @@ def is_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the key substructure: thioester (S-C(=O)) connected to CoA's pantetheine chain
-    # Pattern matches S connected to both the acyl group (C=O) and the CoA backbone (CCNC...)
-    acyl_coa_pattern = Chem.MolFromSmarts("[S](C(=O))CCNC(=O)CCNC(=O)")
+    # Define the thioester group connected to pantetheine chain (S-C(=O)-C-C-N-C(=O))
+    thioester_pantetheine_pattern = Chem.MolFromSmarts("[S](C(=O))C-C-N-C(=O)")
     
-    if mol.HasSubstructMatch(acyl_coa_pattern):
-        return True, "Contains thioester group linked to CoA pantetheine chain"
+    # Define adenine moiety pattern (part of CoA structure)
+    adenine_pattern = Chem.MolFromSmarts("[n]1cnc2ncnc12")
+
+    # Check for both substructures
+    has_thioester = mol.HasSubstructMatch(thioester_pantetheine_pattern)
+    has_adenine = mol.HasSubstructMatch(adenine_pattern)
+
+    if has_thioester and has_adenine:
+        return True, "Contains thioester group linked to CoA pantetheine chain and adenine moiety"
     else:
-        return False, "Missing thioester linkage to CoA backbone"
+        reasons = []
+        if not has_thioester:
+            reasons.append("Missing thioester linkage to CoA backbone")
+        if not has_adenine:
+            reasons.append("Missing adenine moiety characteristic of CoA")
+        return False, ", ".join(reasons) if reasons else "Does not match acyl-CoA criteria"
