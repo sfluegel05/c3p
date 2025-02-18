@@ -24,8 +24,8 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for hydroxyl groups (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    # Define a SMARTS pattern for hydroxyl groups (-OH) that are not part of carboxylic acids or sulfonic acids
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H;!$(O[C,S]=O)]")
     
     # Find all matches for the hydroxyl pattern
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
@@ -34,22 +34,7 @@ def is_diol(smiles: str):
     hydroxyl_count = len(hydroxyl_matches)
 
     # Check if there are exactly two hydroxyl groups
-    if hydroxyl_count != 2:
+    if hydroxyl_count == 2:
+        return True, "Contains exactly two hydroxyl groups"
+    else:
         return False, f"Contains {hydroxyl_count} hydroxyl groups, need exactly 2"
-
-    # Ensure that the hydroxyl groups are not part of carboxylic acids or esters
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
-
-    # Check if any hydroxyl group is part of a carboxylic acid or ester
-    for match in hydroxyl_matches:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:  # Carbon
-                    for bond in neighbor.GetBonds():
-                        if bond.GetBondType() == Chem.BondType.DOUBLE:
-                            if bond.GetBeginAtom().GetAtomicNum() == 8 or bond.GetEndAtom().GetAtomicNum() == 8:  # Oxygen
-                                return False, "Hydroxyl groups are part of carboxylic acids or esters"
-
-    return True, "Contains exactly two hydroxyl groups and no disqualifying functional groups"
