@@ -27,19 +27,19 @@ def is_sphingomyelin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphocholine group
-    phosphocholine_pattern = Chem.MolFromSmarts("[NX3+](C)(C)CCOP([O-])(=O)")
+    # Check for phosphocholine group (more flexible pattern)
+    phosphocholine_pattern = Chem.MolFromSmarts("N(C)(C)CCOP(=O)(O)")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group found"
 
-    # Check for amide linkage to fatty acid
-    amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3H]")
+    # Check for amide linkage to fatty acid (more flexible pattern)
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     if len(amide_matches) != 1:
         return False, f"Found {len(amide_matches)} amide groups, need exactly 1"
 
-    # Check for sphingoid base (long chain with OH and NH)
-    sphingoid_pattern = Chem.MolFromSmarts("[CX4][CX4]([OH])[CX4][NX3H]")
+    # Check for sphingoid base (more flexible pattern)
+    sphingoid_pattern = Chem.MolFromSmarts("[C;H1,H2][C;H1,H2](O)[C;H1,H2][N;H1,H2]")
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid base pattern found"
 
