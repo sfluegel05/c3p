@@ -42,10 +42,25 @@ def is_secondary_ammonium_ion(smiles: str):
                 atom.GetTotalValence() == 4 and 
                 atom.GetHybridization() == Chem.HybridizationType.SP3):
                 
-                # Additional check to exclude cases where N is adjacent to electron-withdrawing groups
-                # that would prevent amine protonation (e.g., amides, nitro groups)
-                has_ewg = any(neighbor.GetAtomicNum() in [7,8]  # Check for N/O neighbors
-                             for neighbor in atom.GetNeighbors())
+                # Check for electron-withdrawing groups:
+                # Direct neighbors (N/O) or carbons in carbonyl groups
+                has_ewg = False
+                for neighbor in atom.GetNeighbors():
+                    # Direct N/O neighbors
+                    if neighbor.GetAtomicNum() in [7, 8]:
+                        has_ewg = True
+                        break
+                    # Check for carbonyl groups (C=O) attached to neighbor carbons
+                    if neighbor.GetAtomicNum() == 6:
+                        for bond in neighbor.GetBonds():
+                            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                                other_atom = bond.GetOtherAtom(neighbor)
+                                if other_atom.GetAtomicNum() == 8:
+                                    has_ewg = True
+                                    break
+                        if has_ewg:
+                            break
+                
                 if not has_ewg:
                     return True, "Positively charged nitrogen with two carbon substituents and two hydrogens"
     
