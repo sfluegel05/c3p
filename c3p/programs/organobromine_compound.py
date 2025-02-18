@@ -29,10 +29,17 @@ def is_organobromine_compound(smiles: str):
     if not bromine_atoms:
         return False, "No bromine atoms found"
 
-    # Check if any bromine atom is directly bonded to a carbon atom
+    # Check if any bromine atom is bonded to a carbon atom
     for bromine_atom in bromine_atoms:
         for neighbor in bromine_atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:  # Atomic number of carbon is 6
                 return True, "Contains at least one carbon-bromine bond"
+
+    # Additionally, check for cases where bromine is part of a larger structure that includes a carbon-bromine bond
+    # For example, in N-bromosuccinimide, the bromine is bonded to nitrogen, but the molecule still contains a carbon-bromine bond
+    # We can use SMARTS pattern to match any carbon-bromine bond
+    carbon_bromine_pattern = Chem.MolFromSmarts("[C]-[Br]")
+    if mol.HasSubstructMatch(carbon_bromine_pattern):
+        return True, "Contains at least one carbon-bromine bond"
 
     return False, "No carbon-bromine bonds found"
