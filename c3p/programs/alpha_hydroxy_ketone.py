@@ -5,7 +5,6 @@ Classifies: CHEBI:139588 alpha-hydroxy ketone
 Classifies: CHEBI:2468 alpha-hydroxy ketone
 """
 from rdkit import Chem
-from rdkit.Chem import MolFromSmarts
 
 def is_alpha_hydroxy_ketone(smiles: str):
     """
@@ -23,34 +22,28 @@ def is_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced SMARTS pattern to capture both aliphatic and aromatic ketones
-    # 1. Find ketone (C=O) with adjacent carbon (alpha)
-    # 2. Alpha carbon must have hydroxyl (O with 1 H)
-    # 3. Exclude conjugated systems and ester/acid environments
-    pattern = MolFromSmarts('[#6]=[O]-[#6;!$(C=O)]-[O;H1]')
+    # Improved SMARTS pattern: ketone with adjacent carbon containing hydroxyl (O with exactly 1 H)
+    # [CX3]=O (ketone) adjacent to a carbon connected to [O;H1] (hydroxyl)
+    pattern = Chem.MolFromSmarts('[CX3](=O)-[C;!$(C=O)]([O;H1])')
     if not pattern:
         return False, "Invalid SMARTS pattern"
 
+    # Find all matches of the pattern
     matches = mol.GetSubstructMatches(pattern)
     if not matches:
         return False, "No ketone with alpha-hydroxy group detected"
 
-    # Additional validation checks for each match
+    # Check if any matched ketone is valid (not part of acid/ester/amide)
     for match in matches:
-        ketone_idx, alpha_idx, _, oh_idx = match
-        
-        # Check ketone environment - must have at least 2 carbon neighbors
-        ketone_atom = mol.GetAtomWithIdx(ketone_idx)
-        carbon_neighbors = sum(1 for n in ketone_atom.GetNeighbors() if n.GetAtomicNum() == 6)
-        if carbon_neighbors < 2:
-            continue  # Reject carbonyls in acids/esters
-        
-        # Check alpha carbon for conjugation (no double bonds)
-        alpha_atom = mol.GetAtomWithIdx(alpha_idx)
-        for bond in alpha_atom.GetBonds():
-            if bond.GetBondType() == Chem.BondType.DOUBLE:
-                break
-        else:  # Only execute if no break (no double bonds)
+        ketone_carbon = mol.GetAtomWithIdx(match[0])
+        # Verify ketone environment (should have 2 carbons attached)
+        carbon_neighbors = sum(1 for n in ketone_carbon.GetNeighbors() if n.GetAtomicNum() == 6)
+        if carbon_neighbors >= 2:
+            # Check alpha carbon's hydroxyl isn't part of conjugated system
+            alpha_carbon = mol.GetAtomWithIdx(match[1])
+            for bond in alpha_carbon.GetBonds():
+                if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetOtherAtom(alpha_carbon).GetAtomicNum() == 8:
+                    continue  # skip conjugated cases
             return True, "Contains ketone with hydroxyl group on adjacent alpha-carbon"
 
-    return False, "No valid alpha-hydroxy ketone pattern found"
+    return False, "No valid ketone with alpha-hydroxy group detected"
