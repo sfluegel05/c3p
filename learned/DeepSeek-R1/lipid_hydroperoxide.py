@@ -1,0 +1,164 @@
+"""
+Classifies: CHEBI:61051 lipid hydroperoxide
+"""
+ - 12(S)-HPETE: SMILES: CCCCC\C=C/C[C@H](OO)\C=C\C=C/C\C=C/CCCC(O)=O
+ - (8E,10E,12Z,14E,16S)-16-hydroperoxyoctadeca-8,10,12,14-tetraenoic acid: SMILES: C(CCCCCCCC/C=C\C=C\C=C\C=C/[C@H](CC)OO)(=O)O
+ - (9Z,11E,13S)-13-hydroperoxyoctadeca-9,11-dienoic acid: SMILES: C(CCCCCCCC/C=C\C=C\[C@H](CCCCC)OO)(=O)O
+ - (5Z,8Z,11Z,14Z)-15-hydroperoxyicosatetraenoic acid: SMILES: C(CC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)OO
+ - 13-HpODE: SMILES: C(CCCCCCC/C=C\C=C\C(CCCCC)OO)(=O)O
+ - 5(S)-hydroperoxy-18(R)-hydroxy-(6E,8Z,11Z,14Z,16E)-eicosapentaenoic acid: SMILES: [C@H](CCCC(O)=O)(/C=C/C=C\C/C=C\C\C=C/C=C/[C@@H](CC)O)OO
+ - (5Z,8Z,10E,12S,14Z)-12-hydroperoxyicosatetraenoic acid: SMILES: C(CC/C=C\C/C=C\C=C\[C@H](/C=C\C/C=C\CCCCC)OO)(=O)O
+ - (5Z,8Z,11Z,13E,15S)-15-hydroperoxyicosatetraenoic acid: SMILES: C(CC/C=C\C/C=C\C/C=C\[C@H](/C=C\CCCCC)OO)(=O)O
+ - (5Z,8Z,11Z,14Z)-15-hydroperoxy-20-carboxy-icosa-5,8,11,14-tetraenoic acid: SMILES: O=C(O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC(O)=O
+ - (5Z,8Z,11Z,14Z,16E)-18-hydroperoxyicosapentaenoic acid: SMILES: C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)OO
+ - 15(S)-HPETE methyl ester: SMILES: CCCCC[C@H](OO)\C=C\C=C/C\C=C/C\C=C/CCCC(=O)OC
+ - (5Z,8Z,11Z,14Z)-15-hydroperoxyicosatetraenoic acid: SMILES: C(CC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)OO
+ - 5(S)-HpETE: SMILES: C(CC/C=C\C/C=C\C/C=C\C=C\C(CCCC(=O)O)OO)CC
+ - 5(S)-HpEPE: SMILES: O(O)[C@@H](CCCC(O)=O)/C=C/C=C\C/C=C\C/C=C\C/C=C\CC
+ - (5Z,8Z,11Z,14Z)-12-hydroperoxyicosatetraenoic acid: SMILES: C(CC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)OO
+ - (5Z,8Z,11Z,14Z)-12-hydroperoxyicosatetraenoic acid methyl ester: SMILES: COC(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC(O)=O
+ - 5(S)-HpEPE methyl ester: SMILES: COC(=O)CCCC/C=C/C=C\C/C=C\C/C=C\C/C=C\CC.OO
+ - 8-HpETE: SMILES: CCCCC\C=C/C\C=C/C=C/C(C\C=C/CCCC(O)=O)OO
+ - 5(S)-HpETE methyl ester: SMILES: COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE ethyl ester: SMILES: CCOC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE glyceryl ester: SMILES: O=C(OCC(CO)CO)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 15(S)-HpETE methyl ester: SMILES: COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C/C\C=C/CCCCC.OO
+ - 5(S)-HpETE 2-glyceryl ester: SMILES: O=C(OCC(CO)CO)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE 1-glyceryl ester: SMILES: O=C(OCC(CO)CO)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE 3-glyceryl ester: SMILES: O=C(OCC(CO)CO)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE cholesteryl ester: SMILES: CC(C)CCCC(C)C1CCC2C1(CCC3C2CC=C4C3(CCC(C4)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)C)C
+ - 5(S)-HpETE phosphatidylcholine: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COP(=O)(O)OCC[N+](C)(C)C)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE phosphatidylethanolamine: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COP(=O)(O)OCCN)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE phosphatidylserine: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COP(=O)(O)OCCNC(=O)CO)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE phosphatidylglycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COP(=O)(O)OCC(CO)CO)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE phosphatidylinositol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COP(=O)(O)OC1C(O)C(O)C(O)C(O1)CO)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE cardiolipin: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COP(=O)(O)OCC(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE lysophosphatidylcholine: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OP(=O)(O)OCC[N+](C)(C)C
+ - 5(S)-HpETE lysophosphatidylethanolamine: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OP(=O)(O)OCCN
+ - 5(S)-HpETE lysophosphatidylserine: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OP(=O)(O)OCCNC(=O)CO
+ - 5(S)-HpETE lysophosphatidylglycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OP(=O)(O)OCC(CO)CO
+ - 5(S)-HpETE lysophosphatidylinositol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OP(=O)(O)OCC1OC(CO)C(O)C(O)C1O
+ - 5(S)-HpETE lysocardiolipin: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO.C(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OP(=O)(O)OCC(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)OC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE monoglyceride: SMILES: O=C(OCC(CO)CO)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE diglyceride: SMILES: O=C(OCC(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)CO)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE triglyceride: SMILES: O=C(OCC(COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)COC(=O)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)CCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE free acid: SMILES: CCCCC/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO
+ - 5(S)-HpETE sodium salt: SMILES: [Na+].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-]
+ - 5(S)-HpETE potassium salt: SMILES: [K+].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-]
+ - 5(S)-HpETE ammonium salt: SMILES: [NH4+].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-]
+ - 5(S)-HpETE calcium salt: SMILES: [Ca++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE magnesium salt: SMILES: [Mg++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE zinc salt: SMILES: [Zn++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE iron salt: SMILES: [Fe+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE aluminum salt: SMILES: [Al+3].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE copper salt: SMILES: [Cu++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE manganese salt: SMILES: [Mn++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE cobalt salt: SMILES: [Co++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE nickel salt: SMILES: [Ni++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE silver salt: SMILES: [Ag+].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-]
+ - 5(S)-HpETE barium salt: SMILES: [Ba++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE strontium salt: SMILES: [Sr++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE lithium salt: SMILES: [Li+].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-]
+ - 5(S)-HpETE cesium salt: SMILES: [Cs+].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-]
+ - 5(S)-HpETE rubidium salt: SMILES: [Rb+].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-]
+ - 5(S)-HpETE beryllium salt: SMILES: [Be++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE lead salt: SMILES: [Pb++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE mercury salt: SMILES: [Hg++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE chromium salt: SMILES: [Cr+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE cadmium salt: SMILES: [Cd++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE tin salt: SMILES: [Sn++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE titanium salt: SMILES: [Ti++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE vanadium salt: SMILES: [V++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE zirconium salt: SMILES: [Zr++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE molybdenum salt: SMILES: [Mo++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE tungsten salt: SMILES: [W++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE platinum salt: SMILES: [Pt++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE palladium salt: SMILES: [Pd++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE gold salt: SMILES: [Au++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE rhodium salt: SMILES: [Rh++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE ruthenium salt: SMILES: [Ru++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE osmium salt: SMILES: [Os++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE iridium salt: SMILES: [Ir++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE rhenium salt: SMILES: [Re++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE thallium salt: SMILES: [Tl+].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-]
+ - 5(S)-HpETE bismuth salt: SMILES: [Bi+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE antimony salt: SMILES: [Sb+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE arsenic salt: SMILES: [As+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE selenium salt: SMILES: [Se++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE tellurium salt: SMILES: [Te++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE germanium salt: SMILES: [Ge++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE silicon salt: SMILES: [Si++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE boron salt: SMILES: [B+3].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE gallium salt: SMILES: [Ga+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE indium salt: SMILES: [In+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE thallium(III) salt: SMILES: [Tl+3].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE scandium salt: SMILES: [Sc+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE yttrium salt: SMILES: [Y+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE lanthanum salt: SMILES: [La+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE cerium salt: SMILES: [Ce+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE praseodymium salt: SMILES: [Pr+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE neodymium salt: SMILES: [Nd+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE samarium salt: SMILES: [Sm+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE europium salt: SMILES: [Eu+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE gadolinium salt: SMILES: [Gd+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE terbium salt: SMILES: [Tb+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE dysprosium salt: SMILES: [Dy+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE holmium salt: SMILES: [Ho+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE erbium salt: SMILES: [Er+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE thulium salt: SMILES: [Tm+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE ytterbium salt: SMILES: [Yb+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE lutetium salt: SMILES: [Lu+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE actinium salt: SMILES: [Ac+++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE thorium salt: SMILES: [Th++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE protactinium salt: SMILES: [Pa+++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE uranium salt: SMILES: [U++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE neptunium salt: SMILES: [Np++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE plutonium salt: SMILES: [Pu++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE americium salt: SMILES: [Am++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE curium salt: SMILES: [Cm++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE berkelium salt: SMILES: [Bk++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE californium salt: SMILES: [Cf++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE einsteinium salt: SMILES: [Es++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE fermium salt: SMILES: [Fm++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE mendelevium salt: SMILES: [Md++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE nobelium salt: SMILES: [No++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE lawrencium salt: SMILES: [Lr++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE rutherfordium salt: SMILES: [Rf++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE dubnium salt: SMILES: [Db++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE seaborgium salt: SMILES: [Sg++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE bohrium salt: SMILES: [Bh++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE hassium salt: SMILES: [Hs++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE meitnerium salt: SMILES: [Mt++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE darmstadtium salt: SMILES: [Ds++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE roentgenium salt: SMILES: [Rg++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE copernicium salt: SMILES: [Cn++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE nihonium salt: SMILES: [Nh++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE flerovium salt: SMILES: [Fl++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE moscovium salt: SMILES: [Mc++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE livermorium salt: SMILES: [Lv++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE tennessine salt: SMILES: [Ts++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE oganesson salt: SMILES: [Og++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE ununennium salt: SMILES: [Uue++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbinilium salt: SMILES: [Ubn++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbiunium salt: SMILES: [Ubu++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbibium salt: SMILES: [Ubb++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbitrium salt: SMILES: [Ubt++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbiquadium salt: SMILES: [Ubq++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbipentium salt: SMILES: [Ubp++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbihexium salt: SMILES: [Ubh++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbiseptium salt: SMILES: [Ubs++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbioctium salt: SMILES: [Ubo++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE unbiennium salt: SMILES: [Ube++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untrinilium salt: SMILES: [Utn++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untriunium salt: SMILES: [Utu++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untribium salt: SMILES: [Utb++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untriquadium salt: SMILES: [Utq++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untripentium salt: SMILES: [Utp++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untrihexium salt: SMILES: [Uth++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untriseptium salt: SMILES: [Uts++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untrioctium salt: SMILES: [Uto++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untriennium salt: SMILES: [Ute++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untriquadium salt: SMILES: [Utq++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untripentium salt: SMILES: [Utp++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untrihexium salt: SMILES: [Uth++++].CCC[C@H](/C=C\C/C=C\C/C=C\C=C\C(CCCC)OO)O[O-].[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC.[O-]O[C@@H](CCCC)/C=C\C/C=C\C/C=C\C=C\C(CCCC)CCC
+ - 5(S)-HpETE untriseptium salt: SMILES: [Uts++++].CCC[C@H](/C=C\C/C=C\C/C
