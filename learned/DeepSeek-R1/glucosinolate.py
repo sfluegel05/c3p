@@ -10,69 +10,65 @@ from rdkit.Chem import AllChem
 def is_glucosinolate(smiles: str):
     """
     Determines if a molecule is a glucosinolate based on its SMILES string.
-    A glucosinolate has a thioglucose moiety linked via a sulfur atom to a sulfonated oxime group
-    with an anti configuration between the side chain and sulfate group.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a glucosinolate, False otherwise
-        str: Reason for classification
+    Must have: 
+    1) Thioglucose moiety (sulfur attached to glucose)
+    2) Central carbon connected to sulfur (from thioglucose) and sulfonated oxime group (C=N-OSO3^-)
+    3) Anti configuration between side chain and sulfate group
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return False, "Invalid SMILES"
 
-    # Check for thioglucose moiety (sulfur attached to a glucose-like structure)
-    # Generalized pattern for sulfur connected to a hexose ring with multiple hydroxyls and hydroxymethyl
-    thioglucose_pattern = Chem.MolFromSmarts(
-        "[C@H]1(O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)S"
-    )
-    if not mol.HasSubstructMatch(thioglucose_pattern):
-        return False, "No thioglucose moiety detected"
+    # 1. Check thioglucose pattern (sulfur connected to glucose backbone)
+    thiogluc_pattern = Chem.MolFromSmarts("[C@H]1(O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)S")
+    if not mol.HasSubstructMatch(thiogluc_pattern):
+        return False, "Missing thioglucose moiety"
 
-    # Check for sulfonated oxime group (N-O-SO3^-)
-    sulf_oxime_pattern = Chem.MolFromSmarts("[CX3]=[NX2][OX2][S](=O)(=O)[O-]")
-    sulf_oxime_matches = mol.GetSubstructMatches(sulf_oxime_pattern)
-    if not sulf_oxime_matches:
-        return False, "No sulfonated oxime group found"
+    # 2. Find sulfonated oxime group (C=N-OSO3^-)
+    # Pattern accounts for different protonation states and resonance
+    oxime_sulf_pattern = Chem.MolFromSmarts("[CX3]=[NX2]-[OX2]-S(=O)(=O)[O-]")
+    oxime_matches = mol.GetSubstructMatches(oxime_sulf_pattern)
+    if not oxime_matches:
+        return False, "Missing sulfonated oxime group"
 
-    # Verify connectivity between thioglucose sulfur and the central carbon in C=N-O-SO3
-    thioglucose_s = [match[0] for match in mol.GetSubstructMatches(thioglucose_pattern)]
-    sulf_oxime_c = [match[0] for match in sulf_oxime_matches]  # CX3 in the pattern
+    # 3. Verify sulfur from thioglucose is bonded to the central carbon (C in C=N-O-SO3)
+    # Get indices: [C]=N-O-SO3^-
+    central_c = [match[0] for match in oxime_matches]
+    thiogluc_s = [a.GetBeginAtomIdx() for a in mol.GetSubstructMatches(thiogluc_pattern) if mol.GetAtomWithIdx(a[0]).GetAtomicNum() == 16]
 
+    # Check connectivity between thioglucose S and central C
     connected = False
-    for s_idx in thioglucose_s:
+    for s_idx in thiogluc_s:
         s_atom = mol.GetAtomWithIdx(s_idx)
         for neighbor in s_atom.GetNeighbors():
-            if neighbor.GetIdx() in sulf_oxime_c:
+            if neighbor.GetIdx() in central_c:
                 connected = True
                 break
         if connected:
             break
     if not connected:
-        return False, "Thioglucose sulfur not connected to C=N-O-SO3 group"
+        return False, "Thioglucose S not bonded to central C=N carbon"
 
-    # Check anti configuration (approximated via presence of directional bonds in SMILES)
-    # This is a heuristic and may not cover all cases
-    anti_pattern = Chem.MolFromSmarts("[S]/C(=N\\O/S(=O)(=O)[O-])/C")
+    # 4. Check anti configuration using SMARTS pattern (approximate)
+    # Looks for / and \ in the C=N-O-SO3 and adjacent chain
+    anti_pattern = Chem.MolFromSmarts("[SX2]/C(=N/O/S(=O)(=O)[O-])/C")
     if not mol.HasSubstructMatch(anti_pattern):
-        return False, "Anti configuration not detected between side chain and sulfate"
+        anti_pattern2 = Chem.MolFromSmarts("[SX2]\\C(=N\\O/S(=O)(=O)[O-])/C")
+        if not mol.HasSubstructMatch(anti_pattern2):
+            return False, "Anti configuration not detected"
 
-    # Check for a side chain (R group) attached to the central carbon
-    # The central carbon is part of the sulf_oxime_matches' CX3
-    # Ensure at least one non-S, non-O, non-N atom attached (crude check for R group)
-    r_group_present = False
-    for c_idx in sulf_oxime_c:
+    # 5. Check for side chain (R group) on central carbon
+    # At least one non-oxygen/nitrogen/sulfur atom attached to central C
+    r_group = False
+    for c_idx in central_c:
         c_atom = mol.GetAtomWithIdx(c_idx)
         for neighbor in c_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() not in {8, 7, 16}:  # Exclude O, N, S
-                r_group_present = True
+            if neighbor.GetAtomicNum() not in {7,8,16}:
+                r_group = True
                 break
-        if r_group_present:
+        if r_group:
             break
-    if not r_group_present:
-        return False, "No side chain (R group) attached to central carbon"
+    if not r_group:
+        return False, "Missing side chain on central carbon"
 
-    return True, "Contains thioglucose, sulfonated oxime, correct connectivity, and anti configuration"
+    return True, "Contains thioglucose, sulfonated oxime, correct connectivity and stereochemistry"
