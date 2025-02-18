@@ -1,78 +1,177 @@
 """
 Classifies: CHEBI:36313 glycerophosphocholine
 """
-"""
-Classifies: CHEBI:17585 glycerophosphocholine
-"""
-from rdkit import Chem
-from rdkit.Chem import Descriptors
-
-def is_glycerophosphocholine(smiles: str):
-    """
-    Determines if a molecule is a glycerophosphocholine based on its SMILES string.
-    A glycerophosphocholine consists of a glycerol backbone with a phosphocholine group and two fatty acid chains.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a glycerophosphocholine, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Check for phosphocholine group (P connected to choline and glycerol oxygen)
-    phosphocholine_pattern = Chem.MolFromSmarts("[O]-P(=O)([O-])-O-C-C-[N+](C)(C)C")
-    if not mol.HasSubstructMatch(phosphocholine_pattern):
-        return False, "Phosphocholine group not found"
-
-    # Find phosphorus atom in phosphocholine group
-    matches = mol.GetSubstructMatches(phosphocholine_pattern)
-    p_atom = matches[0][1]  # P is the second atom in the SMARTS pattern [O]-P...
-
-    # Get oxygen connecting P to glycerol (the first O in the pattern)
-    connecting_o = matches[0][0]
-    glycerol_carbon = [x.GetIdx() for x in mol.GetAtomWithIdx(connecting_o).GetNeighbors() if x.GetIdx() != p_atom][0]
-
-    # Check that glycerol carbon has exactly two other oxygen attachments (for fatty acid chains)
-    glycerol_c = mol.GetAtomWithIdx(glycerol_carbon)
-    o_neighbors = [n for n in glycerol_c.GetNeighbors() if n.GetAtomicNum() == 8 and n.GetIdx() != connecting_o]
-    if len(o_neighbors) != 2:
-        return False, f"Glycerol carbon has {len(o_neighbors)} oxygen attachments (need 2)"
-
-    # Check each oxygen is part of ester or ether group
-    valid_chain_count = 0
-    for o in o_neighbors:
-        # Check for ester (O-C=O) or ether (O-C without carbonyl)
-        ester_match = False
-        ether_match = False
-        
-        # Check ester: O connected to C=O
-        for neighbor in o.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:
-                for bond in neighbor.GetBonds():
-                    if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetBeginAtomIdx() == neighbor.GetIdx() and bond.GetEndAtom().GetAtomicNum() == 8:
-                        ester_match = True
-                        break
-        # Check ether: O connected to C (non-carbonyl)
-        if not ester_match:
-            for neighbor in o.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and any(b.GetBondType() != Chem.BondType.DOUBLE for b in neighbor.GetBonds() if b.GetOtherAtomIdx(neighbor.GetIdx()) != o.GetIdx()):
-                    ether_match = True
-                    break
-        
-        if ester_match or ether_match:
-            valid_chain_count += 1
-
-    if valid_chain_count < 2:
-        return False, f"Found {valid_chain_count} valid fatty acid chains (need 2)"
-
-    # Optional: Check molecular weight to filter very small molecules
-    mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 400:
-        return False, f"Molecular weight {mol_wt:.1f} too low for typical glycerophosphocholine"
-
-    return True, "Glycerol backbone with phosphocholine and two fatty acid chains"
+ - 1-(1Z-octadecenyl)-2-arachidonoyl-sn-glycero-3-phosphocholine: SMILES: [H][C@@](COC(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)(COP([O-])(=O)OCC[N+](C)(C)C)O/C=C\CCCCCCCCCCCCCCCC
+ - 1-palmitoyl-2-linoleoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCC\C=C/C\C=C/CCCC
+ - PC(18:3(9Z,12Z,15Z)/18:3(9Z,12Z,15Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCCC)COC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCCC)([O-])=O
+ - PC(16:0/18:3(6Z,9Z,12Z)): SMILES: C([C@@](COC(CCCCCCCCCCCCCCC)=O)(OC(CCCCCC/C=C\C/C=C\C/C=C\CCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C
+ - PC(20:3(5Z,8Z,11Z)/20:3(5Z,8Z,11Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCC/C=C\C/C=C\C/C=C\CCCCCCCC)COC(=O)CCC/C=C\C/C=C\C/C=C\CCCCCCCC)([O-])=O
+ - 1-palmitoyl-2-oleoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCC\C=C/CCCCCCCC
+ - PC(16:0/18:1(9Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C\CCCCCCCC)COC(=O)CCCCCCCCCCCCCCC)([O-])=O
+ - 1-palmitoyl-2-oleoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCC\C=C/CCCCCCCC
+ - PC(14:0/18:2(9Z,12Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCC/C=C\C/C=C\CCCCC)COC(=O)CCCCCCCCCCCC)([O-])=O
+ - PC(18:0/18:2(9Z,12Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCC/C=C\C/C=C\CCCCC)COC(=O)CCCCCCCCCCCCCCCC)([O-])=O
+ - 1-octadecanoyl-2-(9Z-octadecenoyl)-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCC\C=C/CCCCCCCC
+ - PC(18:1(9Z)/18:1(9Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/CCCCCCCC)COC(=O)CCCCCCCC\C=C/CCCCCCCC)([O-])=O
+ - 1-stearoyl-2-arachidonoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/16:0): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCC)([O-])=O
+ - 1,2-dipalmitoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCCCC
+ - PC(18:1(9Z)/18:1(9Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/CCCCCCCC)COC(=O)CCCCCCCC\C=C/CCCCCCCC)([O-])=O
+ - PC(16:0/18:2(9Z,12Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/C\C=C/CCCCCC)COC(=O)CCCCCCCCCCCCCCC)([O-])=O
+ - PC(18:0/18:1(9Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/CCCCCCCC)COC(=O)CCCCCCCCCCCCCCCC)([O-])=O
+ - PC(18:1(9Z)/18:2(9Z,12Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/C\C=C/CCCCCC)COC(=O)CCCCCCCC\C=C/CCCCCCCC)([O-])=O
+ - PC(18:2(9Z,12Z)/18:2(9Z,12Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/C\C=C/CCCCCC)COC(=O)CCCCCCCC\C=C/C\C=C/CCCCCC)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(20:4(5Z,8Z,11Z,14Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)COC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([O-])=O
+ - PC(18:1(9Z)/16:0): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCC\C=C/CCCCCCCC)([O-])=O
+ - PC(18:0/18:0): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCC)([O-])=O
+ - PC(18:1(9Z)/18:2(9Z,12Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/C\C=C/CCCCCC)COC(=O)CCCCCCCC\C=C/CCCCCCCC)([O-])=O
+ - PC(18:2(9Z,12Z)/18:3(9Z,12Z,15Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/C\C=C/CCCCCC)COC(=O)CCCCCCCC\C=C/C\C=C/C\C=C/CCCCCC)([O-])=O
+ - PC(18:3(6Z,9Z,12Z)/18:2(9Z,12Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCCC)COC(=O)CCCCCCCC\C=C/C\C=C/CCCCCC)([O-])=O
+ - PC(18:1(9Z)/20:3(5Z,8Z,11Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\CCCCCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/18:2(9Z,12Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCC/C=C\C/C=C\CCCCC)COC(=O)CCCCCCCCCCCCCCCC)([O-])=O
+ - PC(18:2(9Z,12Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/C\C=C/CCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:3(8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:3(8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:5(7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:3(8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/18:1(9Z)): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCC\C=C/CCCCCCCC)COC(=O)CCCCCCCCCCCCCCC)([O-])=O
+ - PC(18:1(9Z)/18:0): SMILES: P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)COC(=O)CCCCCCCC\C=C/CCCCCCCC)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(11Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCC/C=C\CCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:3(5Z,8Z,11Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\CCCCCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:4(7Z,10Z,13Z,16Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:5(7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:4(7Z,10Z,13Z,16Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:3(8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:5(4Z,7Z,10Z,13Z,16Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:1(9Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: [C@](COC(=O)CCCCCCCC\C=C/CCCCCCCC)(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(16:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O
+ - PC(18:0/20:4(5Z,8Z,11Z,14Z)): SMILES: [C@](COC(=O)CCCCCCCCCCCCCCCC)(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)([H])COP(OCC[N+](C)(C
