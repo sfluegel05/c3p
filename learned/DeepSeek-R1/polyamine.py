@@ -1,37 +1,84 @@
 """
 Classifies: CHEBI:88061 polyamine
 """
-</think>
+"""
+Classifies: CHEBI:53371 polyamine
+"""
+from rdkit import Chem
 
-Okay, let's see why the previous code failed. The error message was about 'Atom' object having no attribute 'HasSubstructMatch'. Oh right, because the code tried to call HasSubstructMatch on an individual atom, but that method is for the entire molecule, not individual atoms. So the line checking if the atom is part of an exclusion group was incorrect. Instead of checking if the atom matches the pattern, we should find all matches of the exclusion patterns and check if the current atom is in any of those matches.
+def is_polyamine(smiles: str):
+    """
+    Determines if a molecule is a polyamine based on its SMILES string.
+    A polyamine contains two or more amino groups (-NH2, -NH-, etc.) in an organic compound.
 
-Also, the exclusion patterns might not be correctly implemented. For example, the amide pattern might exclude some valid amines. Let's adjust the approach:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Count Amine Groups Correctly**: Need to identify all nitrogen atoms that are part of amine groups, excluding those in nitro, nitrile, sulfonamide, or amide groups.
+    Returns:
+        bool: True if molecule is a polyamine, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
 
-2. **Fix Exclusion Checks**: Instead of checking each atom against the patterns, find all substructure matches for the exclusion patterns and mark those nitrogens as excluded.
+    amine_count = 0
 
-3. **Amine Definition**: Amines include primary, secondary, tertiary amines, but not when part of other functional groups. So, check if the nitrogen is in an amine group by its bonding environment.
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 7:
+            continue  # Only process nitrogen atoms
 
-Let's adjust the code:
+        # Check for nitro groups (N with two double-bonded oxygens)
+        nitro_oxygens = 0
+        for bond in atom.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                neighbor = bond.GetOtherAtom(atom)
+                if neighbor.GetAtomicNum() == 8:
+                    nitro_oxygens += 1
+        if nitro_oxygens >= 2:
+            continue
 
-- **Step 1**: Find all exclusion groups first. For each exclusion pattern, get all matching atoms and mark those nitrogens as excluded.
-- **Step 2**: Iterate through all nitrogen atoms not in excluded groups and check if they are part of an amine (bonded to at least one carbon).
-- **Step 3**: Count valid amines and ensure there are at least two.
+        # Check for nitriles (triple bond to carbon)
+        is_nitrile = any(bond.GetBondType() == Chem.BondType.TRIPLE 
+                        and bond.GetOtherAtom(atom).GetAtomicNum() == 6 
+                        for bond in atom.GetBonds())
+        if is_nitrile:
+            continue
 
-Also, the previous code's amide pattern might be too broad. The amide SMARTS should capture cases where the nitrogen is adjacent to a carbonyl. Let's refine the patterns.
+        # Check for amides (bonded to carbonyl group)
+        is_amide = False
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:
+                for bond in neighbor.GetBonds():
+                    if bond.GetBondType() == Chem.BondType.DOUBLE:
+                        other = bond.GetOtherAtom(neighbor)
+                        if other.GetAtomicNum() == 8:
+                            is_amide = True
+                            break
+                if is_amide:
+                    break
+        if is_amide:
+            continue
 
-Another thing: the molecule must be organic. So, all amines must be bonded to carbon, which the code checks by ensuring neighbors include carbon.
+        # Check for sulfonamides (bonded to sulfonyl group)
+        is_sulfonamide = False
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 16:  # Sulfur
+                sulfur_bonds = neighbor.GetBonds()
+                oxygen_double = sum(1 for b in sulfur_bonds 
+                                   if b.GetBondType() == Chem.BondType.DOUBLE 
+                                   and b.GetOtherAtom(neighbor).GetAtomicNum() == 8)
+                if oxygen_double >= 2:
+                    is_sulfonamide = True
+                    break
+        if is_sulfonamide:
+            continue
 
-Testing the example that caused the error: 'NCCCCN(O)C(=O)CCC(O)=O' (N-(3-carboxypropanoyl)-N-hydroxyputrescine). The code should count the two amines (the primary amine and the hydroxylamine). But in the previous code, maybe the hydroxylamine was excluded. Wait, the exclusion patterns include amides, but hydroxylamine (N-O) isn't excluded. However, the code's exclusion patterns might not have handled that. Wait, the hydroxyl group attached to N: maybe the code counts that as a valid amine if not excluded. Let's see. The exclusion patterns are nitro, nitrile, sulfonamide, amide. The hydroxylamine's N is not in any of those, so it should count. But in the previous code, maybe the way they checked for exclusion was wrong.
+        # Check if bonded to at least one carbon
+        has_carbon = any(n.GetAtomicNum() == 6 for n in atom.GetNeighbors())
+        if has_carbon:
+            amine_count += 1
 
-But the main error was the atom.HasSubstructMatch, which is invalid. So fixing that by first collecting all excluded N atoms from the exclusion patterns.
-
-So the revised approach:
-
-- For each exclusion pattern, find all matching atoms and collect their N atoms.
-- Then, for each N atom in the molecule, if it's not in the excluded list and has at least one C neighbor, count it.
-
-This should correctly exclude N's in nitro, etc., and count the rest as amines if bonded to C.
-
-Let me adjust the code accordingly.
+    if amine_count >= 2:
+        return True, f"Contains {amine_count} amine groups"
+    return False, f"Only {amine_count} amine groups found (requires ≥2)"
