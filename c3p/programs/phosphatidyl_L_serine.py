@@ -26,11 +26,12 @@ def is_phosphatidyl_L_serine(smiles: str):
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol backbone with phosphate group found"
     
-    # Check for ester linkage between phosphate and serine
-    serine_ester_pattern = Chem.MolFromSmarts("[P]-[O]-[C]-[C](=O)-[O]-[C]")
-    if not mol.HasSubstructMatch(serine_ester_pattern):
-       return False, "No serine ester linkage found"
-    
+    # Check for the specific serine linkage pattern to the phosphate group.
+    # This pattern includes the chiral carbon of serine and its connection to both the nitrogen and the phosphate
+    serine_phosphate_pattern = Chem.MolFromSmarts("[P]-[O]-[CH2X4]-[CHX4]([NX3])-[CX3](=[OX1])-[OX2]")
+    if not mol.HasSubstructMatch(serine_phosphate_pattern):
+      return False, "No serine phosphate linkage found"
+
     # Check for two ester groups on the glycerol
     ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[OX2]-[CHX4]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
@@ -59,10 +60,10 @@ def is_phosphatidyl_L_serine(smiles: str):
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
     
 
-    # Check for chiral carbon in serine (L configuration)
-    serine_chiral_carbon = Chem.MolFromSmarts("[NX3]-[CHX4]([CX3](=[OX1])-[OX2])-[OX2]")
-    if not mol.HasSubstructMatch(serine_chiral_carbon):
-        return False, "No chiral carbon in Serine found"
+    # Check for chiral carbon in serine (L configuration) - removed - this is covered by the serine_phosphate_pattern
+    # serine_chiral_carbon = Chem.MolFromSmarts("[NX3]-[CHX4]([CX3](=[OX1])-[OX2])-[OX2]")
+    # if not mol.HasSubstructMatch(serine_chiral_carbon):
+    #   return False, "No chiral carbon in Serine found"
 
     
     # Count carbons and oxygens
