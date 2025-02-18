@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_amino_acid(smiles: str):
     """
     Determines if a molecule is an amino acid based on its SMILES string.
-    An amino acid is characterized by a carboxylic acid group and one or more amino groups 
-    in proximity, forming a recognizable amino acid backbone.
+    An amino acid is characterized by having a carboxylic acid group and an amino group
+    attached to the same alpha carbon.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,23 +21,27 @@ def is_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Refine carboxylic acid search with some biodegradability
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
     
-    # Refine amino group pattern to match typical amino acid nitrogens
-    amino_group_pattern = Chem.MolFromSmarts("[NX3,NX4+][H,D1,D2]")
+    # Carboxylic acid pattern (C(=O)O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxylic_matches:
+        return False, "No carboxylic acid group found"
+
+    # Amino group pattern (NH2)
+    amino_group_pattern = Chem.MolFromSmarts("N")
     amino_group_matches = mol.GetSubstructMatches(amino_group_pattern)
-    if len(amino_group_matches) < 1:
-        return False, "No amino groups found"
+    if not amino_group_matches:
+        return False, "No amino group found"
+    
+    # Identify if the amino group is connected to the same carbon connected to the carboxyl group
+    for carbox_idx in carboxylic_matches:
+        carbox_c_idx = carbox_idx[0]  # Index of the carbon in the carboxylic acid
+        for amino_idx in amino_group_matches:
+            amino_n_idx = amino_idx[0]  # Index of the nitrogen in the amino group
+            # Check if the carbon with the carboxyl is connected directly to the nitrogen
+            carbox_c_atom = mol.GetAtomWithIdx(carbox_c_idx)
+            if any(nbr.GetIdx() == amino_n_idx for nbr in carbox_c_atom.GetNeighbors()):
+                return True, "Contains carboxylic acid and amino group connected to same carbon (alpha carbon)"
 
-    # Validate the connection between amino and carboxylic groups to mimic a standard amino acid chain
-    for match in amino_group_matches:
-        atom = mol.GetAtomWithIdx(match[0])
-        for neighbor in atom.GetNeighbors():
-            if neighbor.HasSubstructMatch(carboxylic_acid_pattern):
-                return True, "Contains carboxylic acid and amino group(s) in correct configuration"
-
-    return False, "No amino acid backbone structure found"
+    return False, "No amino acid backbone structure (amino and carboxyl on same C) found"
