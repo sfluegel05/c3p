@@ -1,231 +1,50 @@
 """
 Classifies: CHEBI:28034 beta-D-galactoside
 """
- - methyl 6-O-acetyl-2,3-di-O-methyl-beta-D-galactoside: SMILES: CO[C@@H]1O[C@H](COC(C)=O)[C@H](OC)[C@H](OC)[C@H]1O
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - methyl 6-O-acetyl-3-O-methyl-beta-D-galactoside: SMILES: CO[C@@H]1O[C@H](COC(C)=O)[C@H](OC)[C@H](O)[C@H]1O
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - methyl 6-O-butanoyl-beta-D-galactoside: SMILES: CO[C@@H]1O[C@H](COC(=O)CCC)[C@H](O)[C@H](O)[C@H]1O
- - 4-nitrophenyl beta-D-galactoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - beta-D-Galp-(1->3)-[alpha-L-Fucp-(1->4)]-D-GlcpNAc: SMILES: O([C@H]1[C@H](O)[C@H](O[C@@H]1CO)O)[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO[C@@H]3O[C@H](CO)[C@H](O)[C@H](O)[C@H]3O
- - methyl 6-O-hexanoyl-beta-D-galactoside: SMILES: CO[C@@H]1O[C@H](COC(=O)CCCCC)[C@H](O)[C@H](O)[C@H]1O
- - methyl 6-O-octanoyl-beta-D-galactoside: SMILES: CO[C@@H]1O[C@H](COC(=O)CCCCCCC)[C@H](O)[C@H](O)[C@H]1O
- - 4-nitrophenyl 6-O-sulfo-beta-D-galactoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)OS(=O)(=O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - beta-D-Galp-(1->3)-beta-D-GlcpNAc: SMILES: O([C@H]1[C@H](O)[C@H](O[C@@H](O)[C@@H]1N)CO)[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO
- - methyl 6-O-palmitoyl-beta-D-galactoside: SMILES: CO[C@@H]1O[C@H](COC(=O)CCCCCCCCCCCCCCC)[C@H](O)[C@H](O)[C@H]1O
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - methyl 6-O-heptanoyl-beta-D-galactoside: SMILES: CO[C@@H]1O[C@H](COC(=O)CCCCCC)[C@H](O)[C@H](O)[C@H]1O
- - 5-bromo-6-chloro-3-indolyl beta-D-galactoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-3-indolyl beta-D-galactoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)OC=2C=CC([N+]([O-])=O)=CC2
- - 5-bromo-4-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)c(Cl)c12
- - 5-bromo-6-chloro-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2c(Cl)c(Br)cc12
- - 5-bromo-3-indolyl beta-D-galactopyranoside: SMILES: [H][C@]1(O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)Oc1c[nH]c2ccc(Br)cc12
- - 4-methylumbelliferyl beta-D-galactopyranoside: SMILES: O(C=1C=C2OC(=O)C=C(C2=CC1)C)[C@H]3[C@@H]([C@@H](O)[C@H]([C@H](O3)CO)O)O
- - 4-nitrophenyl beta-D-galactopyranoside: SMILES: [C@@H]1([C@@H]([C@@H](O)[C@
+"""
+Classifies: CHEBI:137762 beta-D-galactoside
+"""
+from rdkit import Chem
+
+def is_beta_D_galactoside(smiles: str):
+    """
+    Determines if a molecule is a beta-D-galactoside based on its SMILES string.
+    A beta-D-galactoside has a beta-configured D-galactose moiety linked via a glycosidic bond.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a beta-D-galactoside, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # SMARTS pattern for beta-D-galactopyranose with glycosidic bond
+    # The pattern matches the galactose ring with correct stereochemistry and an O-linked group
+    beta_D_galactose_pattern = Chem.MolFromSmarts("[C@@H]1(O[C@H](CO)[C@H](O)[C@@H](O)[C@H]1O)")
+    if beta_D_galactose_pattern is None:
+        return False, "Invalid SMARTS pattern"
+    
+    # Check if the molecule contains the beta-D-galactose moiety
+    if not mol.HasSubstructMatch(beta_D_galactose_pattern):
+        return False, "No beta-D-galactopyranose moiety found"
+    
+    # Additionally, verify that the anomeric oxygen is part of a glycosidic bond (connected to another atom)
+    # The anomeric carbon is the one attached to the glycosidic oxygen (O in the pattern)
+    # Iterate over the matches to check the glycosidic bond
+    matches = mol.GetSubstructMatches(beta_D_galactose_pattern)
+    for match in matches:
+        anomeric_carbon_idx = match[0]  # First atom in the SMARTS is the anomeric carbon
+        anomeric_carbon = mol.GetAtomWithIdx(anomeric_carbon_idx)
+        # Check if the anomeric carbon is bonded to an oxygen that is connected to another atom (not in the ring)
+        for neighbor in anomeric_carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen
+                # Check if this oxygen is connected to a non-hydrogen atom outside the galactose ring
+                for o_neighbor in neighbor.GetNeighbors():
+                    if o_neighbor.GetIdx() not in match:
+                        return True, "Contains beta-D-galactopyranose with glycosidic bond"
+    
+    return False, "No glycosidic bond found on beta-D-galactopyranose moiety"
