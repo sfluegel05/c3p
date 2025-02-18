@@ -21,58 +21,72 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define nitro group pattern
-    nitro_pattern = Chem.MolFromSmarts('[N+](=O)[O-]')
-
-    # Find all nitro groups
-    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
-    num_nitro_groups = len(nitro_matches)
-    if num_nitro_groups != 1:
-        return False, f"Must have exactly one nitro group, found {num_nitro_groups}"
-
     # Get ring information
     ri = mol.GetRingInfo()
     atom_rings = ri.AtomRings()
-    if not atom_rings:
-        return False, "No rings found in molecule"
+    aromatic_rings = [ring for ring in atom_rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
 
-    # Find phenolic oxygen atoms (both protonated and deprotonated)
-    phenol_pattern = Chem.MolFromSmarts('[c][O;H1,-1]')
+    # Check that there is exactly one aromatic ring
+    if len(aromatic_rings) != 1:
+        return False, f"Molecule has {len(aromatic_rings)} aromatic rings, expected 1"
+
+    ring_atoms = set(aromatic_rings[0])
+
+    # Define nitro group pattern
+    nitro_pattern = Chem.MolFromSmarts('[N+](=O)[O-]')
+    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
+
+    # Check for exactly one nitro group
+    if len(nitro_matches) != 1:
+        return False, f"Found {len(nitro_matches)} nitro groups, expected 1"
+
+    # Check that nitro group is attached to the aromatic ring
+    nitro_nitrogen_idx = nitro_matches[0][0]
+    nitro_nitrogen_atom = mol.GetAtomWithIdx(nitro_nitrogen_idx)
+    nitro_connected = False
+    for neighbor in nitro_nitrogen_atom.GetNeighbors():
+        if neighbor.GetIdx() in ring_atoms:
+            nitro_connected = True
+            break
+    if not nitro_connected:
+        return False, "Nitro group is not attached to the aromatic ring"
+
+    # Define phenolic hydroxyl group pattern
+    phenol_pattern = Chem.MolFromSmarts('[c][O;H1]')
     phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    phenol_o_indices = [match[1] for match in phenol_matches]
 
-    if not phenol_o_indices:
-        return False, "No phenolic OH group found"
+    # Check for exactly one phenolic hydroxyl group
+    if len(phenol_matches) != 1:
+        return False, f"Found {len(phenol_matches)} phenolic OH groups, expected 1"
 
-    # For each ring, check if it contains at least one phenolic oxygen and the nitro group
-    for ring in atom_rings:
-        ring_set = set(ring)
-        hydroxyl_found = False
-        nitro_found = False
+    # Check that hydroxyl group is attached to the aromatic ring
+    phenol_oxygen_idx = phenol_matches[0][1]
+    phenol_oxygen_atom = mol.GetAtomWithIdx(phenol_oxygen_idx)
+    hydroxyl_connected = False
+    for neighbor in phenol_oxygen_atom.GetNeighbors():
+        if neighbor.GetIdx() in ring_atoms:
+            hydroxyl_connected = True
+            break
+    if not hydroxyl_connected:
+        return False, "Phenolic OH group is not attached to the aromatic ring"
 
-        # Check for phenolic oxygen in ring
-        for o_idx in phenol_o_indices:
-            o_atom = mol.GetAtomWithIdx(o_idx)
-            for neighbor in o_atom.GetNeighbors():
-                if neighbor.GetIdx() in ring_set:
-                    hydroxyl_found = True
-                    break
-            if hydroxyl_found:
-                break
+    # Check for other substituents on the aromatic ring
+    allowed_substituents = {'C', 'H', 'O', 'N', 'F', 'Cl', 'Br', 'I'}
+    for idx in ring_atoms:
+        atom = mol.GetAtomWithIdx(idx)
+        for neighbor in atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx not in ring_atoms:
+                element = neighbor.GetSymbol()
+                if element not in allowed_substituents:
+                    return False, f"Disallowed substituent '{element}' attached to aromatic ring"
+                # Exclude large substituents (more than 3 atoms)
+                substituent = Chem.PathToSubmol(mol, [idx, neighbor_idx])
+                if substituent.GetNumHeavyAtoms() > 4:
+                    return False, "Substituent attached to ring is too large"
 
-        # Check for nitro group attached to ring
-        for nitro_match in nitro_matches:
-            n_idx = nitro_match[0]
-            n_atom = mol.GetAtomWithIdx(n_idx)
-            for neighbor in n_atom.GetNeighbors():
-                if neighbor.GetIdx() in ring_set:
-                    nitro_found = True
-                    break
-            if nitro_found:
-                break
+    # Check that there are no other rings in the molecule
+    if len(atom_rings) != 1:
+        return False, f"Molecule has {len(atom_rings)} rings, expected 1"
 
-        # Check if ring has at least one phenolic OH and one nitro group
-        if hydroxyl_found and nitro_found:
-            return True, "Contains phenol ring with one nitro group attached"
-
-    return False, "No ring containing both phenolic OH and nitro group found"
+    return True, "Molecule is a mononitrophenol with single aromatic ring and appropriate substituents"
