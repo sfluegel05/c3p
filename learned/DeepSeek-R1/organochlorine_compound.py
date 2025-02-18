@@ -8,13 +8,13 @@ from rdkit import Chem
 
 def is_organochlorine_compound(smiles: str):
     """
-    Determines if a molecule is an organochlorine compound based on the presence of at least one carbon-chlorine bond.
+    Determines if a molecule is an organochlorine compound by checking for any carbon-chlorine bond.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule has a C-Cl bond, False otherwise
+        bool: True if molecule has at least one C-Cl bond (any bond type), False otherwise
         str: Reason for classification
     """
     # Parse the SMILES string
@@ -22,8 +22,8 @@ def is_organochlorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for a chlorine atom bonded to a carbon atom
-    pattern = Chem.MolFromSmarts("[Cl]-[#6]")
+    # SMARTS pattern for any chlorine atom bonded to a carbon (any bond type)
+    pattern = Chem.MolFromSmarts("[Cl]~[#6]")
     
     # Check for presence of the pattern
     if mol.HasSubstructMatch(pattern):
