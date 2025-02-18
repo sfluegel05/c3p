@@ -25,8 +25,11 @@ def is_polyphenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Ensure proper aromaticity perception
+    Chem.SanitizeMol(mol)
+
     # Define phenol SMARTS pattern (hydroxy group attached to aromatic carbon)
-    phenol_pattern = Chem.MolFromSmarts('[OX1H]-[c]')
+    phenol_pattern = Chem.MolFromSmarts('[OX2H]-c')
 
     # Find all phenol groups in the molecule
     phenol_matches = mol.GetSubstructMatches(phenol_pattern)
@@ -43,7 +46,7 @@ def is_polyphenol(smiles: str):
 
     # Iterate over phenol groups
     for match in phenol_matches:
-        oxygen_idx, carbon_idx = match  # Indices of O and C in [OH]-[c]
+        oxygen_idx, carbon_idx = match  # Indices of O and C in [OH]-c
 
         # Get the rings that the carbon atom is part of
         rings_with_carbon = [ring for ring in atom_rings if carbon_idx in ring]
