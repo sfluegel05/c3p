@@ -24,47 +24,58 @@ def is_tetrasaccharide(smiles: str):
     if not mol:
         return False, "Invalid SMILES"
 
-    # Find potential glycosidic bonds (ethers connecting two carbons, at least one in a ring)
-    glycosidic_bonds = 0
+    # Find potential sugar rings (5 or 6-membered with oxygen)
     sugar_rings = []
     ri = mol.GetRingInfo()
     for ring in ri.AtomRings():
         if len(ring) in [5, 6] and any(mol.GetAtomWithIdx(a).GetAtomicNum() == 8 for a in ring):
             sugar_rings.append(set(ring))
 
-    # Find ether bonds connecting different sugar rings or to non-ring atoms (linear units)
+    # Find glycosidic bonds (O connecting two carbons, one from sugar ring)
+    glycosidic_oxygens = set()
     for bond in mol.GetBonds():
-        if bond.GetBondType() != Chem.BondType.ETHER:
+        if bond.GetBondType() != Chem.BondType.SINGLE:
             continue
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
-        if a1.GetAtomicNum() != 8 or a2.GetAtomicNum() != 6:
-            continue  # Ensure it's O connected to C
-        # Check if the O is part of a glycosidic bond (connecting two sugar units)
-        in_rings1 = [i for i, r in enumerate(sugar_rings) if a1.GetIdx() in r]
-        in_rings2 = [i for i, r in enumerate(sugar_rings) if a2.GetIdx() in r]
-        # If the O is in a ring (sugar) and connects to a non-ring C, or connects two different rings
-        if (len(in_rings1) > 0 and len(in_rings2) == 0) or (len(in_rings2) > 0 and len(in_rings1) == 0) or (len(in_rings1) > 0 and len(in_rings2) > 0 and in_rings1[0] != in_rings2[0]):
-            glycosidic_bonds += 1
+        # Check if one atom is O and the other is C
+        if {a1.GetAtomicNum(), a2.GetAtomicNum()} != {6, 8}:
+            continue
+        o_atom = a1 if a1.GetAtomicNum() == 8 else a2
+        c_atom = a1 if a1.GetAtomicNum() == 6 else a2
 
-    # Check for at least three glycosidic bonds
+        # Check if the carbon is in a sugar ring
+        c_in_ring = any(c_atom.GetIdx() in r for r in sugar_rings)
+        # Check if the oxygen is part of another sugar ring or connects to non-ring carbon (linear unit)
+        o_in_ring = any(o_atom.GetIdx() in r for r in sugar_rings)
+
+        if c_in_ring and not o_in_ring:
+            glycosidic_oxygens.add(o_atom.GetIdx())
+        elif o_in_ring:
+            # Check if connected to a carbon not in the same ring
+            for r in sugar_rings:
+                if o_atom.GetIdx() in r and c_atom.GetIdx() not in r:
+                    glycosidic_oxygens.add(o_atom.GetIdx())
+                    break
+
+    # Each glycosidic bond has one oxygen, so count unique oxygens
+    glycosidic_bonds = len(glycosidic_oxygens)
     if glycosidic_bonds < 3:
         return False, f"Found {glycosidic_bonds} glycosidic bonds, need at least 3"
 
-    # Check for four sugar units (rings + linear)
+    # Check for four sugar units (approximated by rings + linear units with hydroxyls)
     # Split into fragments by breaking glycosidic bonds
     edmol = Chem.EditableMol(mol)
     bonds_to_remove = []
     for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.ETHER:
+        if bond.GetBondType() == Chem.BondType.SINGLE:
             a1 = bond.GetBeginAtom()
             a2 = bond.GetEndAtom()
-            # Check if this is a glycosidic bond as per earlier logic
-            in_rings1 = [i for i, r in enumerate(sugar_rings) if a1.GetIdx() in r]
-            in_rings2 = [i for i, r in enumerate(sugar_rings) if a2.GetIdx() in r]
-            if (len(in_rings1) > 0 and len(in_rings2) == 0) or (len(in_rings2) > 0 and len(in_rings1) == 0) or (len(in_rings1) > 0 and len(in_rings2) > 0 and in_rings1[0] != in_rings2[0]):
-                bonds_to_remove.append(bond.GetIdx())
-    
+            if {a1.GetAtomicNum(), a2.GetAtomicNum()} == {6, 8}:
+                o_atom = a1 if a1.GetAtomicNum() == 8 else a2
+                if o_atom.GetIdx() in glycosidic_oxygens:
+                    bonds_to_remove.append(bond.GetIdx())
+
     # Remove bonds and count fragments
     for bid in reversed(sorted(bonds_to_remove)):
         edmol.RemoveBond(bid)
