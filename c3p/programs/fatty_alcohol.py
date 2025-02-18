@@ -30,15 +30,23 @@ def is_fatty_alcohol(smiles: str):
     if not mol.HasSubstructMatch(alcohol_pattern):
         return False, "No alcohol group found"
 
-    # Count the number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 3 or c_count > 27:
-        return False, f"Carbon chain length {c_count} is outside the range of 3 to 27"
-
     # Ensure the molecule is aliphatic (no aromatic rings)
     aromatic_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetIsAromatic())
     if aromatic_atoms > 0:
         return False, "Molecule contains aromatic rings, not aliphatic"
+
+    # Count the number of carbon atoms in the longest aliphatic chain
+    # Use the largest aliphatic chain to determine the carbon count
+    aliphatic_chains = Chem.MolFromSmarts("[CX4H2]")
+    matches = mol.GetSubstructMatches(aliphatic_chains)
+    if not matches:
+        return False, "No aliphatic chain found"
+    
+    # Find the longest aliphatic chain
+    longest_chain = max(matches, key=len)
+    c_count = len(longest_chain)
+    if c_count < 3 or c_count > 27:
+        return False, f"Carbon chain length {c_count} is outside the range of 3 to 27"
 
     # Count the number of oxygen atoms (should be at least one, but can be more)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
@@ -52,17 +60,22 @@ def is_fatty_alcohol(smiles: str):
         pass
 
     # Check for other functional groups that are not typical in fatty alcohols
-    # For example, carboxylic acids, esters, etc.
+    # For example, carboxylic acids, esters, ketones, aldehydes, etc.
     carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")  # Carboxylic acid
     ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")  # Ester
-    if mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(ester_pattern):
-        return False, "Molecule contains carboxylic acid or ester groups, not a fatty alcohol"
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")  # Ketone
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")  # Aldehyde
+    if (mol.HasSubstructMatch(carboxylic_acid_pattern) or 
+        mol.HasSubstructMatch(ester_pattern) or 
+        mol.HasSubstructMatch(ketone_pattern) or 
+        mol.HasSubstructMatch(aldehyde_pattern)):
+        return False, "Molecule contains non-aliphatic functional groups, not a fatty alcohol"
 
     # Ensure the molecule is primarily aliphatic
-    # Check if the molecule has more than 2 non-aliphatic functional groups
+    # Check if the molecule has more than 3 non-aliphatic functional groups
     non_aliphatic_groups = Chem.MolFromSmarts("[!#6&!#1]")
     non_aliphatic_count = len(mol.GetSubstructMatches(non_aliphatic_groups))
-    if non_aliphatic_count > 2:
+    if non_aliphatic_count > 3:
         return False, "Molecule contains too many non-aliphatic functional groups"
 
     return True, f"Aliphatic alcohol with {c_count} carbon atoms and {o_count} oxygen atoms"
