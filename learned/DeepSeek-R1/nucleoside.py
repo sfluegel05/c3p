@@ -1,56 +1,247 @@
 """
 Classifies: CHEBI:33838 nucleoside
 """
-But wait, the sugar_pattern is still using a SMARTS that may not correctly identify the sugar. The pattern "[O]1-[C]-[C]-[C]-[C]-1-CO" looks for a five-membered ring starting with O, followed by four carbons, and a CO group. But in reality, the CO is attached to one of the carbons in the ring, not as a separate atom. For example, in ribose, the CO is attached to C5 (which is outside the ring?), but in the furanose form, the hydroxymethyl is part of the ring.
+ - 3'-O-methyladenosine: SMILES: CO[C@H]1[C@H](O)[C@@H](CO)O[C@H]1n1cnc2c(N)ncnc12
+ - 3'-O-methyluridine: SMILES: CO[C@H]1[C@H](O)[C@@H](CO)O[C@H]1n1c(=O)[nH]c(=O)cc1
+ - 3'-deoxy-3'-fluoroguanosine: SMILES: FC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - 5'-O-(N-acetyl-alpha-neuraminosyl)-(2->8)-alpha-neuraminic acid: SMILES: CC(=O)N[C@@H]1C(=O)O[C@H]([C@H](O)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O[C@H]3O[C@H](C(O)=O)[C@H](O[C@H]4O[C@H](CO)[C@H](O)[C@H](O)[C@H]4NC(C)=O)[C@H](O)[C@H]3NC(C)=O)[C@H](O)[C@H]2NC(C)=O)[C@H]1O)CO
+ - 5-methylcytidine: SMILES: Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
+ - 8-azaguanine riboside: SMILES: O1[C@@H](N2C=3N=C(NC(=O)N3)NC2=O)[C@H](O)[C@H](O)[C@H]1CO
+ - 8-bromoadenosine: SMILES: Brc1ncn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c2n(cnc12)N
+ - 8-chloroadenosine: SMILES: Clc1ncn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c2n(cnc12)N
+ - 8-iodoadenosine: SMILES: Ic1ncn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c2n(cnc12)N
+ - 9-(beta-D-ribofuranosyl)hypoxanthine: SMILES: O[C@@H]1[C@@H](O)[C@H](CO)O[C@@H]1n1c(=O)[nH]c(=O)c2ncnc12
+ - 9-(beta-D-ribofuranosyl)purine: SMILES: O[C@@H]1[C@@H](O)[C@H](CO)O[C@@H]1n1cnc2c1ncn2
+ - 9-(beta-D-xylofuranosyl)adenine: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - 9-(beta-D-xylofuranosyl)guanine: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - 9-(tetrahydro-2-furyl)adenine: SMILES: Nc1ncnc2n(cnc12)C3CCCO3
+ - 9H-purin-6-amine, 9-(5-deoxy-beta-D-ribofuranosyl)-: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](C)[C@H](O)[C@H]3O
+ - 9H-purin-6-amine, 9-(5-O-phosphono-beta-D-ribofuranosyl)-: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - 9H-purin-6-amine, 9-beta-D-arabinofuranosyl-: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - 9H-purin-6-amine, 9-beta-D-ribofuranosyl-: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - 9H-purin-6-ol, 9-beta-D-ribofuranosyl-: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - 9H-purin-6-ol, 9-beta-D-xylofuranosyl-: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - 9H-purin-6-yl 1-deoxy-1-thio-beta-D-ribofuranoside: SMILES: S[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]c(=O)c2n1
+ - Adenine beta-D-ribofuranoside 5'-(trihydrogen diphosphate): SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenine, 9-(5-deoxy-beta-D-ribofuranosyl)-: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](C)[C@H](O)[C@H]3O
+ - Adenine, 9-(5-O-phosphono-beta-D-ribofuranosyl)-: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenine, 9-beta-D-arabinofuranosyl-: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Adenine, 9-beta-D-ribofuranosyl-: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Adenosine 5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine 5'-triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine phosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Arabinoadenosine: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Arabinocytidine: SMILES: Nc1ncn([C@H]2O[C@H](CO)[C@H](O)[C@H]2O)c(=O)[nH]1
+ - Arabinoguanosine: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Arabinosyladenine: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Arabinosylhypoxanthine: SMILES: O[C@@H]1[C@@H](O)[C@H](CO)O[C@@H]1n1c(=O)[nH]c(=O)c2ncnc12
+ - Arabinosylthymine: SMILES: Cc1c(=O)[nH]c(=O)cc1[C@H]1O[C@H](CO)[C@H](O)[C@H]1O
+ - Arabinosyluracil: SMILES: O=C1C=CN([C@H]2O[C@H](CO)[C@H](O)[C@H]2O)C(=O)N1
+ - Beta-D-ribofuranoside, 9H-purin-6-yl 1-deoxy-1-thio-: SMILES: S[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]c(=O)c2n1
+ - Cytidine 5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine 5'-triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidylic acid: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Deoxyadenosine: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](C)[C@H](O)[C@H]3O
+ - Deoxycytidine: SMILES: Nc1ncn([C@H]2O[C@H](C)[C@H](O)[C@H]2O)c(=O)[nH]1
+ - Deoxyguanosine: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@H]3O[C@H](C)[C@H](O)[C@H]3O
+ - Deoxyinosine: SMILES: O[C@@H]1[C@@H](O)[C@H](C)O[C@@H]1n1c(=O)[nH]c(=O)c2ncnc12
+ - Deoxyuridine: SMILES: O=C1C=CN([C@H]2O[C@H](C)[C@H](O)[C@H]2O)C(=O)N1
+ - Guanine, 9-beta-D-ribofuranosyl-: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanine, 9-beta-D-xylofuranosyl-: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Guanosine 5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanosine 5'-triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanosine diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanosine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanylic acid: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Hypoxanthine, 9-beta-D-ribofuranosyl-: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Hypoxanthine, 9-beta-D-xylofuranosyl-: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Inosine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Inosine 5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Inosine diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Inosine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Methylthioadenosine: SMILES: CSC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Purine ribonucleoside: SMILES: C1=NC2=C(N1)C=NC=N2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O
+ - Ribavirin: SMILES: C1=NC(=CN1[C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)N
+ - Ribostamycin: SMILES: CNCC(=O)N[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)N1C=CC(=NC1=O)N
+ - S-adenosyl-L-homocysteine: SMILES: C(CC[C@@H](C(=O)O)N)SC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - S-adenosylmethionine: SMILES: C(CC[C@@H](C(=O)O)N)SC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Thymidine: SMILES: Cc1c(=O)[nH]c(=O)cc1[C@H]1O[C@H](C)[C@H](O)[C@H]1O
+ - Thymidine 5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1Oc1c(C)cc(=O)[nH]c1=O
+ - Thymidine diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1Oc1c(C)cc(=O)[nH]c1=O
+ - Thymidine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1Oc1c(C)cc(=O)[nH]c1=O
+ - Uridine 5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Uridine 5'-triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Uridine diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Uridine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Uridine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Uridylic acid: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Xanthosine: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Xyloadenosine: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Xylocytidine: SMILES: Nc1ncn([C@H]2O[C@H](CO)[C@H](O)[C@H]2O)c(=O)[nH]1
+ - Xyloguanosine: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Xylothymidine: SMILES: Cc1c(=O)[nH]c(=O)cc1[C@H]1O[C@H](CO)[C@H](O)[C@H]1O
+ - Xylouridine: SMILES: O=C1C=CN([C@H]2O[C@H](CO)[C@H](O)[C@H]2O)C(=O)N1
+ - [9-(beta-D-ribofuranosyl)purin-6-yl]carbamoyl phosphate: SMILES: O=P(O)(O)OC(=O)Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - adenosine-5'-diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - adenosine-5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - adenosine-5'-triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - beta-D-ribofuranose 1-[9H-purin-6-ylamine]: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - cytidine-5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - deoxyadenosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1cnc2c(N)ncnc12
+ - deoxycytidine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1cnc2c(=O)[nH]ccc12
+ - deoxyguanosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - deoxyinosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1c(=O)[nH]c(=O)c2ncnc12
+ - deoxyuridine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1cc(=O)[nH]c(=O)c1=O
+ - guanosine-5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - inosine-5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - thymidine-5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1Oc1c(C)cc(=O)[nH]c1=O
+ - uridine-5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - xanthosine-5'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
 
-Wait, no. In the furanose form, the ring is five-membered (O, C1, C2, C3, C4), and the hydroxymethyl (C5) is attached to C4. So the CO group is outside the ring. So the SMARTS pattern should look for a five-membered ring with O, and a hydroxymethyl group attached to one of the ring carbons.
-
-So the correct SMARTS would be:
-
-[O]1[C@@H]([C@H]([C@@H]([C@H]1CO)O)O)O
-
-But this includes specific hydroxyls. To ignore substituents, use:
-
-[O]1[C][C][C][C]1CO
-
-But this would match any five-membered ring with O and a CO group attached.
-
-But in SMARTS, the pattern [O]1[C][C][C][C]1-CO would match O connected to C1, which is connected to C2, C3, C4, and back to O1 (forming a five-membered ring), and C4 has a CO group.
-
-Wait, no. The pattern [O]1-C-C-C-C-1-CO would form a six-membered ring (O1-C-C-C-C-O1) plus a CO group. Not correct.
-
-Alternatively, the pattern should be [O]1-C-C-C-C-1-C-O, which is a five-membered ring (O-C-C-C-C) with a CO group attached to one of the carbons.
-
-But SMARTS uses numbers to indicate ring closures. So the correct SMARTS for a five-membered ring with O and a CO group attached to one of the carbons would be:
-
-[O]1-C-C-C-C-1-CO
-
-But this would form a six-membered ring (O1-C-C-C-C-O1) plus CO. Not correct.
-
-Hmm, this is tricky. Perhaps the correct SMARTS is:
-
-[O]1-C(-CO)-C-C-C-1
-
-This creates a five-membered ring where one of the carbons is attached to a CO group.
-
-But I'm not confident. Given time constraints, perhaps the best approach is to use a more flexible sugar pattern and focus on the N-glycosidic bond and nucleobase detection.
-
-In the previous code, the main issue was that the sugar_pattern was too strict. So, removing the stereochemistry and some hydroxyl checks might help.
-
-Revising the sugar_pattern to:
-
-sugar_pattern = Chem.MolFromSmarts("[C@H]1([C@@H](CO)O[C@@H]([C@H]1O)*)O")
-
-But this is still not right. Alternatively, use a generic pattern that matches any five-membered ring with O and a CO group:
-
-sugar_core = Chem.MolFromSmarts("[O]1-*-*-*-*-1-CO")
-
-But this may not work.
-
-Given the time, I'll proceed with the revised code that relaxes the sugar detection and improves the nucleobase check. The key changes are:
-
-1. Use a more general sugar pattern that looks for a five-membered ring with O and CO group.
-2. Check for the N-glycosidic bond using a pattern that looks for a ring oxygen connected to a ring carbon connected to a nitrogen.
-3. Check if the nitrogen is part of a ring with multiple nitrogens (indicative of a nucleobase).
-
-This should handle more variations and modified sugars/bases.
+Examples of structures that do NOT belong to this class are:
+ - 5,6-dihydrouridine: SMILES: O1[C@@H](N2C(=O)NC(=O)CC2)CC[C@H]1CO
+ - 7-Methylguanine: SMILES: Cn1c(=O)c2c(ncn2)n(C)c1=O
+ - Adenine: SMILES: Nc1ncnc2ncnc12
+ - Adenine, 9-(tetrahydro-2-furanyl)-: SMILES: Nc1ncnc2n(cnc12)C3CCCO3
+ - Adenine, 9-methyl-: SMILES: Cn1c2ncnc2nc1N
+ - Adenine, 9H-purin-6-amine: SMILES: Nc1ncnc2ncnc12
+ - Adenosine 3',5'-cyclic monophosphate: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)
+ - Adenosine 3'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine 3',5'-diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine 5'-(tetrahydrogen triphosphate): SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine diphosphate ribose: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine phosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenosine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenylosuccinic acid: SMILES: O=C(O)C(CC(=O)O)NC(=O)C1=NC=NC2=C1N=CN2[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Adenylyl sulfate: SMILES: O=S(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenylyl-(3'->5')-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)
+ - Adenylyl-(3'->5')-cytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)
+ - Adenylyl-(3'->5')-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)
+ - Adenylyl-(3'->5')-uridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O)
+ - Adenylyl-(5'->5')-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)
+ - Adenylyl-(5'->5')-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)
+ - Adenylyl-(5'->N)-histidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H](N)C(=O)O
+ - Adenylyl-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenylyl-cytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Adenylyl-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Adenylyl-uridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Adenylyladenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Adenylylcytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Adenylylguanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Adenylyluridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - ADP-glucose: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - ADP-ribose: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Alanine, N-[(9beta-D-ribofuranosyl-9H-purin-6-yl)carbonyl]-: SMILES: O=C(N[C@@H](C)C(=O)O)C1=NC=NC2=C1N=CN2[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Allopurinol: SMILES: O=C1NC=NC2=C1NC=N2
+ - Allopurinol ribonucleoside: SMILES: O=C1NC=NC2=C1NC=N2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O
+ - Aminoimidazole carboxamide ribonucleotide: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)c2c(ncn2)n(C1=O)N
+ - Arabinofuranosyladenine: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Arabinofuranosylhypoxanthine: SMILES: O[C@@H]1[C@@H](O)[C@H](CO)O[C@@H]1n1c(=O)[nH]c(=O)c2ncnc12
+ - Arabinofuranosylthymine: SMILES: Cc1c(=O)[nH]c(=O)cc1[C@H]1O[C@H](CO)[C@H](O)[C@H]1O
+ - Arabinofuranosyluracil: SMILES: O=C1C=CN([C@H]2O[C@H](CO)[C@H](O)[C@H]2O)C(=O)N1
+ - Arabinose: SMILES: OCC1OC(O)C(O)C1O
+ - ATP: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Beta-D-ribofuranose 1-(9H-purin-6-ylsulfamate): SMILES: NS(=O)(=O)O[C@H]1[C@@H](O)[C@H](CO)O[C@H]1n1cnc2c(=O)[nH]c(=O)c2n1
+ - Beta-D-ribofuranose 1-[9H-purin-6-yl(methyl)amine]: SMILES: CNc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Beta-D-ribofuranose 1-[(9H-purin-6-yl)amino]: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Beta-D-ribofuranose 1-[(9H-purin-6-yl)oxy]: SMILES: Oc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Beta-D-ribofuranose 1-[N-(9H-purin-6-yl)carbamoyl]: SMILES: O=C(Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O)O
+ - Beta-D-ribofuranose 1-[N2-(9H-purin-6-yl)glycyl]: SMILES: O=C(CNc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O)O
+ - Beta-D-ribofuranose 1-phosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)O
+ - Beta-D-ribofuranosyl adenine: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Beta-D-ribofuranosyl guanine: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Beta-D-ribofuranosyl hypoxanthine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Beta-D-ribofuranosyl uracil: SMILES: O=C1C=CN([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)C(=O)N1
+ - Beta-D-ribofuranosyladenine: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Beta-D-ribofuranosylhypoxanthine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Beta-D-ribofuranosyluracil: SMILES: O=C1C=CN([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)C(=O)N1
+ - Beta-D-ribopyranose: SMILES: OCC1OC(O)C(O)C1O
+ - Carbocyclic adenosine: SMILES: Nc1ncnc2n(cnc12)C3CCCCO3
+ - Carbocyclic inosine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Carbovir: SMILES: C1CC[C@H](O1)n1cnc2c(N)ncnc12
+ - Cidofovir diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1O
+ - Coformycin: SMILES: CN1CC[C@]2(C1=O)N3C(=O)NC(=O)C3=C2N
+ - Cordycepin: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](C)[C@H](O)[C@H]3O
+ - Cytarabine: SMILES: Nc1ncn([C@H]2O[C@H](CO)[C@H](O)[C@H]2O)c(=O)[nH]1
+ - Cytidine 2',3'-cyclic monophosphate: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)
+ - Cytidine 3',5'-cyclic monophosphate: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)
+ - Cytidine 3'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine 5'-(trihydrogen diphosphate): SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine diphosphate choline: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine diphosphate ethanolamine: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine monophosphate N-acetylneuraminic acid: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidine-2',3'-cyclic phosphate: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)
+ - Cytidylyl-(3'->5')-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)
+ - Cytidylyl-(3'->5')-cytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)
+ - Cytidylyl-(3'->5')-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)
+ - Cytidylyl-(3'->5')-uridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O)
+ - Cytidylyl-(5'->5')-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)
+ - Cytidylyl-(5'->5')-cytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)
+ - Cytidylyl-(5'->5')-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)
+ - Cytidylyl-(5'->5')-uridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O)
+ - Cytidylyl-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Cytidylyl-cytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Cytidylyl-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Cytidylyl-uridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Cytosine: SMILES: Nc1ncnc(=O)[nH]1
+ - Cytosine beta-D-ribofuranoside: SMILES: Nc1ncn([C@H]2O[C@H](CO)[C@H](O)[C@H]2O)c(=O)[nH]1
+ - D-ribose: SMILES: OCC1OC(O)C(O)C1O
+ - Deoxyadenosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1cnc2c(N)ncnc12
+ - Deoxycytidine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1cnc2c(=O)[nH]ccc12
+ - Deoxyguanosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Deoxyinosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1c(=O)[nH]c(=O)c2ncnc12
+ - Deoxyuridine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H](C)[C@H](O)[C@H]1On1cc(=O)[nH]c(=O)c1=O
+ - Didanosine: SMILES: Nc1ncn([C@H]2O[C@H](C)[C@H](O)[C@H]2O)c(=O)[nH]1
+ - Dihydrouridine: SMILES: O1[C@@H](N2C(=O)NC(=O)CC2)CC[C@H]1CO
+ - Fludarabine: SMILES: Fc1c(c(=O)[nH]c(=O)c1)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Fludarabine phosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)c1c(F)c(=O)[nH]c(=O)c1
+ - Formycin: SMILES: CN1CC[C@]2(C1=O)N3C(=O)NC(=O)C3=C2N
+ - Formycin B: SMILES: CN1CC[C@]2(C1=O)N3C(=O)NC(=O)C3=C2N
+ - GDP-fucose: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - GDP-mannose: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanine: SMILES: O=C1NC(=O)NC2=C1N=CN2
+ - Guanine, 9H-purin-2-amine-6-ol: SMILES: O=C1NC(=O)NC2=C1N=CN2
+ - Guanosine 3',5'-cyclic monophosphate: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)
+ - Guanosine 3'-monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanosine 5'-(tetrahydrogen triphosphate): SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanosine diphosphate mannose: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanosine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanylyl-(3'->5')-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)
+ - Guanylyl-(3'->5')-cytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)
+ - Guanylyl-(3'->5')-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)
+ - Guanylyl-(3'->5')-uridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O)
+ - Guanylyl-(5'->5')-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12)
+ - Guanylyl-(5'->5')-cytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12)
+ - Guanylyl-(5'->5')-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)
+ - Guanylyl-(5'->5')-uridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O)
+ - Guanylyl-adenosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12
+ - Guanylyl-cytidine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(=O)[nH]ccc12
+ - Guanylyl-guanosine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Guanylyl-uridine: SMILES: O=P(O)(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2n(C1=O)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c(=O)c1=O
+ - Hypoxanthine: SMILES: O=C1NC=NC2=C1NC=N2
+ - Inosine 5'-(tetrahydrogen triphosphate): SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Inosine diphosphate: SMILES: O=P(O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Inosine monophosphate: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Inosine triphosphate: SMILES: O=P(O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Inosinic acid: SMILES: O=P(O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Isoadenosine: SMILES: Nc1ncnc2n(cnc12)[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Isocytidine: SMILES: Nc1ncn([C@H]2O[C@H](CO)[C@H](O)[C@H]2O)c(=O)[nH]1
+ - Isoguanosine: SMILES: O=C1NC(=O)NC2=C1N=CN2[C@H]3O[C@H](CO)[C@H](O)[C@H]3O
+ - Isopentenyladenosine: SMILES: CC(C)=CCNc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Kinetin riboside: SMILES: C=CCNc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
+ - Lyxose: SMILES: OCC1OC(O)C(O)C1O
+ - Methotrexate: SMILES: CN(CC1=CN=C2C(=N1)C(=O)N=C(N2)N)C(=O)C1=CC=C(C=C1)C(=O)N[C@@H](CCC(=O)O)C(=O)O
+ - Methyladenosine: SMILES: CN1C=NC2=C1N=CN2[C@H]3[C@@H]([C@@H]([C@H](O3)CO)O)O
+ - Methylthioinosine: SMILES: CSC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c(=O)c2ncnc12
+ - Nebularine: SMILES: O[C@@H]1[C@@H](O)[C@H](CO)O[C@@H]1n1c(=O)[nH]c(=O)c2ncnc12
+ - Nicotinamide adenine dinucleotide: SMILES: O=C(N)c1ccc[n+](c1)[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2cnc3c(N)ncnc23)[C@@H](O)[C@H](O)[C@H]1O
+ - Nicotinamide adenine dinucleotide phosphate: SMILES: O=C(N)c1ccc[n+](c1)[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)OP(=O)(O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2cn
