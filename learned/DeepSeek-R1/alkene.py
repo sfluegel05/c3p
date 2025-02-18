@@ -5,12 +5,11 @@ Classifies: CHEBI:32878 alkene
 Classifies: CHEBI:32878 alkene
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 
 def is_alkene(smiles: str):
     """
     Determines if a molecule is an alkene based on its SMILES string.
-    An alkene is an acyclic hydrocarbon with exactly one carbon-carbon double bond and formula CnH2n.
+    An alkene is an acyclic hydrocarbon with exactly one carbon-carbon double bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -44,14 +43,4 @@ def is_alkene(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains rings"
 
-    # Add hydrogens to get accurate hydrogen count
-    mol_with_h = Chem.AddHs(mol)
-    
-    # Verify molecular formula CnH2n (including all hydrogens)
-    c_count = sum(1 for atom in mol_with_h.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol_with_h.GetAtoms() if atom.GetAtomicNum() == 1)
-    
-    if h_count != 2 * c_count:
-        return False, f"Molecular formula C{c_count}H{h_count} does not match CnH2n"
-
-    return True, "Acyclic hydrocarbon with exactly one carbon-carbon double bond and formula CnH2n"
+    return True, "Acyclic hydrocarbon with exactly one carbon-carbon double bond"
