@@ -9,8 +9,11 @@ Definition:
     
 Heuristics in this implementation:
 1. Verify that the molecule has at least two ester bonds (the C(=O)O substructure).
-2. Identify a six-membered inositol ring (a ring of six carbons) that has five free –OH groups and one –OH that is substituted with a phosphorus.
-3. From that candidate oxygen substituent on the ring, follow to the phosphorus atom and verify that the phosphate has exactly 4 oxygen neighbors: one from the inositol ring, one phosphoryl oxygen (double-bonded to P) and two ester oxygens (each attached to a carbon that bears a double-bonded oxygen).
+2. Identify a six-membered inositol ring (a ring of six carbons) that has five free –OH groups 
+   and one –OH that is substituted with a phosphorus.
+3. From that candidate oxygen substituent on the ring, follow to the phosphorus atom and verify 
+   that the phosphate has exactly 4 oxygen neighbors: one from the inositol oxygen, one phosphoryl oxygen 
+   (double-bonded to P) and two ester oxygens (each attached to a carbon that bears a double-bonded oxygen).
 Note: This is inherently a heuristic method and it does not capture all stereochemical and connectivity nuances.
 """
 
@@ -111,7 +114,8 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     phosphoryl_count = 0
     ester_count = 0
     for o_atom in remaining_Os:
-        bond_PO = phosphorus.GetBondBetweenAtoms(phosphorus.GetIdx(), o_atom.GetIdx())
+        # Get the bond between the phosphorus and the oxygen from the molecule itself.
+        bond_PO = mol.GetBondBetweenAtoms(phosphorus.GetIdx(), o_atom.GetIdx())
         if bond_PO is None:
             continue
         # Check if the bond is a double bond (P=O).
@@ -142,7 +146,7 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
 
 # ----- For testing purposes -----
 if __name__ == "__main__":
-    # Test with one of the provided correct examples.
+    # Use one of the provided correct examples for testing.
     test_smiles = ("CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)"
                    "[C@@H](O)[C@H]1O)OC(=O)CCCCCCC\\C=C/C\\C=C/CCCCC")
     result, explanation = is_1_phosphatidyl_1D_myo_inositol(test_smiles)
