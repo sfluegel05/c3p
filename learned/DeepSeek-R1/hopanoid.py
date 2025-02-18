@@ -5,7 +5,6 @@ Classifies: CHEBI:51963 hopanoid
 Classifies: CHEBI:XXXXX hopanoid
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 
 def is_hopanoid(smiles: str):
     """
@@ -24,10 +23,11 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for the hopane core (pentacyclic structure)
-    hopane_core = Chem.MolFromSmarts(
-        "[C@]12[C@@H]3[C@@H]([C@@H]4[C@]([C@@H]([C@]5([C@@H](CC4)C(C)(C)CC5)C)CC3)C)CC[C@H]1C(C)(C)CC2"
+    # Define SMARTS pattern for the hopane core (pentacyclic structure) without stereochemistry
+    hopane_core_smarts = (
+        "[C]12[C][C]3[C]([C]4[C]([C]5[C]([C](CC4)C(C)(C)CC5)CC3)CCC1C(C)(C)CC2)"
     )
+    hopane_core = Chem.MolFromSmarts(hopane_core_smarts)
     if hopane_core is None:
         return None, None  # Invalid SMARTS pattern
     
@@ -35,10 +35,11 @@ def is_hopanoid(smiles: str):
     if mol.HasSubstructMatch(hopane_core):
         return True, "Contains hopane core pentacyclic structure"
     
-    # Additional check for variants with unsaturation in the core
-    hopene_core = Chem.MolFromSmarts(
-        "[C@]12[C@@H]3[C@@H]([C@@H]4C=C[C@]([C@@H]([C@]5([C@@H](CC4)C(C)(C)CC5)C)CC3)C)CC[C@H]1C(C)(C)CC2"
+    # Check for hopene core with possible unsaturation
+    hopene_core_smarts = (
+        "[C]12[C][C]3[C]([C]4C=C[C]([C]5[C]([C](CC4)C(C)(C)CC5)CC3)CCC1C(C)(C)CC2)"
     )
+    hopene_core = Chem.MolFromSmarts(hopene_core_smarts)
     if hopene_core and mol.HasSubstructMatch(hopene_core):
         return True, "Contains hopene core with unsaturation"
     
