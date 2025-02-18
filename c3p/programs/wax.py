@@ -5,7 +5,7 @@ Classifies: CHEBI:73702 wax
 Classifies: Wax (long-chain ester)
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
 
 def is_wax(smiles: str):
     """
@@ -57,36 +57,64 @@ def is_wax(smiles: str):
     if acid_start is None:
         return False, "No acid component found"
 
-    # Helper function to count carbons in a component
-    def count_component_carbons(start_idx, exclude):
+    # Helper function to analyze component
+    def analyze_component(start_idx, exclude):
         visited = set(exclude)
         stack = [start_idx]
         carbon_count = 0
+        in_ring = False
         while stack:
             atom_idx = stack.pop()
             if atom_idx in visited:
                 continue
             visited.add(atom_idx)
             atom = mol.GetAtomWithIdx(atom_idx)
+            
+            # Check for rings
+            if atom.IsInRing():
+                in_ring = True
+                
+            # Count carbons
             if atom.GetAtomicNum() == 6:
                 carbon_count += 1
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() not in visited:
-                    stack.append(neighbor.GetIdx())
-        return carbon_count
+                
+            # Check for forbidden groups (amide, nitrile, etc.)
+            for bond in atom.GetBonds():
+                neighbor_idx = bond.GetOtherAtomIdx(atom_idx)
+                if neighbor_idx in visited:
+                    continue
+                stack.append(neighbor_idx)
+                
+        return carbon_count, in_ring
 
-    # Count carbons in both components
+    # Analyze both components
     exclude = {oxygen_idx, carbonyl_c_idx}
-    alcohol_carbons = count_component_carbons(alcohol_start, exclude)
-    acid_carbons = count_component_carbons(acid_start, exclude)
+    alcohol_carbons, alcohol_in_ring = analyze_component(alcohol_start, exclude)
+    acid_carbons, acid_in_ring = analyze_component(acid_start, exclude)
 
-    # Check chain length requirements
+    # Check for rings in components
+    if alcohol_in_ring or acid_in_ring:
+        return False, "Component in ring structure"
+
+    # Check chain lengths (minimum 8 carbons each)
     if alcohol_carbons < 8 or acid_carbons < 8:
         return False, f"Chain lengths too short (alcohol: {alcohol_carbons}, acid: {acid_carbons})"
 
-    # Check for carboxylic acid groups (-COOH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OX2H1]")
-    if mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "Contains carboxylic acid group"
+    # Check for other functional groups
+    forbidden_patterns = {
+        "carboxylic_acid": Chem.MolFromSmarts("C(=O)[OH]"),
+        "amide": Chem.MolFromSmarts("[NX3][CX3](=[OX1])"),
+        "nitrile": Chem.MolFromSmarts("C#N"),
+        "sulfonic_acid": Chem.MolFromSmarts("S(=O)(=O)O"),
+        "phosphate": Chem.MolFromSmarts("OP(=O)(O)O"),
+    }
+    for name, pattern in forbidden_patterns.items():
+        if mol.HasSubstructMatch(pattern):
+            return False, f"Contains {name.replace('_', ' ')} group"
+
+    # Check molecular weight (typical waxes > 300 Da)
+    mol_wt = Descriptors.ExactMolWt(mol)
+    if mol_wt < 300:
+        return False, f"Molecular weight too low ({mol_wt:.1f} Da)"
 
     return True, "Long-chain ester meeting wax criteria"
