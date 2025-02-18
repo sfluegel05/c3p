@@ -2,42 +2,38 @@
 Classifies: CHEBI:10283 2-hydroxy fatty acid
 """
 """
-Classifies: 2-hydroxy fatty acid (CHEBI:78283)
+Classifies: CHEBI:78334 2-hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import MolFromSmiles, MolFromSmarts
+from rdkit.Chem import MolFromSmarts
 
 def is_2_hydroxy_fatty_acid(smiles: str):
     """
-    Determines if a molecule is a 2-hydroxy fatty acid based on its SMILES.
-    A 2-hydroxy fatty acid has a carboxylic acid group with a hydroxyl on the adjacent (alpha/2-position) carbon,
-    and a sufficiently long carbon chain typical of fatty acids.
+    Determines if a molecule is a 2-hydroxy fatty acid based on its SMILES string.
+    A 2-hydroxy fatty acid has a hydroxyl group (-OH) on the alpha carbon (second position)
+    adjacent to the carboxylic acid group.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if criteria are met, False otherwise
+        bool: True if molecule is a 2-hydroxy fatty acid, False otherwise
         str: Reason for classification
     """
-    mol = MolFromSmiles(smiles)
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES"
+        return False, "Invalid SMILES string"
 
-    # Check for at least one carboxylic acid group
-    carboxyl_pattern = MolFromSmarts("[CX3](=O)[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group"
+    # Check for carboxylic acid group (-COOH)
+    carboxylic_pattern = MolFromSmarts("[CX3](=O)[OX2H1]")
+    if not mol.HasSubstructMatch(carboxylic_pattern):
+        return False, "No carboxylic acid group found"
 
-    # Check for hydroxyl on alpha carbon (adjacent to carboxylic acid's carbonyl)
-    alpha_hydroxy_pattern = MolFromSmarts("[CX3](=O)-[CH1]-[OH]")  # Alpha carbon with hydroxyl
-    alpha_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
-    if not alpha_matches:
-        return False, "No hydroxyl on alpha carbon"
+    # Check for hydroxyl on alpha carbon (directly adjacent to carbonyl carbon)
+    # Pattern matches: [Carbonyl]-C(-OH) where carbonyl is from COOH
+    alpha_hydroxy_pattern = MolFromSmarts("[CX3](=O)([OX2H1])-C(-[OH])")
+    if not mol.HasSubstructMatch(alpha_hydroxy_pattern):
+        return False, "No hydroxyl group on alpha carbon adjacent to carboxylic acid"
 
-    # Verify sufficient chain length (total carbons >=5 to exclude small acids like glycolic)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 5:
-        return False, f"Insufficient carbons ({c_count}) for fatty acid"
-
-    return True, "Carboxylic acid with hydroxyl on alpha carbon and sufficient chain length"
+    return True, "2-hydroxy group found adjacent to carboxylic acid"
