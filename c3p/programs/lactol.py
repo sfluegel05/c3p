@@ -2,104 +2,124 @@
 Classifies: CHEBI:38131 lactol
 """
 """
-Classifies: lactol 
+Classifies: lactol
 Definition: Cyclic hemiacetals formed by intramolecular addition of a hydroxy group 
 to an aldehydic or ketonic carbonyl group. In a lactol the carbonyl is converted into 
-an sp3 “hemiacetal” carbon which typically carries one –OH and one –OR substituent (the –OR 
-being part of the ring). This code inspects the molecule for a candidate lactol center.
+an sp3 “hemiacetal” carbon which typically carries one –OH and one –OR substituent 
+(with the –OR being part of the ring). 
+
+This improved version uses additional checks:
+  • Adds explicit hydrogens.
+  • Loops over carbons that are in a ring, sp3‐hybridized, and that carry exactly 1 hydrogen 
+    (as expected for a hemiacetal carbon, CH(OH)(OR)).
+  • Requires that the candidate carbon has at least one oxygen neighbor that has an explicit 
+    hydrogen (an –OH) and at least one oxygen neighbor that is in a ring (the –OR of the cyclic structure).
+  • Confirms that the candidate carbon and that “in‐ring” oxygen occur together in a ring 
+    of size 5–7.
+If such a candidate is found, returns True and the candidate’s atom index.
+If no candidate is found (or the SMILES can’t be parsed) returns False.
 """
 
 from rdkit import Chem
 
 def is_lactol(smiles: str):
     """
-    Determines if a molecule is a lactol based on its SMILES string.
+    Determines if the given SMILES string represents a molecule featuring a lactol center.
     
-    Our heuristic approach is as follows:
-      1. Parse the SMILES and add explicit hydrogens.
-      2. Loop over every carbon atom that is (a) in a ring and (b) sp3-hybridized.
-      3. For each such carbon, find oxygen neighbors. For a lactol center there
-         should be exactly two oxygen neighbors:
-           • One oxygen should be an –OH (having at least one hydrogen attached).
-           • One oxygen should be an ether oxygen that is in the same small ring as the carbon.
-      4. Check that the carbon and that “in‐ring” oxygen share a ring of size 5–7.
-      5. If such a candidate is found, return True and the candidate’s atom index.
+    Our heuristic approach:
+      1. Parse the SMILES string and add explicit hydrogens.
+      2. For each carbon atom:
+           - It must be in a ring, sp3-hybridized,
+           - It should have exactly one hydrogen attached (as expected for a hemiacetal CH),
+             and a total of at least 2 non-hydrogen neighbors.
+      3. Among its neighbors, we require:
+           - At least one oxygen neighbor with an explicit hydrogen (–OH group).
+           - At least one oxygen neighbor that is itself in a ring (acting as the ring –OR).
+      4. Verify that the candidate carbon and the ring oxygen share at least one ring 
+         of size 5–7.
+      5. If a candidate is found, return True along with a message showing the candidate’s index.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if a lactol (cyclic hemiacetal) center is identified, False otherwise.
-        str: Reason for classification.
+        bool: True if a lactol (cyclic hemiacetal) center is detected, False otherwise.
+        str: A reason for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Make sure explicit hydrogens are added so we can detect –OH groups.
+    # Add explicit hydrogens needed to check for -OH groups and hydrogen count on carbon.
     mol = Chem.AddHs(mol)
     
-    # Get ring information list (a tuple of atom index tuples for each ring)
+    # Retrieve ring information: each ring as a tuple of atom indices.
     ring_info = mol.GetRingInfo().AtomRings()
-    valid_ring_sizes = {5, 6, 7}  # typical small rings for lactols
+    valid_ring_sizes = {5, 6, 7}  # typical ring sizes that can form lactols
     
-    # Loop over all carbon atoms in the molecule.
+    # Loop over all atoms to select candidate lactol centers.
     for atom in mol.GetAtoms():
+        # Consider only carbon atoms.
         if atom.GetAtomicNum() != 6:
             continue
-        # Consider only carbons in a ring and with sp3 hybridization.
+        # Must be in a ring and sp3-hybridized.
         if not atom.IsInRing():
             continue
         if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
             continue
-            
-        # Gather oxygen neighbors of this carbon.
+        # Check that the carbon has exactly 1 hydrogen attached.
+        # (For a hemiacetal formed from a carbonyl, we expect CH(OH)(OR) pattern.)
+        num_H = atom.GetTotalNumHs()
+        if num_H != 1:
+            continue
+        
+        # Look at the atom's neighbors; we want to find oxygen neighbors.
         oxy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 8]
-        # In a proper hemiacetal we expect exactly two oxygen neighbors.
-        if len(oxy_neighbors) != 2:
+        # (We do not insist on exactly two oxygens because sometimes extra substituents exist,
+        # but we require at least two and that the roles are filled.)
+        if len(oxy_neighbors) < 2:
             continue
         
-        # Initialize flags and record candidate indices.
-        oh_candidate = None   # oxygen that is –OH (has at least one hydrogen attached)
-        or_candidate = None   # oxygen that is part of a ring with the carbon
+        # Initialize indicators for the two roles.
+        oh_found = False       # oxygen with at least one explicit hydrogen (-OH)
+        ring_oxygen_found = None   # oxygen that is in a ring (likely the -OR group)
         
-        # Examine each oxygen neighbor.
         for oxy in oxy_neighbors:
-            # Determine if the oxygen has any hydrogen neighbor (explicit H)
-            has_h = any(nbr.GetAtomicNum() == 1 for nbr in oxy.GetNeighbors())
-            # Check if this oxygen is in a ring.
-            in_ring = oxy.IsInRing()
-            # We assign based on the rule: one –OH (free hydroxyl, having an H) and one oxygen from the ring.
-            if has_h and (oh_candidate is None):
-                oh_candidate = oxy
-            elif in_ring and (or_candidate is None):
-                or_candidate = oxy
+            # Determine if oxygen bears at least one explicit hydrogen.
+            oxy_has_H = any(nbr.GetAtomicNum() == 1 for nbr in oxy.GetNeighbors())
+            # Determine if oxygen is in a ring.
+            oxy_in_ring = oxy.IsInRing()
+            # We expect one oxygen to be an –OH:
+            if oxy_has_H and not oh_found:
+                oh_found = True
+                continue  # check next neighbor
+            # And we expect at least one oxygen to be part of a ring.
+            if oxy_in_ring and ring_oxygen_found is None:
+                ring_oxygen_found = oxy
         
-        # We need exactly one candidate for each role.
-        if oh_candidate is None or or_candidate is None:
+        # If we did not meet both roles, skip this carbon.
+        if not oh_found or ring_oxygen_found is None:
             continue
         
-        # Confirm that the carbon and the ring oxygen actually belong to a shared ring
-        # of size in the valid range.
+        # Confirm that this carbon and the ring oxygen are in a shared ring of valid size.
         c_idx = atom.GetIdx()
-        o_idx = or_candidate.GetIdx()
+        o_idx = ring_oxygen_found.GetIdx()
         in_valid_ring = False
         for ring in ring_info:
             if c_idx in ring and o_idx in ring and len(ring) in valid_ring_sizes:
                 in_valid_ring = True
                 break
-        
         if not in_valid_ring:
             continue
         
-        # At this point, we have found a candidate lactol center.
-        return True, f"Found cyclic hemiacetal center at carbon atom index {c_idx}"
+        # Found a candidate lactol center.
+        return True, f"Found cyclic hemiacetal (lactol) center at carbon atom index {c_idx}"
     
     return False, "No cyclic hemiacetal (lactol) center found"
 
-# Example usage (optional):
+# Optional: simple test when run as a script.
 if __name__ == "__main__":
-    # Test on beta-ascarylopyranose (known lactol)
-    smiles_example = "C[C@@H]1O[C@H](O)[C@H](O)C[C@H]1O"
-    result, reason = is_lactol(smiles_example)
+    # Test on beta-ascarylopyranose (a known lactol)
+    test_smiles = "C[C@@H]1O[C@H](O)[C@H](O)C[C@H]1O"
+    result, reason = is_lactol(test_smiles)
     print(result, reason)
