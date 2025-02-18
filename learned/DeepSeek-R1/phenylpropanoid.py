@@ -1,273 +1,34 @@
 """
 Classifies: CHEBI:26004 phenylpropanoid
 """
- - 4'-Hydroxy-5,7,3',5'-tetramethoxyflavanone: SMILES: COc1cc(OC)c(OC)cc1C1CC(=O)c2c(O1)cc(OC)c(O)c2
- - 3,5-Dihydroxy-7,4'-dimethoxyflavone: SMILES: COc1ccc(cc1)C2=COC3=C(C2=O)C(=O)C=C(O)C3O
- - 7-hydroxy-8-methoxycoumarin: SMILES: O=C1C=C(OC)c2ccccc2O1
- - 3',4',7-trihydroxyflavone: SMILES: O=C1C(=C(O)C=2C=CC(=O)C=CO2)C2=C(O1)C=C(O)C=C2O
- - 5,7,4'-Trihydroxy-3',5'-dimethoxyflavone: SMILES: COc1cc(OC)ccc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',5,7-Trihydroxy-4',6-dimethoxyflavone: SMILES: COc1cc(OC)c(O)cc1C=2C(=O)C3=C(O)C(O)=C(O)C=C3O2
- - 5,7-Dihydroxy-3',4',5'-trimethoxyflavone: SMILES: COc1cc(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 5,7-Dihydroxy-3',4'-dimethoxyflavone: SMILES: COc1ccc(cc1OC)C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3,5,7-Trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)C=2C(=O)C3=C(O)C(O)=C(O)C=C3O2
- - 5,7-Dihydroxy-3',4',5'-trimethoxyflavone: SMILES: COc1cc(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxyflavone: SMILES: O=C1C(=C(O)C=2C=CC(=O)C=CO2)C3=C(O1)C=C(O)C(O)=C3
- - 3',5,7-Trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)C=2C(=O)C3=C(O)C(O)=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxyflavone: SMILES: O=C1C(=C(O)C=2C=CC(=O)C=CO2)C3=C(O1)C(O)=C(O)C=C3O
- - 3',4',5',5,7-Pentahydroxyflavone: SMILES: O=C1C(=C(O)C=2C=CC(=O)C=CO2)C3=C(O1)C(O)=C(O)C(O)=C3
- - 3',4',5,5',7-Pentahydroxyflavone: SMILES: O=C1C(=C(O)C=2C=CC(=O)C=CO2)C3=C(O1)C(O)=C(O)C(O)=C3O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 5,7-Dihydroxy-3',4',5',6-tetramethoxyflavone: SMILES: COc1cc(OC)c(OC)c(OC)cc1C=2C(=O)C3=C(O)C=C(O)C=C3O2
- - 3',4',5,7-Tetrahydroxy-6-methoxyflavone: SMILES: COc1cc(O)c2C(=O)C(=C(O)C=3C=CC(=O)C=CO3)C(=O)Oc2c1O
- - 3',4',5,5',7-Pentahydroxy-6-methoxyflavone: SMILES: CO
+</think>
+
+Okay, let's figure out why the previous code didn't work. The error message says "unexpected indent" which usually means there's a problem with the code's formatting, like spaces or tabs where they shouldn't be. Looking at the previous code, it seems like the user included a lot of SMILES examples directly in the code block, which isn't valid Python. The code block should only contain the function and necessary imports, not data examples.
+
+Now, focusing on the task: classify phenylpropanoids. The definition says they have a phenylpropane skeleton (C6-C3). So the core structure is a benzene ring connected to a three-carbon chain. Examples include flavonoids, coumarins, etc.
+
+To detect this, the code should check for a benzene ring (aromatic) attached to a three-carbon chain. The three-carbon chain might have various substituents or be part of a larger structure like a coumarin or flavone.
+
+So, the plan is:
+1. Check for at least one aromatic benzene ring.
+2. Check if there's a three-carbon chain attached to the benzene. This chain could be propyl, propenyl, or part of a cyclic structure (like in coumarins).
+3. Allow for various functional groups and substitutions on the benzene and the chain.
+
+Using RDKit, we can search for the benzene ring and then look for a three-carbon chain connected to it. SMARTS patterns can help here. For example, a benzene ring with a propyl group: c1ccccc1CCC. But since the chain can be modified (like with double bonds or oxygen atoms in coumarins), the pattern needs to be flexible.
+
+Possible SMARTS patterns:
+- Benzene connected to a propyl group: [c]1[c][c][c][c][c]1-[CX4]-[CX4]-[CX4]-*
+- Or a propenyl group: [c]1[c][c][c][c][c]1-C=C-C-*
+- Also, check for cyclic structures where the three carbons are part of a ring (like coumarin's lactone ring).
+
+Additionally, the molecule should be organic (no metals, etc.), but maybe that's assumed here.
+
+Testing the code with the examples provided: for instance, 4-phenylcoumarin has a benzene attached to a coumarin structure, which includes the three-carbon chain as part of the lactone ring. The code should recognize that.
+
+Potential issues:
+- Ensuring that the three-carbon chain is correctly identified in various configurations.
+- Handling complex structures where the chain is part of a ring or has functional groups.
+
+So, the function will parse the SMILES, check for the benzene ring, then check if there's a three-carbon chain attached. If both are present, return True with the reason.
+
+Let's draft the code accordingly.
