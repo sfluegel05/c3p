@@ -20,14 +20,21 @@ def is_4__hydroxyflavanones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
-
+    
     # Define a refined SMARTS pattern for 4'-hydroxyflavanone
-    # This pattern represents a flavanone core [C1(COC2=O)] with a 4'-hydroxy group on an aromatic ring linked at C1
-    flavanone_pattern = Chem.MolFromSmarts("[OH]c1ccc([C@H]2CC(=O)c3c(cccc3O)O2)cc1")
+    # The flavanone core pattern with hydroxy on the B-ring is targeted
+    flavanone_core = Chem.MolFromSmarts("C1(C(C=O)c2ccccc2O1)c3ccc(O)cc3")
     
-    if not mol.HasSubstructMatch(flavanone_pattern):
-        return False, "No 4'-hydroxyflavanone pattern found"
+    # Check the stereochemistry around the flavanone core
+    flavanone_stereo_pattern = Chem.MolFromSmarts("[C@H]1(C(=O)c2c(cccc2O1)c3ccc(O)cc3)C")
+
+    # Ensure it has both flavanone core and the specific stereochemistry
+    if not mol.HasSubstructMatch(flavanone_core):
+        return False, "No flavanone core structure found"
     
+    if not mol.HasSubstructMatch(flavanone_stereo_pattern):
+        return False, "Incorrect stereochemistry for 4'-hydroxyflavanone"
+
     return True, "Matches the 4'-hydroxyflavanone structure"
 
 # Example usage
