@@ -39,6 +39,8 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
         return False, "No glycosidic bond found"
 
     # Ensure the molecule contains more than just the glucuronic acid moiety
+    # This is a simple check to ensure there is another substructure connected via the glycosidic bond
+    # We count the number of atoms not part of the glucuronic acid moiety
     glucuronic_acid_atoms = set()
     for match in mol.GetSubstructMatches(glucuronic_acid_pattern):
         glucuronic_acid_atoms.update(match)
@@ -47,11 +49,11 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     if len(glucuronic_acid_atoms) >= total_atoms:
         return False, "Molecule contains only the glucuronic acid moiety"
 
-    # Check stereochemistry: Ensure the C1-OH is axial (beta configuration)
-    # This is a more accurate check using the chiral center at C1
+    # Basic stereochemistry check: Ensure the C1-OH is axial (beta configuration)
+    # This is a simplified check and may not catch all cases
     for match in mol.GetSubstructMatches(glucuronic_acid_pattern):
         c1_atom = mol.GetAtomWithIdx(match[0])
-        if c1_atom.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
+        if not c1_atom.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
             return False, "Glucuronic acid moiety is not in beta configuration"
 
     return True, "Contains beta-D-glucuronic acid moiety with a glycosidic bond"
