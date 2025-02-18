@@ -16,18 +16,17 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Check for at least one amino and one carboxyl group
-    amino_pattern = MolFromSmarts('[NH2,NX3H,NX4H2]')
-    carboxyl_pattern = MolFromSmarts('C(=O)[OH]')
-    if not mol.HasSubstructMatch(amino_pattern) or not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "Missing amino or carboxyl group"
+    # Check for alpha-amino acid structure: NH2-CH(R)-COOH
+    alpha_amino_pattern = MolFromSmarts('[NH2,NX3H,NX4H2]-[CX4H]([!O])-[CX3](=O)[OH]')
+    if not mol.HasSubstructMatch(alpha_amino_pattern):
+        return False, "Not an alpha-amino acid"
     
     # Check for peptide bonds (amide linkages between amino acids)
     peptide_pattern = MolFromSmarts('[CX3](=O)-[NX3H]-[CX4]')
     if mol.HasSubstructMatch(peptide_pattern):
         return False, "Contains peptide bond"
     
-    # Standard amino acid core structures (SMARTS patterns)
+    # Standard amino acid core structures (exact matches)
     standard_amino_smarts = [
         # Glycine
         '[NH2]C([H])(C(=O)O)',
@@ -71,14 +70,13 @@ def is_non_proteinogenic_amino_acid(smiles: str):
         'C1=CC=C2C(=C1)C(=CN2)C[C@H]([NH2])C(=O)O'
     ]
     
-    # Check if matches any standard amino acid core
+    # Check if the entire molecule matches any standard amino acid
     for smarts in standard_amino_smarts:
         pattern = MolFromSmarts(smarts)
         if pattern is not None and mol.HasSubstructMatch(pattern):
-            return False, "Matches standard amino acid core"
+            return False, "Matches standard amino acid"
     
     # Check for zwitterionic forms of standard amino acids
-    # Example: glycine zwitterion is [NH3+]CC(=O)[O-]
     zwitterion_pattern = MolFromSmarts('[NH3+]C([H])(C(=O)[O-])')
     if mol.HasSubstructMatch(zwitterion_pattern):
         return False, "Standard amino acid zwitterion"
