@@ -52,9 +52,9 @@ def is_long_chain_fatty_acid(smiles: str):
     if longest_chain < 13 or longest_chain > 22:
         return False, f"Chain length is {longest_chain}, must be between 13 and 22"
 
-    # Check for excessive branching (optional, but fatty acids are typically linear)
+    # Check for excessive branching (allow minimal branching)
     n_branches = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2)
-    if n_branches > 2:  # Allow minimal branching
+    if n_branches > 4:  # Allow up to 4 branches
         return False, "Excessive branching detected"
 
     return True, "Contains a carboxylic acid group and a carbon chain length between 13 and 22"
