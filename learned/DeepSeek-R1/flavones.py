@@ -1,54 +1,315 @@
 """
 Classifies: CHEBI:24043 flavones
 """
-"""
-Classifies: CHEBI:72025 flavone
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-
-def is_flavones(smiles: str):
-    """
-    Determines if a molecule is a flavone based on its SMILES string.
-    Flavones have a 2-aryl-1-benzopyran-4-one skeleton and substituted derivatives.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a flavone, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Define SMARTS pattern for the 2-arylchromen-4-one skeleton
-    # Core is benzopyran-4-one with aryl group at position 2
-    flavone_core = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)c(c2)-[a]")
-    matches = mol.GetSubstructMatches(flavone_core)
-    if not matches:
-        return False, "No 2-arylchromen-4-one skeleton found"
-
-    # Get ring information
-    ring_info = mol.GetRingInfo()
-    core_rings = set()
-    for ring in ring_info.AtomRings():
-        # Check if this ring is part of the core (benzopyran-4-one)
-        # Core atoms are from the SMARTS match (indices 0-8 for the core + aryl connector)
-        core_atoms = set(matches[0][:9])  # Adjust indices based on SMARTS
-        if any(atom in core_atoms for atom in ring):
-            core_rings.add(tuple(ring))
-
-    # Check aryl group is a separate aromatic ring (not part of core)
-    for match in matches:
-        aryl_connector = match[-1]  # Last atom in match is the aryl connector
-        for ring in ring_info.AtomRings():
-            if aryl_connector in ring and tuple(ring) not in core_rings:
-                # Check if the ring is aromatic and at least 6-membered
-                is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
-                if is_aromatic and len(ring) >= 6:
-                    return True, "Contains 2-arylchromen-4-one skeleton with aromatic substituent"
-
-    return False, "Aryl group not part of separate aromatic ring"
+ - 3-O-methylquercetin: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1ccc(O)c(O)c1
+ - quercetin 3-O-beta-D-glucuronide: SMILES: OC1C(O)C(OC2=C(OC3=C(C4=CC(=O)C=C(O4)C=C3O)C5=CC(O)=C(O)C=C5)C6=CC(O)=C(O)C=C6)OC(C1O)C(=O)O
+ - 6-C-[beta-D-xylopyranosyl-(1->2)-beta-D-glucopyranosyl]apigenin: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@H]2CO)[C@H](O)[C@@H](O)[C@H]1Oc1c2oc(-c3ccc(O)cc3)c(=O)cc2cc(O)c1O
+ - quercetin 3-O-(6''-malonylglucoside): SMILES: O=C(CC(=O)O)COC1OC(COC2=C(OC3=CC(=O)C=C(O3)C4=CC=C(O)C(O)=C4)C5=CC=C(O)C(O)=C5)C(O)C(O)C1O
+ - kaempferol 3-O-(6''-O-acetyl-beta-D-glucopyranoside): SMILES: CC(=O)OCC1OC(OC2=C(OC3=CC(=O)C=C(O3)C4=CC=C(O)C=C4)C5=CC=C(O)C=C5)C(O)C(O)C1O
+ - 5,7-dihydroxy-3,6,8-trimethoxyflavone: SMILES: COc1c(OC)c2oc(cc(=O)c2c(OC)c1O)-c1ccccc1
+ - 7-O-methylapigenin: SMILES: COc1cc2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 7-O-methylisoscutellarein: SMILES: COc1cc2oc(cc(=O)c2c(O)c1O)-c1ccccc1O
+ - 3,5,7,3',4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2c(oc(cc2=O)-c2ccc(O)c(O)c2)c1O
+ - 3,7-di-O-methylquercetin: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1ccc(O)c(O)c1
+ - 7-O-methylisoscutellarein 4'-methyl ether: SMILES: COc1ccc(cc1)-c1cc(=O)c2c(O)c(OC)cc(O)c2o1
+ - 5,7,3',4'-tetrahydroxy-3-methoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1ccc(O)c(O)c1
+ - 3,7,4'-tri-O-methylkaempferol: SMILES: COc1ccc(cc1)-c1oc2cc(OC)cc(OC)c2c(=O)c1OC
+ - 5,7,4'-trihydroxy-3,6,8-trimethoxyflavone: SMILES: COc1c(OC)c(OC)c2oc(cc(=O)c2c1O)-c1ccc(O)cc1
+ - 3,7,8-trimethoxy-5-hydroxyflavone: SMILES: COc1c(OC)c2oc(cc(=O)c2c(OC)c1O)-c1ccccc1
+ - 5,7-dihydroxy-3,8-dimethoxyflavone: SMILES: COc1c(OC)c2oc(cc(=O)c2c(O)c1O)-c1ccccc1
+ - 3,5,7,8-tetrahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccccc1
+ - 5,7,4'-trihydroxy-3,6,8-trimethoxyflavone: SMILES: COc1c(OC)c(OC)c2oc(cc(=O)c2c1O)-c1ccc(O)cc1
+ - 3,5,7-trihydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1ccccc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,4'-tetrahydroxy-8-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 5,7,3',4',5'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1ccc(O)c(O)c1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1)-c1c(O)c(O)c(O)cc1
+ - 3,5,7,8,4'-pentahydroxyflavone: SMILES: Oc1cc(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,4'-tetrahydroxy-6,8-dimethoxyflavone: SMILES: COc1c(OC)c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,8-tetrahydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7-trihydroxy-4'-methoxyflavone: SMILES: COc1ccc(cc1)-c1oc2cc(O)c(O)c(O)c2c(=O)c1O
+ - 3,5,7,4'-tetrahydroxy-6-methoxyflavone: SMILES: COc1c(O)c2oc(cc(=O)c2c(O)c1O)-c1ccc(O)cc1
+ - 3,5,7,3
