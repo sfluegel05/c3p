@@ -2,101 +2,117 @@
 Classifies: CHEBI:65061 2,5-diketopiperazines
 """
 """
-Classifies: 2,5-diketopiperazines
-Defined as: Any piperazinone that has a piperazine-2,5-dione skeleton.
-This module defines a function is_2_5_diketopiperazines that determines if a molecule,
-given by its SMILES string, contains a 2,5-diketopiperazine core.
+Classifies: 2,5-diketopiperazines (any piperazinone that has a piperazine-2,5-dione skeleton)
+
+This module defines a function is_2_5_diketopiperazines that determines whether a molecule,
+given by its SMILES string, contains a 2,5-diketopiperazine core. The core is defined by the pattern:
+    N - C(=O) - C - N - C(=O) - C
+arranged as a six-membered ring.
 """
 
 from rdkit import Chem
 
-def has_terminal_carbonyl(mol, carbon):
+def has_carbonyl(mol, atom):
     """
-    Checks if the given carbon atom is part of a carbonyl that has a terminal oxygen.
-    Terminal means that the oxygen atom double-bonded to the carbon has no additional heavy atom neighbors.
+    Check if the specified carbon atom is part of a carbonyl group.
+    That is, does it have at least one neighboring oxygen connected by a double bond?
+
+    Args:
+        mol (rdkit.Chem.Mol): The molecule to which the atom belongs.
+        atom (rdkit.Chem.Atom): The atom to check.
+
+    Returns:
+        bool: True if a double-bonded oxygen is found, False otherwise.
     """
-    # Loop over neighbors of the carbon
-    for neighbor in carbon.GetNeighbors():
-        bond = mol.GetBondBetweenAtoms(carbon.GetIdx(), neighbor.GetIdx())
-        # Check for a double-bonded oxygen atom
-        if neighbor.GetAtomicNum() == 8 and bond and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            # Verify that the oxygen's other connections are only to hydrogens (or none)
-            heavy_neighbors = [
-                nbr for nbr in neighbor.GetNeighbors() 
-                if nbr.GetAtomicNum() > 1 and nbr.GetIdx() != carbon.GetIdx()
-            ]
-            if len(heavy_neighbors) == 0:
-                return True
+    if atom.GetSymbol() != "C":
+        return False
+    # Loop through all neighbors of the atom
+    for neighbor in atom.GetNeighbors():
+        # Get the bond between the two atoms via the molecule
+        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+        if neighbor.GetSymbol() == "O" and bond and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            return True
     return False
+
+def check_ring_pattern(mol, atoms):
+    """
+    Given a list of 6 atoms in order around a ring, check if they match the pattern:
+    [N, C(=O), C (non-carbonyl), N, C(=O), C (non-carbonyl)].
+
+    Args:
+        mol (rdkit.Chem.Mol): The molecule.
+        atoms (list of rdkit.Chem.Atom): List of atoms in the ring (ordered).
+
+    Returns:
+        bool: True if the atoms match the desired pattern, False otherwise.
+    """
+    # Position 0: Must be nitrogen
+    if atoms[0].GetSymbol() != "N":
+        return False
+    # Position 1: Must be a carbonyl carbon (C with a double-bonded oxygen)
+    if not (atoms[1].GetSymbol() == "C" and has_carbonyl(mol, atoms[1])):
+        return False
+    # Position 2: Must be a carbon that is not a carbonyl
+    if atoms[2].GetSymbol() != "C" or has_carbonyl(mol, atoms[2]):
+        return False
+    # Position 3: Must be nitrogen
+    if atoms[3].GetSymbol() != "N":
+        return False
+    # Position 4: Must be a carbonyl carbon
+    if not (atoms[4].GetSymbol() == "C" and has_carbonyl(mol, atoms[4])):
+        return False
+    # Position 5: Must be a carbon that is not a carbonyl
+    if atoms[5].GetSymbol() != "C" or has_carbonyl(mol, atoms[5]):
+        return False
+    return True
 
 def is_2_5_diketopiperazines(smiles: str):
     """
-    Determines if a molecule contains a 2,5-diketopiperazine core based on its SMILES.
-    The 2,5-diketopiperazine core is defined as a six-membered ring with a pattern
-    (read in cyclic order): N, C(carbonyl), C(non-carbonyl), N, C(carbonyl), C(non-carbonyl),
-    where the two carbonyl carbons have a terminal oxygen double-bond.
-    
+    Determines if a molecule is a 2,5-diketopiperazine based on its SMILES string.
+    A 2,5-diketopiperazine has a six-membered ring with the connectivity:
+        N - C(=O) - C - N - C(=O) - C,
+    where the two carbons in positions 1 and 4 are carbonyl centers (i.e., have a double-bonded oxygen).
+
+    The function checks all six-membered rings in the molecule and all rotations (and their reversals)
+    to see if one of them matches the specified pattern.
+
     Args:
         smiles (str): SMILES string of the molecule.
-    
+
     Returns:
-        bool: True if a 2,5-diketopiperazine core is detected, False otherwise.
-        str: Explanation for the classification.
+        bool: True if the molecule has a 2,5-diketopiperazine skeleton, False otherwise.
+        str: Explanation of the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get all rings using RDKit's symmetric SSSR algorithm.
-    rings = Chem.GetSymmSSSR(mol)
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()  # Tuples of atom indices forming rings.
     
-    # Process each ring of size 6.
-    for ring in rings:
+    # Check each six-membered ring for the 2,5-diketopiperazine pattern.
+    for ring in atom_rings:
         if len(ring) != 6:
-            continue  # Only interested in 6-membered rings
-        # Convert ring (which is a tuple of atom indices) to a list of atoms.
+            continue  # Only interested in six-membered rings.
         ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        
-        # The desired pattern (in cyclic order) is:
-        # [0] N, [1] C with terminal carbonyl, [2] C without carbonyl,
-        # [3] N, [4] C with terminal carbonyl, [5] C without carbonyl.
-        # As the ring can be rotated arbitrarily, we try all rotations.
-        for shift in range(6):
-            ordered = ring_atoms[shift:] + ring_atoms[:shift]
-            valid = True
-            # Position 0 must be a nitrogen.
-            if ordered[0].GetSymbol() != "N":
-                valid = False
-            # Position 1 must be a carbon with a terminal C=O.
-            if not (ordered[1].GetSymbol() == "C" and has_terminal_carbonyl(mol, ordered[1])):
-                valid = False
-            # Position 2 must be a carbon and should NOT itself be a carbonyl carbon.
-            if ordered[2].GetSymbol() != "C" or has_terminal_carbonyl(mol, ordered[2]):
-                valid = False
-            # Position 3 must be a nitrogen.
-            if ordered[3].GetSymbol() != "N":
-                valid = False
-            # Position 4 must be a carbon with a terminal C=O.
-            if not (ordered[4].GetSymbol() == "C" and has_terminal_carbonyl(mol, ordered[4])):
-                valid = False
-            # Position 5 must be a carbon and not a carbonyl carbon.
-            if ordered[5].GetSymbol() != "C" or has_terminal_carbonyl(mol, ordered[5]):
-                valid = False
-
-            if valid:
-                ring_indices = [atom.GetIdx() for atom in ordered]
-                return True, ("Molecule contains a 2,5-diketopiperazine core "
-                              f"with ring atom indices (in order): {ring_indices}")
+        # Because the ring is cyclic, test all cyclic rotations and their reverse orders.
+        for start in range(6):
+            # Forward ordering
+            forward = [ring_atoms[(start + i) % 6] for i in range(6)]
+            if check_ring_pattern(mol, forward):
+                return True, "Molecule contains a 2,5-diketopiperazine skeleton (ring indices: {})".format(ring)
+            # Reverse ordering (to account for opposite direction around the ring)
+            reverse = [ring_atoms[(start - i) % 6] for i in range(6)]
+            if check_ring_pattern(mol, reverse):
+                return True, "Molecule contains a 2,5-diketopiperazine skeleton (ring indices: {})".format(ring)
     
-    return False, "Molecule does not contain a validated piperazine-2,5-dione core"
+    return False, "Molecule does not contain the required piperazine-2,5-dione skeleton"
 
-# Example usage:
-# Uncomment the lines below to test with some SMILES.
-# tests = [
-#     "O=C1CNC(=O)CN1",  # simplest 2,5-diketopiperazine: Expected True
-#     "CC(C)[C@@H]1NC(=O)C(=C)NC1=O",  # cyclo(DeltaAla-L-Val): Expected True (if the core is preserved)
-#     "S1S[C@]23N([C@@H]4[C@@H](O)C=C[C@@H]([C@H]4C2)O)C([C@]15N([C@@H]6[C@@H](O)C=C[C@@H]([C@H]6C5)O)C3=O)=O"  # Brocazine E: Expected True if the core is present
+# Example usage (you can uncomment these lines to test a couple of cases):
+# test_smiles = [
+#     "O=C1CNC(=O)CN1",  # Simplest 2,5-diketopiperazine, expected: True
+#     "CC1C(=O)NC(=O)N1",  # Not a six-membered ring as required, expected: False
 # ]
-# for smi in tests:
+# for smi in test_smiles:
 #     result, reason = is_2_5_diketopiperazines(smi)
 #     print(smi, result, reason)
