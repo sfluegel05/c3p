@@ -25,12 +25,15 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for at least one carboxylic acid group
-    carboxylic_pattern = MolFromSmarts("[CX3](=O)[OX2H1]")  # COOH group
+    # Check for carboxylic acid group (-COOH)
+    carboxylic_pattern = MolFromSmarts("[CX3](=O)[OX2H1]")
     if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
 
-    # Find alpha carbon (carbon adjacent to carboxylic acid's carbonyl carbon)
-    # and check for hydroxyl group
-    alpha_hydroxy_pattern = MolFromSmarts("[CX3](=O)-[CH](-[OH])")  # Alpha carbon with hydroxyl
-    if
+    # Check for hydroxyl on alpha carbon (directly adjacent to carbonyl carbon)
+    # Pattern matches: [Carbonyl]-C(-OH) where carbonyl is from COOH
+    alpha_hydroxy_pattern = MolFromSmarts("[CX3](=O)([OX2H1])-C(-[OH])")
+    if not mol.HasSubstructMatch(alpha_hydroxy_pattern):
+        return False, "No hydroxyl group on alpha carbon adjacent to carboxylic acid"
+
+    return True, "2-hydroxy group found adjacent to carboxylic acid"
