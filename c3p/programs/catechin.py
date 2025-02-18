@@ -29,12 +29,9 @@ def is_catechin(smiles: str):
     # Define core structure pattern (flavan-3-ol skeleton)
     # This pattern matches the basic 2-phenylchromane structure with at least one hydroxyl group
     # and allows for various substitutions
-    core_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)Cc2c(O)cc(O)cc2O1")
+    core_pattern = Chem.MolFromSmarts("C1C(O)Cc2c(O)cc(O)cc2O1")
     if not mol.HasSubstructMatch(core_pattern):
-        # Try without stereochemistry
-        core_pattern = Chem.MolFromSmarts("C1C(O)Cc2c(O)cc(O)cc2O1")
-        if not mol.HasSubstructMatch(core_pattern):
-            return False, "No flavan-3-ol core structure found"
+        return False, "No flavan-3-ol core structure found"
 
     # Check for characteristic features
     # 1. At least two aromatic rings (one from flavan, one from phenyl)
@@ -55,6 +52,8 @@ def is_catechin(smiles: str):
         Chem.MolFromSmarts("C=C"),                    # Double bond
         Chem.MolFromSmarts("C#N"),                    # Nitrile
         Chem.MolFromSmarts("C1OC1"),                  # Epoxide
+        Chem.MolFromSmarts("CO"),                     # Methoxy
+        Chem.MolFromSmarts("C=O"),                    # Carbonyl
     ]
     
     has_substitution = any(mol.HasSubstructMatch(patt) for patt in substitution_patterns)
@@ -68,9 +67,9 @@ def is_catechin(smiles: str):
     if hydroxyl_matches < min_hydroxyl:
         return False, f"Found {hydroxyl_matches} hydroxyl groups, need at least {min_hydroxyl}"
 
-    # 4. Check molecular weight range (200-800 Da typical for catechin derivatives)
+    # 4. Check molecular weight range (200-1000 Da typical for catechin derivatives)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 800:
+    if mol_wt < 200 or mol_wt > 1000:
         return False, f"Molecular weight {mol_wt:.1f} outside typical catechin range"
 
     # 5. Additional checks for common catechin features
