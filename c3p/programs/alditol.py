@@ -1,294 +1,45 @@
 """
 Classifies: CHEBI:17522 alditol
 """
- - D-sorbitol: SMILES: OC[C@H](O)[C@H](O)[C@@H](O)[C@H](O)CO
- - D-mannitol: SMILES: OC[C@H](O)[C@H](O)[C@@H](O)[C@H](O)CO
- - D-galactitol: SMILES: OC[C@H](O)[C@@H](O)[C@@H](O)[C@H](O)CO
- - 1-O-(alpha-D-galactopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-galactopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-glucopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-glucopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-mannopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-mannopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-xylopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-xylopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-arabinopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-arabinopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-fucopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-fucopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-fucopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-fucopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-rhamnopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-rhamnopyranosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-galactofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-galactofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-galactofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-galactofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-glucofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-glucofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-glucofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-glucofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-mannofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-mannofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-mannofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-mannofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-xylofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-xylofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-xylofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-xylofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-arabinofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-arabinofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-arabinofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-arabinofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-fucofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-fucofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-fucofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-fucofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-rhamnofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-rhamnofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-rhamnofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-rhamnofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-psicofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-psicofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-psicofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-psicofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-tagatofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-tagatofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-tagatofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-tagatofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-talofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-talofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-talofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-talofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-allofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-allofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-allofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-allofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-altrofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-altrofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-altrofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-altrofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-gulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-gulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-gulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-gulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-idofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-D-idofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-L-idofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(beta-L-idofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)CO
- - 1-O-(alpha-D-galactopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-galactopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-galactopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-galactopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-glucopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-glucopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-glucopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-glucopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-mannopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-mannopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-mannopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-mannopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-gulopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-gulopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-gulopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-gulopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-idopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-idopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-idopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-idopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-talopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-talopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-talopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-talopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-allopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-allopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-allopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-allopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-altropyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-altropyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-altropyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-altropyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-psicopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-psicopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-psicopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-psicopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-tagatopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-tagatopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-tagatopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-tagatopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-rhamnopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-rhamnopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-rhamnopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-rhamnopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-fucopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-fucopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-fucopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-fucopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-xylopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-xylopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-xylopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-xylopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-arabinopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-arabinopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-arabinopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-arabinopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-ribopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-ribopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-ribopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-ribopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-lyxopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-lyxopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-lyxopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-lyxopyranuronosyl)-D-glycerol: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-xylulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-xylulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-xylulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-xylulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-ribulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-ribulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-ribulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-ribulofuranosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-psicofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-psicofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-psicofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-psicofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-tagatofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-tagatofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-tagatofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-tagatofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-idofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-talofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-allofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-altrofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-D-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(alpha-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
- - 1-O-(beta-L-gulofuranuronosyl)-D-glycerol: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1OCC(O)CO)C(=O)O
+"""
+Classifies: CHEBI:17522 alditol
+"""
+from rdkit import Chem
+from rdkit.Chem import Mol
+
+def is_alditol(smiles: str):
+    """
+    Determines if a molecule is an alditol based on its SMILES string.
+    An alditol is an acyclic polyol with the general formula HOCH2[CH(OH)]nCH2OH.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an alditol, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+
+    # Check for rings
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains rings"
+
+    # Check for branching (each carbon has <=2 carbon neighbors)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            carbon_neighbors = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
+            if carbon_neighbors > 2:
+                return False, "Branched carbon chain"
+
+    # Check all carbons have at least one hydroxyl group
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:
+            has_hydroxyl = any(neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1 
+                              for neighbor in atom.GetNeighbors())
+            if not has_hydroxyl:
+                return False, f"Carbon {atom.GetIdx()+1} has no hydroxyl group"
+
+    return True, "Acyclic, unbranched polyol with hydroxyls on all carbons"
