@@ -21,20 +21,22 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a glycerol backbone with a defined structure linked by stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("O[C@@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    # Look for glycerol backbone and phosphoserine structure with correct stereochemistry
+    backbone_pattern = Chem.MolFromSmarts("O[C@@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)CO")
+    if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No glycerol backbone with correct stereochemistry found"
     
-    # Check for the presence and correct placement of the phosphoserine group
-    phosphoserine_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@H](N)C(=O)O")
-    if not mol.HasSubstructMatch(phosphoserine_pattern):
-        return False, "No phosphoserine group found"
-
-    # Look for acyl chain pattern with ester linkage
-    acyl_pattern = Chem.MolFromSmarts("C(=O)OC[C@H](O)")  # Focus on ester linkage, possibly allowing different chain orientations
-    acyl_match = mol.GetSubstructMatch(acyl_pattern)
-    if not acyl_match:
-        return False, "No acyl chain linked to the glycerol 1-hydroxy position"
+    # Ensure the presence of a single acyl chain with ester linkage where expected
+    acyl_pattern = Chem.MolFromSmarts("C(=O)OC[C@H](O)CO[P]")
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    if len(acyl_matches) != 1:
+        return False, f"Expected exactly 1 acyl chain bound to the glycerol 1-hydroxy position, found {len(acyl_matches)}"
+    
+    # Ensure there are no additional acyl chains (avoiding two-chain phospholipids)
+    # Check for ester linkage and count them
+    ester_link_pattern = Chem.MolFromSmarts("C(=O)O")
+    ester_matches = mol.GetSubstructMatches(ester_link_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester linkages, expected exactly 1"
 
     return True, "Contains glycerol backbone with acyl chain and attached phosphoserine group"
