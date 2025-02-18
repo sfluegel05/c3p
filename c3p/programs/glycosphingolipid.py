@@ -7,7 +7,7 @@ def is_glycosphingolipid(smiles: str):
     """
     Determines if a molecule is a glycosphingolipid based on its SMILES string.
     A glycosphingolipid must contain both a sphingoid/ceramide backbone and a carbohydrate residue
-    attached via a glycosidic linkage to the O-1 of the sphingoid.
+    attached via a glycosidic linkage to O-1 of the sphingoid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,15 +22,15 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for pattern indicating glycosidic linkage (O-glycosidic bound sugar)
-    glycosidic_pattern = Chem.MolFromSmarts("CO[C@H]1O[C@@H]([C@@H](O)[C@@H](O)[C@H]1O)[C@@H]([C@H](O)CO)O")
+    # Look for a carbohydrate moiety with a glycosidic linkage pattern
+    glycosidic_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1")
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkage found"
 
-    # Look for long-chain base sphingoid/ceramide backbone pattern
-    sphingoid_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCCCOC(=O)N[C@@H](CO)C")
+    # Look for sphingoid base pattern
+    sphingoid_pattern = Chem.MolFromSmarts("O[C@H](CO)CN(C(=O)C)CCCCCCCCCCCCCCCC")
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid/ceramide backbone found"
 
-    # Both substructures must exist in a glycosphingolipid
+    # Both the patterns should be present for the classification as glycosphingolipid
     return True, "Contains sphingoid/ceramide backbone with glycosidic linkage to carbohydrate"
