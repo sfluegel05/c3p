@@ -3,19 +3,14 @@ Classifies: CHEBI:2571 aliphatic alcohol
 """
 """
 Classifies: An aliphatic alcohol, defined as 'An alcohol derived from an aliphatic compound.'
-
 Improvement rationale:
-- Instead of disqualifying a candidate –OH if any neighbor is aromatic, we now only consider
-  candidates where the –OH is attached to a saturated (sp3) carbon that is non‐aromatic and is not
-  part of any ring. (A cyclic –OH, such as in sugars or steroids, can often be part of a more complex 
-  structure that should not be classified as a simple aliphatic alcohol.)
-- We then perform a search over the molecule’s carbon network (restricted to non‐aromatic, sp3 carbons
-  not in rings) to check if there is a long enough aliphatic chain (we use a threshold of at least 6 carbons)
-  that “supports” the classification.
-- Only if a candidate –OH is found on such an aliphatic chain, we classify the molecule as an aliphatic alcohol.
-  
-This approach helped us avoid false positives where a lone –OH on a (possibly benzylic) carbon triggers a classification,
-and it also recovers some of the false negatives.
+ - We first disqualify molecules that contain free carboxylic acid/carboxylate groups.
+ - For the remaining molecules, we examine each –OH group.
+   The –OH must be attached to a saturated (sp³), non‐aromatic carbon.
+ - Then, from that candidate carbon we perform a depth‐first search (DFS)
+   on its neighboring carbons (allowed if they are not aromatic, not in a ring and not carbonyl)
+   to measure the longest contiguous aliphatic chain.
+ - If any such chain reaches at least 6 carbons in length the molecule is classified as an aliphatic alcohol.
 """
 
 from rdkit import Chem
@@ -23,9 +18,9 @@ from rdkit import Chem
 def is_aliphatic_alcohol(smiles: str):
     """
     Determines if a molecule is an aliphatic alcohol based on its SMILES string.
-    Here, aliphatic alcohols are defined as having at least one hydroxyl (-OH) group attached to a saturated 
-    (sp3), non-aromatic carbon that is not in a ring. Furthermore, that carbon must be part of a contiguous aliphatic 
-    chain (of at least 6 carbons) to ensure that the alcohol is derived from an essentially aliphatic compound.
+    Here, an aliphatic alcohol is defined as having at least one hydroxyl (-OH) group attached to a saturated 
+    (sp³), non‐aromatic carbon. Furthermore, that candidate carbon must be connected to a contiguous, open-chain 
+    aliphatic (acyclic) region (which may include one or two isolated sp2 centers) of at least 6 carbons.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -37,55 +32,89 @@ def is_aliphatic_alcohol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Helper function: perform DFS from a starting carbon atom over restricted aliphatic (sp3, non-aromatic, non-ring) carbons.
-    def dfs_aliphatic_chain(atom, visited):
+    
+    # --- Preliminary check: disqualify compounds with free carboxylic acid or carboxylate groups.
+    # We consider a carboxylic acid pattern: [CX3](=O)[O;H1] and also its deprotonated form: [CX3](=O)[O-]
+    acid_smarts = [Chem.MolFromSmarts("[CX3](=O)[O;H1]"), 
+                   Chem.MolFromSmarts("[CX3](=O)[O-]")]
+    for smarts in acid_smarts:
+        if mol.HasSubstructMatch(smarts):
+            return False, "Molecule contains carboxylic acid/carboxylate functionality"
+    
+    # Helper: Identify if a carbon can be considered part of a contiguous aliphatic chain.
+    def is_allowed_chain_carbon(atom):
+        # Must be a carbon that is not aromatic and not in any ring.
+        if atom.GetAtomicNum() != 6 or atom.GetIsAromatic() or atom.IsInRing():
+            return False
+        # Exclude carbons that are carbonyl-like: any double bond to an oxygen.
+        for bond in atom.GetBonds():
+            # bond.GetBondTypeAsDouble() equals 2.0 for a double bond.
+            if bond.GetBondTypeAsDouble() == 2.0:
+                other = bond.GetOtherAtom(atom)
+                if other.GetAtomicNum() == 8:
+                    return False
+        return True
+    
+    # DFS to determine the maximum length (number of carbons) in the contiguous chain.
+    # We count each allowed carbon exactly once per path.
+    def dfs_chain(atom, visited):
         visited.add(atom.GetIdx())
-        length = 1  # count this atom
+        max_length = 1  # count this atom
         for nbr in atom.GetNeighbors():
-            # Only follow carbons that are saturated (sp3), non-aromatic, not in a ring, and not visited already.
-            if nbr.GetAtomicNum() == 6 and nbr.GetHybridization() == Chem.rdchem.HybridizationType.SP3 and (not nbr.GetIsAromatic()) and (not nbr.IsInRing()):
-                if nbr.GetIdx() not in visited:
-                    branch_length = dfs_aliphatic_chain(nbr, visited)
-                    # We take maximum path length among branches
-                    length = max(length, 1 + branch_length)
-        return length
+            if nbr.GetAtomicNum() == 6 and is_allowed_chain_carbon(nbr) and nbr.GetIdx() not in visited:
+                branch_length = dfs_chain(nbr, visited.copy())
+                max_length = max(max_length, 1 + branch_length)
+        return max_length
 
-    # Iterate over oxygen atoms (possible hydroxyl groups)
+    # Iterate over oxygen atoms that might be part of an -OH group.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 8:
             continue
-        # Check if it is part of an -OH group (has at least one H either explicitly or implicitly)
+        # Check that this oxygen has at least one hydrogen (explicit or implicit)
         if atom.GetTotalNumHs() < 1:
-            continue  # not an -OH group
-        # Look at neighbors: we need one of them to be a carbon candidate
+            continue  # not a free hydroxyl
+        
+        # Check the neighbors of the O; we are looking for a carbon to which the -OH is attached.
         for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6:
-                # Focus on the candidate carbon: it must be sp3, non-aromatic and not part of a ring.
-                if nbr.GetHybridization() != Chem.rdchem.HybridizationType.SP3 or nbr.GetIsAromatic() or nbr.IsInRing():
+            if nbr.GetAtomicNum() != 6:
+                continue
+            # Require candidate carbon to be saturated (sp³) and non‐aromatic.
+            # (We relax the “not in ring” requirement so that, for example, side‐chains off cyclic structures are examined.)
+            if nbr.GetHybridization() != Chem.rdchem.HybridizationType.SP3 or nbr.GetIsAromatic():
+                continue
+            
+            # Now, from this candidate carbon, ignore the oxygen we came from and search among its other neighbors
+            # for a contiguous aliphatic chain (acyclic portion) of at least 6 carbons.
+            for subnbr in nbr.GetNeighbors():
+                # Do not follow back the hydroxyl oxygen.
+                if subnbr.GetIdx() == atom.GetIdx():
                     continue
-                # Now, from this candidate carbon, search for a long contiguous chain of aliphatic carbons.
-                chain_length = dfs_aliphatic_chain(nbr, set())
-                if chain_length >= 6:
-                    return True, ("Found -OH group attached to a non-ring, saturated (sp3, non-aromatic) carbon "
-                                  "that is part of a contiguous aliphatic chain (chain length = {}).".format(chain_length))
-    return False, ("No qualifying -OH group found on a non-ring, sp3 carbon that is part of a sufficiently long "
-                   "aliphatic chain (>= 6 carbons).")
-    
-# (Optional) Testing examples – these are not required in the final program.
+                # We require that the chain (if present) is in an acyclic, non‐aromatic region.
+                if subnbr.GetAtomicNum() == 6 and is_allowed_chain_carbon(subnbr):
+                    chain_length = dfs_chain(subnbr, set())
+                    if chain_length >= 6:
+                        return True, ("Found -OH group attached to a sp3, non-aromatic carbon "
+                                      "that is connected to an acyclic aliphatic chain (chain length = {})."
+                                      .format(chain_length))
+    return False, ("No qualifying -OH group found attached to a sp3, non-aromatic carbon with an adjoining "
+                   "acyclic aliphatic chain of at least 6 carbons.")
+
+# (Optional) Some testing examples.
 if __name__ == "__main__":
     test_smiles = [
-        "O=C1OC([C@@H](O)\\C=C/C=C/C)CC1",  # Sapinofuranone A (True)
-        "CCCCCCC(C)O",                     # octan-2-ol (True)
-        "O=C(OC)/C=C/CC(O)CCCCCC(O)C",       # Cladosporester A (True)
-        "OCCCCCC/C=C/CCCC",                # 7E-dodecen-1-ol (True)
-        "O[C@H](C1=CC=C(CO)C=C1)CCCCC",     # 1-[4-(Hydroxymethyl)phenyl]hexan-1-ol (should be True)
-        "OC1=CC=CC=C1",                    # Phenol: -OH on aromatic carbon (False)
+        # True positives (expected):
+        "CCCCCCC(C)O",           # octan-2-ol
+        "O=C(OC)/C=C/CC(O)CCCCCC(O)C",  # Cladosporester A
+        "CCCCCC(O)CC(=O)CCc1ccc(O)c(O)c1",  # 1-(3,4-Dihydroxyphenyl)-5-hydroxy-3-decanone
+        "OCCCCCC/C=C/CCCC",       # 7E-dodecen-1-ol
+        "O=C(CCCCCCCCCCCCCCCCCCCCCO)CCCCCC",  # 28-Hydroxy-7-octacosanone
+        # False positives (expected to be disqualified due to acid functionality):
+        "CCCCCCCCCCCCCCCCCC(O)C([O-])=O",  # 2-hydroxyarachidate
     ]
     
     for sm in test_smiles:
-        is_valid, reason = is_aliphatic_alcohol(sm)
+        classification, reason = is_aliphatic_alcohol(sm)
         print("SMILES:", sm)
-        print("Classification:", is_valid)
+        print("Classification:", classification)
         print("Reason:", reason)
         print("-" * 60)
