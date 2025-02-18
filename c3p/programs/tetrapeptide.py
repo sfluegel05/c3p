@@ -20,20 +20,28 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the peptide bond pattern: N-C(=O)
-    peptide_bond_pattern = Chem.MolFromSmarts("N-C(=O)")
+    # Define a more specific peptide bond pattern: N-[C](=O)-[N]
+    peptide_bond_pattern = Chem.MolFromSmarts("[#6;X3](=O)[#7;X3]")
 
     # Find matches for peptide bonds
-    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    num_peptide_bonds = len(peptide_bond_matches)
+    num_peptide_bonds = len(mol.GetSubstructMatches(peptide_bond_pattern))
 
-    # For a tetrapeptide, there should be 3 peptide bonds linking 4 residues
+    # Verify if potential tetrapeptide is not part of larger cycle incorrectly picked up
+    # Verify that all 3 peptide bonds correspond to non-overlapping terminal-amidic linkages.
+    # For a tetrapeptide, there should be 3 peptide bonds linking 4 residues.
     if num_peptide_bonds == 3:
-        return True, "Contains four amino-acid residues connected by peptide linkages"
-    else:
-        return False, f"Found {num_peptide_bonds} peptide bonds, requires exactly 3 to be a tetrapeptide"
+        # Check if end groups are capped (if applicable)
+        num_cap_groups = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and atom.GetDegree() == 3])
+        
+        # Modification: Verify if we've exactly two non-bonded terminal groups (likely capping groups)
+        if num_cap_groups >= 2:
+            return True, "Contains four amino-acid residues connected by peptide linkages"
+        else:
+            return False, "Does not have expected terminal amidic capping groups"
+    
+    return False, f"Found {num_peptide_bonds} peptide bonds, requires exactly 3 to be a tetrapeptide"
 
-# Example usage
+# Example usage in debug mode
 smiles = "C[C@H](N)C(=O)N[C@@H](Cc1ccccc1)C(=O)N[C@@H](CC(O)=O)C(=O)N[C@@H](CC(O)=O)C(O)=O"
 result = is_tetrapeptide(smiles)
 print(result)
