@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_carbonate_ester(smiles: str):
     """
     Determines if a molecule is a carbonate ester based on its SMILES string.
-    A carbonate ester has the functional group O=C(O-)O- attached to organic groups.
+    A carbonate ester typically has the functional group O=C(O-)O- attached to organic groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,12 +21,17 @@ def is_carbonate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a carbonate ester: R-O-C(=O)-O-R'
-    # This pattern ensures that C=O is bonded to two O atoms, each bonded to carbon atoms
-    carbonate_ester_pattern = Chem.MolFromSmarts("[$([#6])]OC(=O)O[$([#6])]")
+    # Define the SMARTS pattern for a carbonate species
+    # Capture linear and cyclic variations of carbonate groups
+    carbonate_ester_patterns = [
+        Chem.MolFromSmarts("[$([#6])-]-O-C(=O)-O-[$([#6])]"),  # R-O-C(=O)-O-R', linear
+        Chem.MolFromSmarts("O=C1OC[*]C1"),  # Cyclic carbonate, e.g., ethylene carbonate
+        Chem.MolFromSmarts("C(=O)(O[*])O[*]")  # General template, possible variations within rings
+    ]
 
-    # Check if the molecule matches the carbonate ester pattern
-    if mol.HasSubstructMatch(carbonate_ester_pattern):
-        return True, "Contains carbonate ester functional group"
-    else:
-        return False, "No carbonate ester functional group found"
+    # Check if the molecule matches any known carbonate ester pattern
+    for pattern in carbonate_ester_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains carbonate ester functional group"
+    
+    return False, "No carbonate ester functional group found"
