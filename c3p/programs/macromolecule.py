@@ -21,16 +21,21 @@ def is_macromolecule(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check molecular weight
+    # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 1000:
-        return False, f"Molecular weight too low for macromolecule: {mol_wt} Da"
+    min_macromolecule_weight = 500  # Lower threshold for smaller macromolecules
+    if mol_wt < min_macromolecule_weight:
+        return False, f"Molecular weight {mol_wt:.2f} Da is less than the minimum macromolecule threshold {min_macromolecule_weight} Da"
 
-    # Look for repeating units based on SMARTS patterns that might represent common monomeric units
-    # Here, we use a simplistic approach by looking for repeating carbon chains or other simple units
-    # This can be customized/expanded for specific types of macromolecules
-    repeating_unit_pattern = Chem.MolFromSmarts("[*]~[*]~[*]~[*]~[*]")  # Very basic pattern
-    if not mol.HasSubstructMatch(repeating_unit_pattern):
-        return False, f"No repeating units found. Typical macromolecules have such units."
+    # Define more specific repeating unit patterns
+    # Detect typical monomer links, e.g., peptide ($C(=O)N), glycosidic ($O-$C-O), or nucleic acid links
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    glycosidic_bond_pattern = Chem.MolFromSmarts("O[C@H]1C([C@@H](O)C(O)[C@@H]1O)>>O[C@@H]([C@H]2OC)[C@H](O)[C@H](O2)")
+    
+    peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
 
-    return True, "Molecule is considered a macromolecule based on molecular weight and repeating units"
+    if len(peptide_matches) >= 3 or len(glycosidic_matches) >= 3:
+        return True, "Molecule is considered a macromolecule based on repeating peptide or glycosidic bond structures."
+
+    return False, "No sufficient repeating unit motifs commonly found in macromolecules detected."
