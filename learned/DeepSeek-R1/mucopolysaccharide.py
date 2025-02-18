@@ -10,50 +10,42 @@ from rdkit.Chem import rdMolDescriptors
 def is_mucopolysaccharide(smiles: str):
     """
     Determines if a molecule is a mucopolysaccharide based on its SMILES string.
-    Mucopolysaccharides are polysaccharides composed of alternating uronic acid and glycosamine units,
-    often with sulfate ester groups.
-    
-    Args:
-        smiles (str): SMILES string of the molecule
-        
-    Returns:
-        bool: True if molecule matches mucopolysaccharide characteristics
-        str: Reason for classification
+    Mucopolysaccharides are polysaccharides with alternating uronic acid and glycosamine units,
+    often sulfated.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for uronic acid components (carboxylic acid attached to a ring)
-    uronic_acid_pattern = Chem.MolFromSmarts('[C;R](=O)[OX2H1]')  # Carboxylic acid on ring atom
-    has_uronic = mol.HasSubstructMatch(uronic_acid_pattern)
+    # Uronic acid: carboxylic acid group (COOH)
+    uronic_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2H1]')
+    has_uronic = mol.HasSubstructMatch(uronic_pattern)
 
-    # Check for glycosamine components (amino group on a ring)
-    glycosamine_pattern = Chem.MolFromSmarts('[N;R]')  # Any nitrogen in a ring
+    # Glycosamine: amino group attached to carbon adjacent to oxygen (sugar-like)
+    glycosamine_pattern = Chem.MolFromSmarts('[N;H2,H1][C][O]')
     has_glycosamine = mol.HasSubstructMatch(glycosamine_pattern)
 
-    # Check for sulfate ester groups (O-SO3)
+    # Sulfate ester (O-SO3)
     sulfate_pattern = Chem.MolFromSmarts('[OX2]S(=O)(=O)[OX2]')
     has_sulfate = mol.HasSubstructMatch(sulfate_pattern)
 
-    # Check for polysaccharide structure (multiple glycosidic bonds)
-    glycosidic_pattern = Chem.MolFromSmarts('[r]O[r]')  # Oxygen connecting two rings
-    glycosidic_bonds = len(mol.GetSubstructMatches(glycosidic_pattern))
-    is_polymer = glycosidic_bonds >= 2  # At least two glycosidic linkages
+    # Glycosidic bonds (O connecting two carbons with multiple oxygen attachments)
+    glycosidic_pattern = Chem.MolFromSmarts('[C;!$(C=O)]O[C;!$(C=O)]')
+    glycosidic_count = len(mol.GetSubstructMatches(glycosidic_pattern))
 
     reasons = []
     if not has_uronic:
         reasons.append("No uronic acid units detected")
     if not has_glycosamine:
         reasons.append("No glycosamine units detected")
-    if not is_polymer:
-        reasons.append("Insufficient glycosidic bonds for polysaccharide structure")
+    if glycosidic_count < 1:
+        reasons.append("Insufficient glycosidic bonds")
 
-    # Core requirements: alternating units implied by presence of both components in polymer
-    if has_uronic and has_glycosamine and is_polymer:
-        reason = "Contains alternating uronic acid and glycosamine units"
+    # Core requirements: both components and at least one glycosidic bond
+    if has_uronic and has_glycosamine and glycosidic_count >= 1:
+        reason = "Contains uronic acid and glycosamine units with glycosidic bonds"
         if has_sulfate:
-            reason += " with sulfate ester groups"
+            reason += " and sulfate esters"
         return True, reason
     
-    return False, "; ".join(reasons) if reasons else "Does not match mucopolysaccharide criteria"
+    return False, "; ".join(reasons) if reasons else "Does not meet mucopolysaccharide criteria"
