@@ -5,7 +5,7 @@ Classifies: CHEBI:82744 aliphatic aldoxime
 Classifies: CHEBI:83406 aliphatic aldoxime
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
 
 def is_aliphatic_aldoxime(smiles: str):
     """
@@ -32,10 +32,6 @@ def is_aliphatic_aldoxime(smiles: str):
     if not aldoxime_matches:
         return False, "No aldoxime group (C=N-OH) found"
 
-    # Get ring information for later checks
-    ring_info = mol.GetRingInfo()
-    ring_info.Initialize()  # Ensure ring info is calculated
-
     # Check each aldoxime group for aliphatic characteristics
     for match in aldoxime_matches:
         cx3_idx = match[0]  # Aldoxime carbon (C in C=N-OH)
@@ -43,40 +39,67 @@ def is_aliphatic_aldoxime(smiles: str):
         
         # Find non-hydrogen, non-nitrogen neighbors (must be exactly 1 for aldehyde-derived)
         r_candidates = [n for n in cx3_atom.GetNeighbors()
-                       if n.GetAtomicNum() == 6 and n.GetIdx() != match[1]]
+                       if n.GetAtomicNum() != 1 and n.GetIdx() != match[1]]  # Exclude H and N
         
-        # Check for exactly one carbon neighbor (R group)
+        # Check for exactly one R group neighbor (should be carbon)
         if len(r_candidates) != 1:
             continue
             
-        r_carbon = r_candidates[0]
+        r_group = r_candidates[0]
+        if r_group.GetAtomicNum() != 6:
+            continue  # R group must be carbon-based
         
-        # Check R group is acyclic and aliphatic
+        # Check R group is aliphatic (no aromatic bonds) and acyclic (no rings)
+        # Traverse all atoms in R group starting from connection point
         visited = set()
-        stack = [r_carbon]
-        is_valid = True
+        stack = [r_group]
+        is_aliphatic = True
+        has_ring = False
         
-        while stack and is_valid:
+        while stack and is_aliphatic and not has_ring:
             current = stack.pop()
+            if current.GetIdx() in visited:
+                continue
+            visited.add(current.GetIdx())
             
-            # Check for aromatic atoms or rings in R group
-            if current.GetIsAromatic() or ring_info.IsAtomInRing(current.GetIdx()):
-                is_valid = False
+            # Check for aromatic atoms or bonds
+            if current.GetIsAromatic():
+                is_aliphatic = False
                 break
             
-            # Traverse all connected atoms except aldoxime carbon
+            # Check bonds for aromaticity
+            for bond in current.GetBonds():
+                if bond.GetBondType() == Chem.BondType.AROMATIC:
+                    is_aliphatic = False
+                    break
+            if not is_aliphatic:
+                break
+            
+            # Check if current atom is in a ring
+            if mol.GetRingInfo().IsAtomInRing(current.GetIdx()):
+                has_ring = True
+                break
+            
+            # Add neighboring atoms except aldoxime carbon
             for neighbor in current.GetNeighbors():
-                if neighbor.GetIdx() == cx3_idx:
-                    continue
-                if neighbor.GetIdx() not in visited:
-                    visited.add(neighbor.GetIdx())
+                if neighbor.GetIdx() != cx3_idx and neighbor.GetIdx() not in visited:
                     stack.append(neighbor)
         
-        if is_valid:
-            # Verify aldoxime carbon has only one non-H neighbor (the R group)
-            non_h_neighbors = [n for n in cx3_atom.GetNeighbors()
-                              if n.GetAtomicNum() != 1 and n.GetIdx() != match[1]]
-            if len(non_h_neighbors) == 1:
-                return True, "Contains aldoxime group with acyclic aliphatic R chain"
+        if has_ring or not is_aliphatic:
+            continue
+        
+        # Check that aldoxime carbon has no other substituents (only R and N=O)
+        # All other bonds should be to hydrogen
+        h_count = 0
+        for bond in cx3_atom.GetBonds():
+            other_atom = bond.GetOtherAtom(cx3_atom)
+            if other_atom.GetAtomicNum() == 1:
+                h_count += 1
+            elif other_atom.GetIdx() not in [r_group.GetIdx(), match[1]]:
+                # Extra substituent found (not H, R, or N)
+                break
+        else:
+            # All checks passed
+            return True, "Contains aldoxime group with acyclic aliphatic R chain"
 
     return False, "No valid aliphatic aldoxime groups found"
