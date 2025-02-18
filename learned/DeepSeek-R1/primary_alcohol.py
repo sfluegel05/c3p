@@ -48,17 +48,19 @@ def is_primary_alcohol(smiles: str):
             if bond.GetBondType() != Chem.BondType.SINGLE:
                 break
         else:
-            # Count hydrogens and adjacent carbons on the carbon
+            # Count hydrogens and adjacent carbons on the carbon (excluding the hydroxyl oxygen)
             h_count = c_atom.GetTotalNumHs()
             carbon_neighbors = 0
             other_neighbors = 0
             for neighbor in c_atom.GetNeighbors():
+                if neighbor.GetIdx() == o_idx:
+                    continue  # skip the hydroxyl oxygen itself
                 if neighbor.GetAtomicNum() == 6:
                     carbon_neighbors += 1
                 elif neighbor.GetAtomicNum() != 1:  # exclude hydrogens
                     other_neighbors += 1
             
-            # Check for any non-carbon, non-hydrogen neighbors
+            # Check for any non-carbon, non-hydrogen neighbors (other than the hydroxyl O)
             if other_neighbors > 0:
                 continue
             
