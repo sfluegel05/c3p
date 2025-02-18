@@ -21,7 +21,8 @@ def is_diketone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define ketone SMARTS pattern
-    ketone_pattern = Chem.MolFromSmarts("C=O")
+    # [CX3](=[OX1])([CX4])([CX4])  is a carbon double bonded to oxygen and bonded to two other carbons
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])([CX4])([CX4])")
 
     # Find all matches of the ketone pattern
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
