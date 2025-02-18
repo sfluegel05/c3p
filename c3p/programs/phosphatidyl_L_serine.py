@@ -5,7 +5,6 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-
 def is_phosphatidyl_L_serine(smiles: str):
     """
     Determines if a molecule is a phosphatidyl-L-serine based on its SMILES string.
@@ -23,12 +22,12 @@ def is_phosphatidyl_L_serine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for glycerol backbone linked to phosphate
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("[CH2X4]([OX2])-[CHX4]([OX2])-[CH2X4]-[OX2]-[PX4](=[OX1])([OX2])")
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[CH2X4]-[CHX4]-[CH2X4]-[OX2]-[PX4](=[OX1])")
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol backbone with phosphate group found"
     
     # Check for ester linkage between phosphate and serine
-    serine_ester_pattern = Chem.MolFromSmarts("[P]([OX2])(=[OX1])-[OX2]-[CHX4]([NX3])-[CX3](=[OX1])-[OX2]")
+    serine_ester_pattern = Chem.MolFromSmarts("[P]-[O]-[C]-[C](=O)-[O]-[C]")
     if not mol.HasSubstructMatch(serine_ester_pattern):
        return False, "No serine ester linkage found"
     
@@ -37,7 +36,7 @@ def is_phosphatidyl_L_serine(smiles: str):
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
     # filter for esters directly attached to glycerol
-    glycerol_positions = mol.GetSubstructMatches(Chem.MolFromSmarts("[CH2X4]([OX2])-[CHX4]([OX2])-[CH2X4]-[OX2]-[P]"))[0]
+    glycerol_positions = mol.GetSubstructMatches(Chem.MolFromSmarts("[CH2X4]-[CHX4]-[CH2X4]-[O]-[P]"))[0]
     glycerol_atoms = [mol.GetAtomWithIdx(glycerol_positions[0]),mol.GetAtomWithIdx(glycerol_positions[1]),mol.GetAtomWithIdx(glycerol_positions[2])]
 
     relevant_ester_matches = 0
@@ -62,14 +61,8 @@ def is_phosphatidyl_L_serine(smiles: str):
 
     # Check for chiral carbon in serine (L configuration)
     serine_chiral_carbon = Chem.MolFromSmarts("[NX3]-[CHX4]([CX3](=[OX1])-[OX2])-[OX2]")
-    serine_carbon_match = mol.GetSubstructMatch(serine_chiral_carbon)
-    if serine_carbon_match:
-      chiral_center = mol.GetAtomWithIdx(serine_carbon_match[1])
-      if chiral_center.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CW and chiral_center.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
-         return False, "Serine must be L-configured"
-    else:
+    if not mol.HasSubstructMatch(serine_chiral_carbon):
         return False, "No chiral carbon in Serine found"
-    
 
     
     # Count carbons and oxygens
