@@ -21,26 +21,26 @@ def is_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define complex potential patterns indicative of monoterpenoids
+    # Define expanded potential patterns indicative of monoterpenoids
     terpene_patterns = [
-        Chem.MolFromSmarts("CC(C)C=CC=CCC(C)C"),  # Linear monoterpene example
-        Chem.MolFromSmarts("C1CCC(C(C1)C)C"),     # Basic cyclic monoterpene
-        Chem.MolFromSmarts("C1C2(C)CCC2CCC1"),    # Bicyclic monoterpenoid
+        Chem.MolFromSmarts("C1=CCC(C=C1)C(C)C"),     # Common cyclic monoterpenoid (p-menthane derivatives)
+        Chem.MolFromSmarts("C12CCC(C1)(C)C2"),       # Bicyclic monoterpenoids
+        Chem.MolFromSmarts("C1=CC=C(C(C)C)CC1"),     # Aromatic monoterpenoid variations
     ]
 
-    # Check for monoterpenoid indicative functional groups, common terpenoid oxygens
+    # Check for common monoterpenoid functional groups within expected span
     functional_group_patterns = [
-        Chem.MolFromSmarts("[CX4][OH]"),  # Alcohol groups
-        Chem.MolFromSmarts("[CX3](=O)[OH]"),  # Carboxylic acid groups
-        Chem.MolFromSmarts("[CX3](=O)[O][CX4]"),  # Ester groups
+        Chem.MolFromSmarts("[CX4][OH]"),  # Alcohol groups directly attached to terpenoid structure
+        Chem.MolFromSmarts("[CX3](=O)[OH]"),  # Carboxylic acid groups on modified terpenoids
+        Chem.MolFromSmarts("[CX3](=O)[O][CX4]"),  # Ester groups common in monoterpenoid derivatives
     ]
 
-    # Carbon count expected range (allow moderate range around C10 due to modifications)
+    # Carbon count expected to be around 10 (allowing slight flexibility for rearrangements and functional groups)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
     # Check patterns and count
-    if ((any(mol.HasSubstructMatch(pattern) for pattern in terpene_patterns) and 8 <= c_count <= 12) or
-        (any(mol.HasSubstructMatch(fg_pattern) for fg_pattern in functional_group_patterns) and 8 <= c_count <= 12)):
+    if ((any(mol.HasSubstructMatch(pattern) for pattern in terpene_patterns) and 9 <= c_count <= 11) or
+        (all(mol.HasSubstructMatch(fg_pattern) for fg_pattern in functional_group_patterns) and 9 <= c_count <= 11)):
         return True, "Structure matches typical patterns seen in monoterpenoids with functional groups"
 
     return False, "No typical monoterpenoid structural features detected"
