@@ -10,7 +10,7 @@ def is_secondary_ammonium_ion(smiles: str):
     """
     Determines if a molecule is a secondary ammonium ion based on its SMILES string.
     A secondary ammonium ion has a nitrogen atom with +1 charge, two carbon substituents,
-    and a total valence of 4 (indicating two bonds to carbons and two hydrogens).
+    and exactly two hydrogens (explicit or implicit) for a total valence of 4.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,15 +27,12 @@ def is_secondary_ammonium_ion(smiles: str):
     # Iterate over all atoms to find potential nitrogen atoms
     for atom in mol.GetAtoms():
         if atom.GetSymbol() == 'N' and atom.GetFormalCharge() == 1:
-            valence = atom.GetTotalValence()
-            degree = atom.GetDegree()  # Number of explicit bonds
-            
-            # Check valence and degree criteria
-            if valence == 4 and degree == 2:
-                # Check if both neighbors are carbons
+            # Check valence and bonding criteria
+            if atom.GetDegree() == 2 and atom.GetTotalNumHs() == 2:
+                # Verify both neighbors are carbons
                 neighbors = atom.GetNeighbors()
                 if all(n.GetAtomicNum() == 6 for n in neighbors):
-                    return True, "Contains a nitrogen with +1 charge, two carbon substituents, and valence 4"
+                    return True, "Contains nitrogen with +1 charge, two carbon substituents, and two hydrogens"
     
     # If no matching nitrogen found
     return False, "No secondary ammonium ion detected"
