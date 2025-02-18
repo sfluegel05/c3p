@@ -1,531 +1,67 @@
 """
 Classifies: CHEBI:39418 straight-chain saturated fatty acid
 """
- - 9-hydroxynonanoic acid: SMILES: OCCCCCCCCC(O)=O
- - pentadecanoic acid: SMILES: CCCCCCCCCCCCCCC(O)=O
- - 10-hydroxystearic acid: SMILES: OCCCCCCCCCCCCCCCCC(O)=O
- - pentanoic acid: SMILES: CCCCC(O)=O
- - 12-hydroxydodecanoic acid: SMILES: OCCCCCCCCCCCC(O)=O
- - 11-hydroxyundecanoic acid: SMILES: OCCCCCCCCCCC(O)=O
- - 16-hydroxyhexadecanoic acid: SMILES: OCCCCCCCCCCCCCCCC(O)=O
- - 18-hydroxyoctadecanoic acid: SMILES: OCCCCCCCCCCCCCCCCCC(O)=O
- - 14-hydroxytetradecanoic acid: SMILES: OCCCCCCCCCCCCC(O)=O
- - 17-hydroxyheptadecanoic acid: SMILES: OCCCCCCCCCCCCCCCC(O)=O
- - 3-hydroxypropanoic acid: SMILES: OCC(O)=O
- - 8-hydroxyoctanoic acid: SMILES: OCCCCCCCC(O)=O
- - 2-hydroxypropanoic acid: SMILES: CC(O)(O)=O
- - 6-hydroxyhexanoic acid: SMILES: OCCCCCC(O)=O
- - 7-hydroxyheptanoic acid: SMILES: OCCCCCCC(O)=O
- - 5-hydroxypentanoic acid: SMILES: OCCCCC(O)=O
- - 4-hydroxybutanoic acid: SMILES: OCCCC(O)=O
- - 15-hydroxyhexadecanoic acid: SMILES: OCCCCCCCCCCCCCCCC(O)=O
- - 3-hydroxybutyric acid: SMILES: CC(O)CC(O)=O
- - 13-hydroxy-9Z,11E-octadecadienoic acid: SMILES: OCCCCCCCC/C=C\C=C\CCCCCC(O)=O
- - 13-hydroxyoctadecanoic acid: SMILES: OCCCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxyoctadecanoic acid: SMILES: OCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxyoctadecanoic acid: SMILES: OCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxyoctadecanoic acid: SMILES: OCCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxyoctadecanoic acid: SMILES: OCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxyhexanoic acid: SMILES: OCCCCCC(O)=O
- - 2-hydroxyhexadecanoic acid: SMILES: CC(O)CCCCCCCCCCCCCC(O)=O
- - 3-hydroxyhexadecanoic acid: SMILES: CCC(O)CCCCCCCCCCCCC(O)=O
- - 4-hydroxyhexadecanoic acid: SMILES: CCCC(O)CCCCCCCCCCCC(O)=O
- - 5-hydroxyhexadecanoic acid: SMILES: CCCCC(O)CCCCCCCCCCC(O)=O
- - 6-hydroxyhexadecanoic acid: SMILES: CCCCCC(O)CCCCCCCCCC(O)=O
- - 7-hydroxyhexadecanoic acid: SMILES: CCCCCCC(O)CCCCCCCCC(O)=O
- - 8-hydroxyhexadecanoic acid: SMILES: CCCCCCCC(O)CCCCCCCC(O)=O
- - 9-hydroxyhexadecanoic acid: SMILES: CCCCCCCCC(O)CCCCCCC(O)=O
- - 10-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCC(O)CCCCCC(O)=O
- - 11-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCC(O)CCCCC(O)=O
- - 12-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCC(O)CCCC(O)=O
- - 13-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCCC(O)CCC(O)=O
- - 14-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCCCC(O)CC(O)=O
- - 15-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCCCCC(O)C(O)=O
- - 16-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)(O)=O
- - 3-hydroxyheptanoic acid: SMILES: CCC(O)CCCC(O)=O
- - 4-hydroxyheptanoic acid: SMILES: CCCC(O)CCC(O)=O
- - 5-hydroxyheptanoic acid: SMILES: CCCCC(O)CC(O)=O
- - 6-hydroxyheptanoic acid: SMILES: CCCCCC(O)C(O)=O
- - 3-hydroxyoctanoic acid: SMILES: CCC(O)CCCCC(O)=O
- - 4-hydroxyoctanoic acid: SMILES: CCCC(O)CCCC(O)=O
- - 5-hydroxyoctanoic acid: SMILES: CCCCC(O)CCC(O)=O
- - 6-hydroxyoctanoic acid: SMILES: CCCCCC(O)CC(O)=O
- - 7-hydroxyoctanoic acid: SMILES: CCCCCCC(O)C(O)=O
- - 3-hydroxynonanoic acid: SMILES: CCC(O)CCCCCC(O)=O
- - 4-hydroxynonanoic acid: SMILES: CCCC(O)CCCCC(O)=O
- - 5-hydroxynonanoic acid: SMILES: CCCCC(O)CCCC(O)=O
- - 6-hydroxynonanoic acid: SMILES: CCCCCC(O)CCC(O)=O
- - 7-hydroxynonanoic acid: SMILES: CCCCCCC(O)CC(O)=O
- - 8-hydroxynonanoic acid: SMILES: CCCCCCCC(O)C(O)=O
- - 3-hydroxydecanoic acid: SMILES: CCC(O)CCCCCCC(O)=O
- - 4-hydroxydecanoic acid: SMILES: CCCC(O)CCCCCC(O)=O
- - 5-hydroxydecanoic acid: SMILES: CCCCC(O)CCCCC(O)=O
- - 6-hydroxydecanoic acid: SMILES: CCCCCC(O)CCCC(O)=O
- - 7-hydroxydecanoic acid: SMILES: CCCCCCC(O)CCC(O)=O
- - 8-hydroxydecanoic acid: SMILES: CCCCCCCC(O)CC(O)=O
- - 9-hydroxydecanoic acid: SMILES: CCCCCCCCC(O)C(O)=O
- - 3-hydroxyundecanoic acid: SMILES: CCC(O)CCCCCCCC(O)=O
- - 4-hydroxyundecanoic acid: SMILES: CCCC(O)CCCCCCC(O)=O
- - 5-hydroxyundecanoic acid: SMILES: CCCCC(O)CCCCCC(O)=O
- - 6-hydroxyundecanoic acid: SMILES: CCCCCC(O)CCCCC(O)=O
- - 7-hydroxyundecanoic acid: SMILES: CCCCCCC(O)CCCC(O)=O
- - 8-hydroxyundecanoic acid: SMILES: CCCCCCCC(O)CCC(O)=O
- - 9-hydroxyundecanoic acid: SMILES: CCCCCCCCC(O)CC(O)=O
- - 10-hydroxyundecanoic acid: SMILES: CCCCCCCCCC(O)C(O)=O
- - 3-hydroxydodecanoic acid: SMILES: CCC(O)CCCCCCCCC(O)=O
- - 4-hydroxydodecanoic acid: SMILES: CCCC(O)CCCCCCCC(O)=O
- - 5-hydroxydodecanoic acid: SMILES: CCCCC(O)CCCCCCC(O)=O
- - 6-hydroxydodecanoic acid: SMILES: CCCCCC(O)CCCCCC(O)=O
- - 7-hydroxydodecanoic acid: SMILES: CCCCCCC(O)CCCCC(O)=O
- - 8-hydroxydodecanoic acid: SMILES: CCCCCCCC(O)CCCC(O)=O
- - 9-hydroxydodecanoic acid: SMILES: CCCCCCCCC(O)CCC(O)=O
- - 10-hydroxydodecanoic acid: SMILES: CCCCCCCCCC(O)CC(O)=O
- - 11-hydroxydodecanoic acid: SMILES: CCCCCCCCCCC(O)C(O)=O
- - 3-hydroxytridecanoic acid: SMILES: CCC(O)CCCCCCCCCC(O)=O
- - 4-hydroxytridecanoic acid: SMILES: CCCC(O)CCCCCCCCC(O)=O
- - 5-hydroxytridecanoic acid: SMILES: CCCCC(O)CCCCCCCC(O)=O
- - 6-hydroxytridecanoic acid: SMILES: CCCCCC(O)CCCCCCC(O)=O
- - 7-hydroxytridecanoic acid: SMILES: CCCCCCC(O)CCCCCC(O)=O
- - 8-hydroxytridecanoic acid: SMILES: CCCCCCCC(O)CCCCC(O)=O
- - 9-hydroxytridecanoic acid: SMILES: CCCCCCCCC(O)CCCC(O)=O
- - 10-hydroxytridecanoic acid: SMILES: CCCCCCCCCC(O)CCC(O)=O
- - 11-hydroxytridecanoic acid: SMILES: CCCCCCCCCCC(O)CC(O)=O
- - 12-hydroxytridecanoic acid: SMILES: CCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxytetradecanoic acid: SMILES: CCC(O)CCCCCCCCCCC(O)=O
- - 4-hydroxytetradecanoic acid: SMILES: CCCC(O)CCCCCCCCCC(O)=O
- - 5-hydroxytetradecanoic acid: SMILES: CCCCC(O)CCCCCCCCC(O)=O
- - 6-hydroxytetradecanoic acid: SMILES: CCCCCC(O)CCCCCCCC(O)=O
- - 7-hydroxytetradecanoic acid: SMILES: CCCCCCC(O)CCCCCCC(O)=O
- - 8-hydroxytetradecanoic acid: SMILES: CCCCCCCC(O)CCCCCC(O)=O
- - 9-hydroxytetradecanoic acid: SMILES: CCCCCCCCC(O)CCCCC(O)=O
- - 10-hydroxytetradecanoic acid: SMILES: CCCCCCCCCC(O)CCCC(O)=O
- - 11-hydroxytetradecanoic acid: SMILES: CCCCCCCCCCC(O)CCC(O)=O
- - 12-hydroxytetradecanoic acid: SMILES: CCCCCCCCCCCC(O)CC(O)=O
- - 13-hydroxytetradecanoic acid: SMILES: CCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxypentadecanoic acid: SMILES: CCC(O)CCCCCCCCCCCC(O)=O
- - 4-hydroxypentadecanoic acid: SMILES: CCCC(O)CCCCCCCCCCC(O)=O
- - 5-hydroxypentadecanoic acid: SMILES: CCCCC(O)CCCCCCCCCC(O)=O
- - 6-hydroxypentadecanoic acid: SMILES: CCCCCC(O)CCCCCCCCC(O)=O
- - 7-hydroxypentadecanoic acid: SMILES: CCCCCCC(O)CCCCCCCC(O)=O
- - 8-hydroxypentadecanoic acid: SMILES: CCCCCCCC(O)CCCCCCC(O)=O
- - 9-hydroxypentadecanoic acid: SMILES: CCCCCCCCC(O)CCCCCC(O)=O
- - 10-hydroxypentadecanoic acid: SMILES: CCCCCCCCCC(O)CCCCC(O)=O
- - 11-hydroxypentadecanoic acid: SMILES: CCCCCCCCCCC(O)CCCC(O)=O
- - 12-hydroxypentadecanoic acid: SMILES: CCCCCCCCCCCC(O)CCC(O)=O
- - 13-hydroxypentadecanoic acid: SMILES: CCCCCCCCCCCCC(O)CC(O)=O
- - 14-hydroxypentadecanoic acid: SMILES: CCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxyhexadecanoic acid: SMILES: CCC(O)CCCCCCCCCCCCC(O)=O
- - 4-hydroxyhexadecanoic acid: SMILES: CCCC(O)CCCCCCCCCCCC(O)=O
- - 5-hydroxyhexadecanoic acid: SMILES: CCCCC(O)CCCCCCCCCCC(O)=O
- - 6-hydroxyhexadecanoic acid: SMILES: CCCCCC(O)CCCCCCCCCC(O)=O
- - 7-hydroxyhexadecanoic acid: SMILES: CCCCCCC(O)CCCCCCCCC(O)=O
- - 8-hydroxyhexadecanoic acid: SMILES: CCCCCCCC(O)CCCCCCCC(O)=O
- - 9-hydroxyhexadecanoic acid: SMILES: CCCCCCCCC(O)CCCCCCC(O)=O
- - 10-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCC(O)CCCCCC(O)=O
- - 11-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCC(O)CCCCC(O)=O
- - 12-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCC(O)CCCC(O)=O
- - 13-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCCC(O)CCC(O)=O
- - 14-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCCCC(O)CC(O)=O
- - 15-hydroxyhexadecanoic acid: SMILES: CCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxyheptadecanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCC(O)=O
- - 4-hydroxyheptadecanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCC(O)=O
- - 5-hydroxyheptadecanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCC(O)=O
- - 6-hydroxyheptadecanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCC(O)=O
- - 7-hydroxyheptadecanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCC(O)=O
- - 8-hydroxyheptadecanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCC(O)=O
- - 9-hydroxyheptadecanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCC(O)=O
- - 10-hydroxyheptadecanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCC(O)=O
- - 11-hydroxyheptadecanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCC(O)=O
- - 12-hydroxyheptadecanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCC(O)=O
- - 13-hydroxyheptadecanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCC(O)=O
- - 14-hydroxyheptadecanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCC(O)=O
- - 15-hydroxyheptadecanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CC(O)=O
- - 16-hydroxyheptadecanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxyoctadecanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCC(O)=O
- - 4-hydroxyoctadecanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCC(O)=O
- - 5-hydroxyoctadecanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCC(O)=O
- - 6-hydroxyoctadecanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCC(O)=O
- - 7-hydroxyoctadecanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCC(O)=O
- - 8-hydroxyoctadecanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCC(O)=O
- - 9-hydroxyoctadecanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCC(O)=O
- - 10-hydroxyoctadecanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCC(O)=O
- - 11-hydroxyoctadecanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCC(O)=O
- - 12-hydroxyoctadecanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCC(O)=O
- - 13-hydroxyoctadecanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCC(O)=O
- - 14-hydroxyoctadecanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCC(O)=O
- - 15-hydroxyoctadecanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCC(O)=O
- - 16-hydroxyoctadecanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CC(O)=O
- - 17-hydroxyoctadecanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxynonadecanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxynonadecanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 5-hydroxynonadecanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 6-hydroxynonadecanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 7-hydroxynonadecanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 8-hydroxynonadecanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 9-hydroxynonadecanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 10-hydroxynonadecanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 11-hydroxynonadecanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 12-hydroxynonadecanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 13-hydroxynonadecanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 14-hydroxynonadecanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 15-hydroxynonadecanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 16-hydroxynonadecanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 17-hydroxynonadecanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 18-hydroxynonadecanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxyicosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxyicosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxyicosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 6-hydroxyicosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 7-hydroxyicosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 8-hydroxyicosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 9-hydroxyicosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 10-hydroxyicosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 11-hydroxyicosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 12-hydroxyicosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 13-hydroxyicosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 14-hydroxyicosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 15-hydroxyicosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 16-hydroxyicosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 17-hydroxyicosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 18-hydroxyicosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 19-hydroxyicosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxyheneicosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxyheneicosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxyheneicosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxyheneicosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 7-hydroxyheneicosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 8-hydroxyheneicosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 9-hydroxyheneicosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 10-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 11-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 12-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 13-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 14-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 15-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 16-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 17-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 18-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 19-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 20-hydroxyheneicosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxydocosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxydocosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxydocosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxydocosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxydocosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 8-hydroxydocosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 9-hydroxydocosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 10-hydroxydocosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 11-hydroxydocosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 12-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 13-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 14-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 15-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 16-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 17-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 18-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 19-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 20-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 21-hydroxydocosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxytricosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxytricosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxytricosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxytricosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxytricosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxytricosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 9-hydroxytricosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 10-hydroxytricosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 11-hydroxytricosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 12-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 13-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 14-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 15-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 16-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 17-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 18-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 19-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 20-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 21-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 22-hydroxytricosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxytetracosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxytetracosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxytetracosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxytetracosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxytetracosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxytetracosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxytetracosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 10-hydroxytetracosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 11-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 12-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 13-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 14-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 15-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 16-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 17-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 18-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 19-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 20-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 21-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 22-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 23-hydroxytetracosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxypentacosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxypentacosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxypentacosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxypentacosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxypentacosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxypentacosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxypentacosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxypentacosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 11-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 12-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 13-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 14-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 15-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 16-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 17-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 18-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 19-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 20-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 21-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 22-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 23-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 24-hydroxypentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)(O)=O
- - 3-hydroxyhexacosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxyhexacosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxyhexacosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxyhexacosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxyhexacosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxyhexacosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxyhexacosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 12-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 13-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 14-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 15-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 16-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 17-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 18-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 19-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 20-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 21-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 22-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 23-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 24-hydroxyhexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)(O)=O
- - 3-hydroxyheptacosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxyheptacosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxyheptacosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxyheptacosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxyheptacosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxyheptacosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxyheptacosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 13-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 14-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 15-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 16-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 17-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 18-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 19-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 20-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 21-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 22-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 23-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 24-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 25-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 26-hydroxyheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxyoctacosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxyoctacosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxyoctacosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxyoctacosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxyoctacosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxyoctacosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxyoctacosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 13-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 14-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 15-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 16-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 17-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 18-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 19-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 20-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 21-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 22-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 23-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 24-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 25-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 26-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 27-hydroxyoctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxynonacosanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxynonacosanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxynonacosanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxynonacosanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxynonacosanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxynonacosanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxynonacosanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxynonacosanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 13-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 14-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 15-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 16-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 17-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 18-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 19-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 20-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 21-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 22-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 23-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 24-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 25-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 26-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 27-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 28-hydroxynonacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxytriacontanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxytriacontanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxytriacontanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxytriacontanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxytriacontanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxytriacontanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxytriacontanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxytriacontanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 13-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 14-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 15-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 16-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 17-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 18-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 19-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 20-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 21-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 22-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 23-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 24-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 25-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 26-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 27-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 28-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 29-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 30-hydroxytriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxydotriacontanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxydotriacontanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxydotriacontanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxydotriacontanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxydotriacontanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxydotriacontanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxydotriacontanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 13-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 14-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 15-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 16-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 17-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 18-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 19-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 20-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 21-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 22-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 23-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 24-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 25-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 26-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 27-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 28-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 29-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 30-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 31-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 32-hydroxydotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxytritriacontanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxytritriacontanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxytritriacontanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxytritriacontanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxytritriacontanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxytritriacontanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxytritriacontanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 13-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 14-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 15-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 16-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 17-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 18-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 19-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 20-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 21-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 22-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 23-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 24-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 25-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 26-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 27-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 28-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 29-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 30-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 31-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 32-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 33-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 34-hydroxytritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxytetratriacontanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxytetratriacontanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxytetratriacontanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxytetratriacontanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxytetratriacontanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxytetratriacontanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 13-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 14-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 15-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 16-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 17-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 18-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 19-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCC(O)=O
- - 20-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCC(O)=O
- - 21-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCC(O)=O
- - 22-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCC(O)=O
- - 23-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCC(O)=O
- - 24-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCC(O)=O
- - 25-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCC(O)=O
- - 26-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCC(O)=O
- - 27-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCC(O)=O
- - 28-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCC(O)=O
- - 29-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCCC(O)=O
- - 30-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCCC(O)=O
- - 31-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCCC(O)=O
- - 32-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCCC(O)=O
- - 33-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCCC(O)=O
- - 34-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CCC(O)=O
- - 35-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(O)=O
- - 36-hydroxytetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O
- - 3-hydroxypentatriacontanoic acid: SMILES: CCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 4-hydroxypentatriacontanoic acid: SMILES: CCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 5-hydroxypentatriacontanoic acid: SMILES: CCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 6-hydroxypentatriacontanoic acid: SMILES: CCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 7-hydroxypentatriacontanoic acid: SMILES: CCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 8-hydroxypentatriacontanoic acid: SMILES: CCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 9-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 10-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 11-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 12-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 13-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 14-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 15-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 16-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 17-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCCC(O)=O
- - 18-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCCC(O)=O
- - 19-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCCC(O)=O
- - 20-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCCCCCCCCCCCCCCC(O)=O
- - 21-hydroxypentatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCC
+</think>
+
+Okay, let's try to figure out why the previous code didn't work. The user mentioned an error: "Error: unexpected indent (<string>, line 1)". That suggests there was a syntax issue, like incorrect indentation in the code. But looking at the previous code, it seems like the code block might have been pasted incorrectly, maybe with some extra lines or incorrect formatting. The actual code provided in the previous attempt isn't shown properly, but the examples given have SMILES that are hydroxy fatty acids. Wait, the task is to classify straight-chain saturated fatty acids, which are defined as lacking side chains. The examples include molecules like 15-hydroxypentadecanoic acid, which has a hydroxyl group. But wait, the definition says "lacking a side-chain". So a hydroxyl group would be a side chain, right? So maybe those examples are actually not part of the class. But the user provided them as examples that do belong. Hmm, that's confusing. Maybe the definition allows for a single hydroxyl group as part of the main chain? Or maybe the examples are incorrect. Wait, looking at the problem statement: the examples include structures like 15-hydroxypentadecanoic acid. But according to the class definition, straight-chain saturated fatty acids lack side chains. So those hydroxy examples might actually be invalid, but the user lists them as positives. That suggests that the hydroxyl group is allowed as part of the main chain, perhaps as a substituent but not branching. So maybe the code needs to check that there are no branches, but a single hydroxyl group on the main chain is acceptable. Wait, but the function name is is_straight_chain_saturated_fatty_acid. Saturated means no double bonds, and straight-chain means no branching. So the code needs to verify:
+
+1. The molecule is a carboxylic acid (has a -COOH group).
+2. The carbon chain is fully saturated (no double or triple bonds).
+3. The carbon chain is straight (no branching, i.e., all carbons are in a single chain with no substituents except possibly the hydroxyl in the examples).
+
+But the examples include hydroxy substituents. Wait, the problem statement's examples include 15-hydroxypentadecanoic acid, which has a hydroxyl group. But according to the class definition, it's a straight-chain saturated fatty acid. That implies that substituents like hydroxyl are allowed as long as they don't create branches. So the hydroxyl is a substituent on the main chain, not a branch. So the code should allow substituents like hydroxyl but ensure there are no branches. Wait, but a hydroxyl group is a substituent. So the chain can have substituents as long as the main chain is straight and there are no side chains (like methyl groups, etc.). Hmm, this is confusing. The definition says "lacking a side-chain", so maybe substituents like hydroxyl are allowed. Or perhaps the examples are incorrect, but according to the user's examples, they should be considered part of the class.
+
+So the code needs to:
+
+- Check for a carboxylic acid group.
+- Ensure all carbon atoms are in a single chain (no branching).
+- Ensure all bonds are single (saturated).
+- Possibly allow substituents like hydroxyl as long as they don't create branches.
+
+Wait, but the definition says "lacking a side-chain". A side-chain would be a branch. So the molecule should be a straight chain with no branches. Substituents like hydroxyl on the main chain are allowed, as they don't create branches. For example, 15-hydroxypentadecanoic acid has a hydroxyl group on carbon 15, but the main chain is still straight. So the code needs to check that the molecule is a carboxylic acid, all carbons are in a single chain (no branching), and all bonds are single.
+
+So steps for the function:
+
+1. Parse the SMILES into a molecule.
+2. Check for the presence of a carboxylic acid group (-COOH). This can be done with a SMARTS pattern like [CX3](=O)[OX2H1].
+3. Ensure that the molecule has no branches. How to check for a straight chain? The molecule should be a single chain of carbons with no branching. So every carbon (except the ends) should have exactly two carbon neighbors. The carboxylic acid's carbon is part of the chain. So, iterate through all carbons (excluding the carboxylic acid's oxygen-bearing carbons?) and check that each has at most two carbon neighbors. Wait, the main chain carbons should each have two adjacent carbons except the ends. For a straight-chain fatty acid, the carboxylic acid is at one end, and the other end is a methyl group (or similar). So, the chain should be a linear arrangement of carbons.
+
+But how to check for branching? Maybe using the number of carbon atoms with more than two carbon neighbors. If any carbon (except possibly the first and last) has more than two carbon neighbors, it's branched.
+
+Alternatively, use a SMARTS pattern for branching. For example, a carbon connected to three or four other carbons would indicate branching.
+
+Another approach: check that all carbons in the main chain (excluding the carboxylic acid oxygens) are in a straight line. But how to define that programmatically.
+
+Alternatively, the molecule should have no carbon atoms with degree >=3 (since each carbon in a straight chain would have degree 2, except the ends which have degree 1). Wait, but the carboxylic acid group has the carbonyl carbon (degree 3: connected to two oxygens and the adjacent carbon). So need to handle that.
+
+Wait, the carbonyl carbon (in COOH) is connected to three atoms: the adjacent carbon, the double-bonded oxygen, and the hydroxyl oxygen. So its degree is 3, but that's part of the functional group. So the code should ignore that carbon when checking for branching.
+
+So the steps could be:
+
+- Find the carboxylic acid group.
+- Starting from the carboxylic acid's carbon, traverse the carbon chain.
+- Ensure that each carbon in the chain (except the first and last) has exactly two adjacent carbons (i.e., no branching).
+- Check that all bonds in the chain are single bonds (saturated).
+- Also, check that there are no other functional groups that introduce branches.
+
+But implementing this in RDKit requires some steps.
+
+Let me think of possible RDKit approaches:
+
+1. Use SMARTS to find the carboxylic acid group. For example, the pattern [CH2]...C(=O)OH, but maybe better to use a SMARTS that matches the COOH group.
+
+2. Once the COOH is found, check that the rest of the molecule is a straight chain. How?
+
+Alternatively, the entire molecule should be a single chain of carbons, with the COOH at one end and a methyl (or similar) at the other, and no branches.
+
+Another approach: check that all carbons (except the carboxylic acid ones) are in a single chain, with each having at most two carbon neighbors.
+
+But how to implement that.
+
+Alternatively, check that there are no carbons with more than two carbon neighbors. But the carboxylic acid's carbonyl carbon has three bonds (but two are to oxygen), so its carbon neighbors are only one (the adjacent carbon in the chain). So that carbon would have only one carbon neighbor. So the rest of the carbons in the chain should have two carbon neighbors (except the ends).
+
+Wait, the chain would start at the carboxylic acid's carbonyl carbon. The next carbon is part of the chain. For example, in hexanoic acid (CCCCCC(O)=O), the chain is 6 carbons: the carbonyl carbon is the sixth, connected to five other carbons in a row.
+
+Wait, no. Hexanoic acid is CH3CH2CH2CH2CH2COOH. The carbonyl carbon is the sixth carbon. Each of the previous carbons (2-5) are in a chain. Each of those (carbons 2-5) would have two carbon neighbors (previous and next), except the first (carbon 1, which is CH3, connected to carbon 2).
+
+So in the chain, the first carbon (methyl end) has one carbon neighbor, the middle carbons have two, and the
