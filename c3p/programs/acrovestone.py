@@ -27,19 +27,19 @@ def is_acrovestone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Acrovestones are polyphenolic compounds, so should contain multiple phenol groups
-    n_phenol_groups = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and
-                           sum(mol.GetAtomWithIdx(j).GetAtomicNum() == 8 for j in atom.GetNeighbors()) == 1)
+    phenol_pattern = Chem.MolFromSmarts("c1ccc(O)cc1")
+    n_phenol_groups = len(mol.GetSubstructMatches(phenol_pattern))
     if n_phenol_groups < 2:
         return False, "Too few phenol groups for acrovestone"
 
     # Acrovestones are isoflavones or related compounds, so should have an isoflavone backbone
-    isoflavone_pattern = Chem.MolFromSmarts("[C@]12C=C[C@@H](C1=O)[C@]2(c1ccc(O)cc1)c1ccc(O)cc1")
+    isoflavone_pattern = Chem.MolFromSmarts("C1=CC(=O)Oc2c1cc(O)c(c2)c3ccc(O)cc3")
     if not mol.HasSubstructMatch(isoflavone_pattern):
         return False, "No isoflavone backbone found"
     
-    # Acrovestones typically have a molecular weight between 300-800 Da
+    # Acrovestones typically have a molecular weight between 300-600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 800:
+    if mol_wt < 300 or mol_wt > 600:
         return False, "Molecular weight outside typical acrovestone range"
 
     # Acrovestones often have glycosidic substituents, so look for sugar groups
