@@ -23,29 +23,40 @@ def is_carotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check number of double bonds (at least 8 for conjugated system)
-    double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-    if double_bonds < 8:
-        return False, f"Found {double_bonds} double bonds (needs ≥8)"
-
-    # Check carbon count (derived from C40 backbone, allowing modifications)
+    # Check basic carbon skeleton requirements
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 30:
-        return False, f"Only {c_count} carbons (needs ≥30)"
+    if c_count < 35:  # Allow some modification from C40 base
+        return False, f"Insufficient carbons ({c_count} < 35)"
 
-    # Check for methyl groups adjacent to conjugated systems (isoprenoid feature)
-    methyl_pattern = Chem.MolFromSmarts("[CH3]-[C]=,*")  # Methyl near conjugated bonds
-    if not mol.HasSubstructMatch(methyl_pattern):
-        return False, "No methyl groups near conjugated system"
+    # Detect conjugated polyene chain (at least 8 alternating double bonds)
+    polyene_pattern = Chem.MolFromSmarts("*=*-#*=*-#*=*-#*=*-#*=*-#*=*-#*=*-#*=*")
+    if not polyene_pattern:
+        return None, None  # Fallback if pattern fails to compile
+    if not mol.HasSubstructMatch(polyene_pattern):
+        return False, "No extended conjugated polyene chain"
 
-    # Molecular weight check to exclude retinoids (carotenoids typically >400 Da)
+    # Check for isoprenoid methyl groups (at least 4 methyls near double bonds)
+    methyl_pattern = Chem.MolFromSmarts("[CH3]-[C]=[C]")
+    if not methyl_pattern:
+        return None, None
+    methyl_matches = len(mol.GetSubstructMatches(methyl_pattern))
+    if methyl_matches < 4:
+        return False, f"Only {methyl_matches} isoprenoid methyl groups"
+
+    # Exclude retinoids using beta-ionone ring check
+    beta_ionone = Chem.MolFromSmarts("[C]1([CH3])=C([CH3])[CH2][CH2][C]([CH3])([CH3])[CH2]1")
+    if beta_ionone and mol.HasSubstructMatch(beta_ionone):
+        if c_count < 40:  # Retinoids have shorter chains
+            return False, "Beta-ionone ring with short chain (retinoid)"
+
+    # Molecular weight range (400-1000 Da typical for carotenoids)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, f"Molecular weight too low ({mol_wt:.1f} Da)"
+    if mol_wt < 400 or mol_wt > 1000:
+        return False, f"Molecular weight {mol_wt:.1f} Da outside typical range"
 
-    # Check for beta-ionone ring (retinoid marker) with short chain exclusion
-    beta_ionone = Chem.MolFromSmarts("[C]1([C])=C([CH3])C([C])([C])CCC1")
-    if mol.HasSubstructMatch(beta_ionone) and c_count < 35:
-        return False, "Beta-ionone ring with short chain (retinoid)"
+    # Check oxygen count (carotenoids can have 0-6 oxygens typically)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count > 6:
+        return False, f"Too many oxygens ({o_count}) for carotenoid"
 
-    return True, "Conjugated polyene chain with isoprenoid features and sufficient size"
+    return True, "Extended conjugated polyene with isoprenoid features"
