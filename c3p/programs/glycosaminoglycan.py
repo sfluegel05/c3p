@@ -6,9 +6,8 @@ from rdkit import Chem
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
-    Glycosaminoglycans are characterized by containing repeat units of sugars 
-    with substantial amino (NH2) modifications.
-    
+    Glycosaminoglycans must contain repeating disaccharide units and amino sugar features.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -22,18 +21,16 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Consider generalized sugar-like patterns: simply a 5 or 6 member ring with multiple hydroxyls
-    sugar_pattern = Chem.MolFromSmarts("C1([OH])[CH2][CH2][OH][CH][OH][CH1]1")
+    # SMARTS patterns for sugar rings and amino substitutions
+    sugar_ring_pattern = Chem.MolFromSmarts("C1([OH])[CH2][CH][OH][CH][OH][CH2]1")
+    amino_sugar_pattern = Chem.MolFromSmarts("C1[CH][NH2][CH2][CH][OH][CH2]1")
     
-    # Consider an amino group in place of one of the hydroxyls, without rigid specificity
-    aminosugar_pattern = Chem.MolFromSmarts("C1([OH])[CH2][CH2]([NH2])[CH][OH][CH1]1")
-    
-    # Check for these key substructures
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    aminosugar_matches = mol.GetSubstructMatches(aminosugar_pattern)
+    # Search for recognizable sugar and amino sugar patterns
+    sugar_matches = mol.GetSubstructMatches(sugar_ring_pattern)
+    amino_sugar_matches = mol.GetSubstructMatches(amino_sugar_pattern)
 
-    # Assume it's a glycosaminoglycan if we detect amino-sugars in reasonable quantity
-    if len(aminosugar_matches) >= 2:
-        return True, "Contains a substantial proportion of aminomonosaccharide residues"
+    # Require at least a certain number of amino sugars to classify as glycosaminoglycan
+    if len(amino_sugar_matches) >= 3:
+        return True, f"Contains {len(amino_sugar_matches)} amino sugar residues, suggesting glycosaminoglycan"
 
     return False, "Does not contain recognizable glycosaminoglycan features"
