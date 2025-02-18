@@ -25,10 +25,8 @@ def is_flavones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for the 2-arylchromen-4-one skeleton
-    # Chromen-4-one core (benzopyran-4-one) with aryl group at position 2
-    # Core: benzene fused to pyrone (O=C1C=CC2=C1C=CC=C2)
-    # Aryl group attached to C2 of pyrone (atom index 4 in SMARTS)
-    flavone_core = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)cc2-[a]")
+    # Core is benzopyran-4-one with aryl group at position 2
+    flavone_core = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)c(c2)-[a]")
     matches = mol.GetSubstructMatches(flavone_core)
     if not matches:
         return False, "No 2-arylchromen-4-one skeleton found"
@@ -37,18 +35,20 @@ def is_flavones(smiles: str):
     ring_info = mol.GetRingInfo()
     core_rings = set()
     for ring in ring_info.AtomRings():
-        if any(atom_idx in matches[0][:6] for atom_idx in ring):  # Core atoms are first 6 in SMARTS pattern
-            core_rings.add(ring)
+        # Check if this ring is part of the core (benzopyran-4-one)
+        # Core atoms are from the SMARTS match (indices 0-8 for the core + aryl connector)
+        core_atoms = set(matches[0][:9])  # Adjust indices based on SMARTS
+        if any(atom in core_atoms for atom in ring):
+            core_rings.add(tuple(ring))
 
-    # Check aryl group is a separate aromatic ring
+    # Check aryl group is a separate aromatic ring (not part of core)
     for match in matches:
         aryl_connector = match[-1]  # Last atom in match is the aryl connector
-        # Check if aryl connector is part of a separate aromatic ring
         for ring in ring_info.AtomRings():
-            if aryl_connector in ring and ring not in core_rings:
-                # Check if the ring is aromatic
+            if aryl_connector in ring and tuple(ring) not in core_rings:
+                # Check if the ring is aromatic and at least 6-membered
                 is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
-                if is_aromatic and len(ring) >= 6:  # At least benzene-like
+                if is_aromatic and len(ring) >= 6:
                     return True, "Contains 2-arylchromen-4-one skeleton with aromatic substituent"
 
     return False, "Aryl group not part of separate aromatic ring"
