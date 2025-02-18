@@ -26,33 +26,36 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
         return False, "Coenzyme A structure not found"
 
     # Look for thioester linkage: S-C(=O) for fatty acyl attachment
-    thioester_pattern = Chem.MolFromSmarts("S-[CX3](=O)-[C]")
+    thioester_pattern = Chem.MolFromSmarts("S-[CX3](=O)-")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester linkage found"
 
-    # Check for acyl chain length from 2 to 6 carbons
+    # Check if the chain length from the carbon in S-C(=O)-C linkage is 2 to 6 carbons
     for match in thioester_matches:
-        acyl_start = match[2]  # Start checking from the carbon in the S-C(=O)-C linkage
-        chain_length = 1  # Start counting from the carbon in the thioester linkage
-        
-        queue = [acyl_start]
-        visited = set(queue)
-        
-        while queue:
-            atom_idx = queue.pop(0)
-            atom = mol.GetAtomWithIdx(atom_idx)
+        carbonyl_carbon_idx = match[1]
+        next_carbon_idx = match[2]
 
-            for neighbor in atom.GetNeighbors():
+        # Use BFS to traverse the carbon chain starting from next_carbon
+        queue = [next_carbon_idx]
+        visited = {next_carbon_idx}
+        chain_length = 1
+
+        while queue:
+            current_idx = queue.pop(0)
+            current_atom = mol.GetAtomWithIdx(current_idx)
+
+            for neighbor in current_atom.GetNeighbors():
                 n_idx = neighbor.GetIdx()
-                
-                # Traverse only through unvisited carbon atoms, skip others
-                if n_idx not in visited and mol.GetAtomWithIdx(n_idx).GetAtomicNum() == 6:
-                    chain_length += 1
+                n_atom = mol.GetAtomWithIdx(n_idx)
+
+                # Visit only carbon atoms that are part of the chain and not revisiting
+                if n_idx not in visited and n_atom.GetAtomicNum() == 6:
                     visited.add(n_idx)
                     queue.append(n_idx)
-
-        # Validate short chain length
+                    chain_length += 1
+        
+        # Validate if chain length is 2 to 6
         if 2 <= chain_length <= 6:
             return True, "Contains Coenzyme A linked with a short-chain fatty acid"
 
