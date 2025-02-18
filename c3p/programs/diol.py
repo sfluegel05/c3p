@@ -41,7 +41,15 @@ def is_diol(smiles: str):
     carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
 
-    if mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(ester_pattern):
-        return False, "Hydroxyl groups are part of carboxylic acids or esters"
+    # Check if any hydroxyl group is part of a carboxylic acid or ester
+    for match in hydroxyl_matches:
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:  # Carbon
+                    for bond in neighbor.GetBonds():
+                        if bond.GetBondType() == Chem.BondType.DOUBLE:
+                            if bond.GetBeginAtom().GetAtomicNum() == 8 or bond.GetEndAtom().GetAtomicNum() == 8:  # Oxygen
+                                return False, "Hydroxyl groups are part of carboxylic acids or esters"
 
     return True, "Contains exactly two hydroxyl groups and no disqualifying functional groups"
