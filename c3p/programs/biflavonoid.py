@@ -1,0 +1,155 @@
+"""
+Classifies: CHEBI:50128 biflavonoid
+"""
+ - (-)-epicatechin-(4beta->8)-(-)-epicatechin: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@@H]3[C@H](O)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - procyanidin B7: SMILES: O[C@H]1Cc2c(O[C@@H]1c1ccc(O)c(O)c1)cc(O)c([C@H]1[C@H](O)[C@H](Oc3cc(O)cc(O)c13)c1ccc(O)c(O)c1)c2O
+ - hinokiflavone: SMILES: Oc1ccc(cc1)-c1cc(=O)c2c(O)cc(O)c(-c3c(O)cc(O)c4c3oc(cc4=O)-c3ccc(O)cc3)c2o1
+ - (4alpha->8)-bis-3'-O-methylgallocatechin: SMILES: COc1ccc(cc1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](O)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(O)c(O)c1
+ - (2S),(2''S)-8,8''-5',5''-tetrahydroxy-7,7''-3,3''-4,4''-5''-heptamethoxy-5,5''-biflavan: SMILES: COc1cc(c2CC[C@H](Oc2c1O)c1cc(O)c(OC)c(OC)c1)-c1cc(OC)c(O)c2O[C@@H](CCc12)c1cc(OC)c(OC)c(OC)c1
+ - (-)-epigallocatechin-(4beta->8)-(-)-epigallocatechin: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@@H]3[C@H](O)[C@H](Oc4cc(O)cc(O)c34)c3cc(O)c(O)c(O)c3)c2O[C@@H]1c1cc(O)c(O)c(O)c1
+ - procyanidin B2 3-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - procyanidin B5 3-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - (-)-epicatechin-(4alpha->6)-(+)-gallocatechin: SMILES: O[C@H]1Cc2c(O[C@@H]1c1cc(O)c(O)c(O)c1)cc(O)c([C@H]1[C@H](O)[C@H](Oc3cc(O)cc(O)c13)c3ccc(O)c(O)c3)c2O
+ - procyanidin B4: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@@H]3[C@@H](O)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - procyanidin B6 3-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - (-)-epicatechin-(4beta->6)-(-)-epicatechin: SMILES: O[C@H]1Cc2c(O[C@@H]1c1ccc(O)c(O)c1)cc(O)c([C@@H]3[C@H](O)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O
+ - (+)-catechin-(4alpha->8)-(-)-epicatechin: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](O)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - procyanidin B7 3-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - (4alpha->8)-bis-3',4'-di-O-methylgallocatechin: SMILES: COc1c(OC)cc(cc1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](O)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(OC)c(O)c1
+ - (4alpha->8)-bis-4'-O-methylgallocatechin-3'-O-gallate: SMILES: COc1c(O)cc(cc1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H](Oc2cc(O)cc(O)c12)c1cc(O)c(OC)c(O)c1
+ - procyanidin B2 3'-O-gallate: SMILES: O[C@@H]1[C@H](Oc2cc(O)cc(O)c2[C@H]1c1c(O)cc(O)c2C[C@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@H](Oc12)c1ccc(O)c(O)c1)c1ccc(O)c(O)c1
+ - (4alpha->8)-bis-3',4',5'-tri-O-methylgallocatechin: SMILES: COc1c(OC)c(OC)cc(c1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](O)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(OC)c(OC)c1
+ - (4alpha->8)-bis-3',4'-di-O-methylgallocatechin-3'-O-gallate: SMILES: COc1c(OC)cc(cc1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(OC)c(O)c1
+ - (4alpha->8)-bis-4'-O-methylgallocatechin-3'-O-gallate: SMILES: COc1c(O)cc(cc1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H](Oc2cc(O)cc(O)c12)c1cc(O)c(OC)c(O)c1
+ - procyanidin B5 3'-O-gallate: SMILES: O[C@@H]1[C@H](Oc2cc(O)cc(O)c2[C@H]1c1c(O)cc(O)c2C[C@@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@H](Oc12)c1ccc(O)c(O)c1)c1ccc(O)c(O)c1
+ - procyanidin B6 3'-O-gallate: SMILES: O[C@@H]1[C@H](Oc2cc(O)cc(O)c2[C@H]1c1c(O)cc(O)c2C[C@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@H](Oc12)c1ccc(O)c(O)c1)c1ccc(O)c(O)c1
+ - (4alpha->8)-bis-3',4',5'-tri-O-methylgallocatechin-3'-O-gallate: SMILES: COc1c(OC)c(OC)cc(c1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(OC)c(OC)c1
+ - (4alpha->8)-bis-3',4',5'-tri-O-methylgallocatechin-4'-O-gallate: SMILES: COc1c(OC)c(OC)cc(c1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(OC)c(OC)c1
+ - procyanidin B8 3-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - (4alpha->8)-bis-3',4',5'-tri-O-methylgallocatechin-4'-O-gallate: SMILES: COc1c(OC)c(OC)cc(c1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(OC)c(OC)c1
+ - procyanidin B7 3'-O-gallate: SMILES: O[C@@H]1[C@H](Oc2cc(O)cc(O)c2[C@H]1c1c(O)cc(O)c2C[C@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@H](Oc12)c1ccc(O)c(O)c1)c1ccc(O)c(O)c1
+ - procyanidin B8 3'-O-gallate: SMILES: O[C@@H]1[C@H](Oc2cc(O)cc(O)c2[C@H]1c1c(O)cc(O)c2C[C@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@H](Oc12)c1ccc(O)c(O)c1)c1ccc(O)c(O)c1
+ - (4alpha->8)-bis-3',4',5'-tri-O-methylgallocatechin-3',4'-di-O-gallate: SMILES: COc1c(OC)c(OC)cc(c1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(OC)c(OC)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](O)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - (4alpha->8)-bis-3',4',5'-tri-O-methylgallocatechin-3',4',5'-tri-O-gallate: SMILES: COc1c(OC)c(OC)cc(c1O)[C@H]1Oc2c(C[C@@H]1O)c(O)cc(O)c2[C@H]1[C@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H](Oc2cc(O)cc(O)c12)c1cc(OC)c(OC)c(OC)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B3 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B4 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B2 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B1 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B6 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B7 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B8 3',3''-di-O-gallate: SMILES: O[C@H]1Cc2c(O)cc(O)c([C@H]3[C@H](OC(=O)c4cc(O)c(O)c(O)c4)[C@H](Oc4cc(O)cc(O)c34)c3ccc(O)c(O)c3)c2O[C@@H]1c1ccc(O)c(O)c1OC(=O)c2cc(O)c(O)c(O)c2
+ - procyanidin B5 3',3''-di-O-gallate: SMILES
