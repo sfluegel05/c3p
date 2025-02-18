@@ -27,10 +27,10 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the glycerol backbone with phosphate at position 3
+    # Check for glycerol backbone with phosphate at position 3
     # The pattern matches a glycerol backbone with a phosphate group at position 3
     # The phosphate group can be in different protonation states
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("[C@H]([CH2X4])([OHX2])[CH2X4][OX2][PX4](=[OX1])([OX2H,OX2-])[OX2H,OX2-]")
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OHX2])[CH2X4][OX2][PX4](=[OX1])([OX2H,OX2-])[OX2H,OX2-]")
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol backbone with phosphate at position 3 found"
 
@@ -50,18 +50,6 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300 or mol_wt > 1000:
         return False, "Molecular weight out of range for monoacyl-sn-glycerol 3-phosphate"
-
-    # Check that the acyl group is attached to either position 1 or 2 of the glycerol backbone
-    ester_atom = ester_matches[0][0]  # Oxygen atom of the ester group
-    ester_bond = mol.GetBondBetweenAtoms(ester_atom, ester_matches[0][1])  # Bond between oxygen and carbonyl carbon
-    if ester_bond is None:
-        return False, "Invalid ester bond"
-
-    # Get the atom connected to the ester oxygen (should be either position 1 or 2 of the glycerol backbone)
-    ester_connected_atom = ester_bond.GetBeginAtomIdx() if ester_bond.GetBeginAtomIdx() != ester_atom else ester_bond.GetEndAtomIdx()
-    glycerol_backbone_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'C' and atom.GetDegree() >= 2]
-    if ester_connected_atom not in glycerol_backbone_atoms:
-        return False, "Acyl group not attached to position 1 or 2 of the glycerol backbone"
 
     # Check stereochemistry (sn-glycerol)
     # The stereochemistry can be inferred from the SMILES string, but RDKit's substructure matching does not directly handle stereochemistry.
