@@ -39,9 +39,12 @@ def is_N_acetyl_amino_acid(smiles: str):
         return False, "No amino acid backbone found"
 
     # Check if the acetyl group is directly attached to the nitrogen of the amino acid backbone
-    n_acetyl_amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4H3].[NX3][CX4H][CX3](=[OX1])[OX2H1]")
-    n_acetyl_amino_acid_matches = mol.GetSubstructMatches(n_acetyl_amino_acid_pattern)
-    if len(n_acetyl_amino_acid_matches) == 0:
-        return False, "Acetyl group not attached to the nitrogen of the amino acid backbone"
+    # We need to ensure that the nitrogen in the acetyl group is the same as the nitrogen in the amino acid backbone
+    for n_acetyl_match in n_acetyl_matches:
+        acetyl_nitrogen = n_acetyl_match[0]  # Nitrogen in the acetyl group
+        for amino_acid_match in amino_acid_matches:
+            amino_nitrogen = amino_acid_match[0]  # Nitrogen in the amino acid backbone
+            if acetyl_nitrogen == amino_nitrogen:
+                return True, "Contains an acetyl group attached to the nitrogen of an amino acid backbone"
 
-    return True, "Contains an acetyl group attached to the nitrogen of an amino acid backbone"
+    return False, "Acetyl group not attached to the nitrogen of the amino acid backbone"
