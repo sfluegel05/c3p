@@ -5,11 +5,12 @@ Classifies: CHEBI:35681 secondary alcohol
 Classifies: Secondary Alcohols (CHEBI:35678)
 """
 from rdkit import Chem
+from rdkit.Chem import HybridizationType
 
 def is_secondary_alcohol(smiles: str) -> tuple[bool, str]:
     """
     Determines if a molecule is a secondary alcohol based on its SMILES string.
-    A secondary alcohol has a hydroxyl group (-OH) attached to a carbon atom
+    A secondary alcohol has a hydroxyl group (-OH) attached to a saturated carbon atom
     that is bonded to exactly two other carbon atoms.
 
     Args:
@@ -23,7 +24,7 @@ def is_secondary_alcohol(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Find all hydroxyl oxygen atoms (OX2H matches -OH groups)
+    # Find all hydroxyl oxygen atoms (-OH groups)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     
@@ -42,9 +43,16 @@ def is_secondary_alcohol(smiles: str) -> tuple[bool, str]:
         carbon = neighbors[0]
         if carbon.GetAtomicNum() != 6:
             continue  # Hydroxyl not attached to carbon
+            
+        # Check for sp³ hybridization (saturated carbon)
+        if carbon.GetHybridization() != HybridizationType.SP3:
+            continue  # Exclude aromatic/unsaturated carbons
+            
+        # Count carbon neighbors (must have exactly two)
+        carbon_neighbors = [nbr for nbr in carbon.GetNeighbors() 
+                          if nbr.GetAtomicNum() == 6 
+                          and nbr.GetIdx() != oxygen_idx]
         
-        # Count carbon neighbors (should have exactly two other carbons)
-        carbon_neighbors = [atom for atom in carbon.GetNeighbors() if atom.GetAtomicNum() == 6]
         if len(carbon_neighbors) == 2:
             return True, "Hydroxyl attached to secondary carbon"
 
