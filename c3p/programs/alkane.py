@@ -37,9 +37,13 @@ def is_alkane(smiles: str):
     if any(bond.GetBondType() not in [Chem.BondType.SINGLE] for bond in mol.GetBonds()):
         return False, "Molecule contains double or triple bonds"
 
+    # Calculate the total number of hydrogens (explicit + implicit)
+    h_count = 0
+    for atom in mol.GetAtoms():
+        h_count += atom.GetTotalNumHs()  # This includes implicit hydrogens
+
     # Check the general formula CnH2n+2
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
     
     if h_count != 2 * c_count + 2:
         return False, f"Molecule does not follow the general formula CnH2n+2 (C{c_count}H{h_count})"
