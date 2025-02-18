@@ -1,129 +1,72 @@
 """
 Classifies: CHEBI:61910 very long-chain fatty acyl-CoA
 """
- - (3R,14Z,17Z,20Z,23Z,26Z)-3-hydroxydotriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,13Z,16Z,19Z,22Z,25Z)-3-hydroxyoctacosapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,6Z,9Z,12Z,15Z,18Z)-tetracosahexaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,9Z,12Z,15Z,18Z)-3-hydroxytetracosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (16Z,19Z,22Z,25Z,28Z,31Z)-3-oxotetratriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,15Z)-3-hydroxytetracosenoyl-CoA: SMILES: CCCCCCCC\C=C/CCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - 3-oxodotriacontanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (23Z,26Z,29Z,32Z,35Z)-3-oxooctatriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3S,6Z,9Z,12Z,15Z,18Z)-3-hydroxytetracosapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC[C@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (11Z,14Z,17Z,20Z)-hexacosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (10Z,13Z,16Z,19Z,22Z,25Z)-octacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - 3-oxotetracosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (17Z,20Z,23Z,26Z)-3-oxodotriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,11Z,14Z,17Z,20Z)-3-hydroxyhexacosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,15Z,18Z,21Z,24Z)-triacontapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (11Z,14Z,17Z,20Z,23Z)-hexacosapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (10Z,13Z,16Z)-3-oxodocosatrienoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/CCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,8Z,11Z,14Z,17Z,20Z,23Z)-hydroxyhexacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (14Z,17Z,20Z,23Z,26Z,29Z)-dotriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (R)-3-hydroxyhexacosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (15Z,18Z,21Z,24Z,27Z)-3-oxotriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (15Z,18Z,21Z,24Z,27Z)-triacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (18Z,21Z,24Z,27Z,30Z)-hexatriacontapentaenoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC([C@H](C(NCCC(NCCSC(CCCCCCCCCCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCCC)=O)=O)=O)O)(C)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (S)-3-hydroxyhexacosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC[C@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,12Z,15Z,18Z,21Z,24Z,27Z)-triacontaheptaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - trans-2-hexacosenoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (16Z,19Z,22Z,25Z,28Z,31Z)-tetratriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,17Z,20Z,23Z,26Z)-dotriacontapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,23Z,26Z,29Z,32Z,35Z)-octatriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,21Z,24Z,27Z,30Z)-3-hydroxyhexatriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,16Z,19Z,22Z,25Z,28Z,31Z)-3-hydroxytetratriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - octacosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - trans-2-tetracosenoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (14Z,17Z,20Z,23Z,26Z,29Z)-3-oxodotriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,19Z,22Z,25Z,28Z)-3-hydroxytetratriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (10Z,13Z,16Z,19Z,22Z)-octacosapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (14Z,17Z,20Z,23Z,26Z)-dotriacontapentaenoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC(C)([C@H](C(NCCC(NCCSC(=O)CCCCCCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCCC)=O)=O)O)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (10Z,13Z,16Z,19Z,22Z,25Z)-3-oxooctacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (13Z,16Z,19Z,22Z)-3-oxooctacosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - tricosanoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC([C@H](C(NCCC(NCCSC(=O)CCCCCCCCCCCCCCCCCCCCCC)=O)=O)O)(C)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (3R,19Z,22Z,25Z,28Z,31Z)-3-hydroxytetratriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (23Z,26Z,29Z,32Z)-3-oxooctatriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (17Z,20Z,23Z,26Z)-dotriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (12Z,15Z,18Z,21Z,24Z)-triacontapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (15Z)-tetracosenoyl-CoA: SMILES: CCCCCCCC\C=C/CCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (8Z,11Z,14Z,17Z,20Z,23Z)-hexacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,23Z,26Z,29Z,32Z,35Z)-3-hydroxyoctatriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - docosanoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC(C)([C@H](C(NCCC(NCCSC(=O)CCCCCCCCCCCCCCCCCCCCC)=O)=O)O)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (2E,9Z,12Z,15Z,18Z)-tetracosapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,14Z,17Z,20Z,23Z,26Z)-3-hydroxydotriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,13Z,16Z,19Z,22Z,25Z)-3-hydroxyoctacosapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,6Z,9Z,12Z,15Z,18Z)-tetracosahexaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,9Z,12Z,15Z,18Z)-3-hydroxytetracosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (16Z,19Z,22Z,25Z,28Z,31Z)-3-oxotetratriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,15Z)-3-hydroxytetracosenoyl-CoA: SMILES: CCCCCCCC\C=C/CCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - 3-oxodotriacontanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (23Z,26Z,29Z,32Z,35Z)-3-oxooctatriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3S,6Z,9Z,12Z,15Z,18Z)-3-hydroxytetracosapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC[C@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (11Z,14Z,17Z,20Z)-hexacosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (10Z,13Z,16Z,19Z,22Z,25Z)-octacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - 3-oxotetracosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (17Z,20Z,23Z,26Z)-3-oxodotriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,11Z,14Z,17Z,20Z)-3-hydroxyhexacosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,15Z,18Z,21Z,24Z)-triacontapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (11Z,14Z,17Z,20Z,23Z)-hexacosapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (10Z,13Z,16Z)-3-oxodocosatrienoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/CCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,8Z,11Z,14Z,17Z,20Z,23Z)-hydroxyhexacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (14Z,17Z,20Z,23Z,26Z,29Z)-dotriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (R)-3-hydroxyhexacosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (15Z,18Z,21Z,24Z,27Z)-3-oxotriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (15Z,18Z,21Z,24Z,27Z)-triacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (18Z,21Z,24Z,27Z,30Z)-hexatriacontapentaenoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC([C@H](C(NCCC(NCCSC(CCCCCCCCCCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCCC)=O)=O)=O)O)(C)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (S)-3-hydroxyhexacosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC[C@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,12Z,15Z,18Z,21Z,24Z,27Z)-triacontaheptaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - trans-2-hexacosenoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (16Z,19Z,22Z,25Z,28Z,31Z)-tetratriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,17Z,20Z,23Z,26Z)-dotriacontapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,23Z,26Z,29Z,32Z,35Z)-octatriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,21Z,24Z,27Z,30Z)-3-hydroxyhexatriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,16Z,19Z,22Z,25Z,28Z,31Z)-3-hydroxytetratriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - octacosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - trans-2-tetracosenoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (14Z,17Z,20Z,23Z,26Z,29Z)-3-oxodotriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,19Z,22Z,25Z,28Z)-3-hydroxytetratriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (10Z,13Z,16Z,19Z,22Z)-octacosapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (14Z,17Z,20Z,23Z,26Z)-dotriacontapentaenoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC(C)([C@H](C(NCCC(NCCSC(=O)CCCCCCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCCC)=O)=O)O)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (10Z,13Z,16Z,19Z,22Z,25Z)-3-oxooctacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (13Z,16Z,19Z,22Z)-3-oxooctacosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - tricosanoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC([C@H](C(NCCC(NCCSC(=O)CCCCCCCCCCCCCCCCCCCCCC)=O)=O)O)(C)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (3R,19Z,22Z,25Z,28Z,31Z)-3-hydroxytetratriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (23Z,26Z,29Z,32Z)-3-oxooctatriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (17Z,20Z,23Z,26Z)-dotriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (12Z,15Z,18Z,21Z,24Z)-triacontapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (15Z)-tetracosenoyl-CoA: SMILES: CCCCCCCC\C=C/CCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (8Z,11Z,14Z,17Z,20Z,23Z)-hexacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,23Z,26Z,29Z,32Z,35Z)-3-hydroxyoctatriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - docosanoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC(C)([C@H](C(NCCC(NCCSC(=O)CCCCCCCCCCCCCCCCCCCCC)=O)=O)O)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (2E,9Z,12Z,15Z,18Z)-tetracosapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,14Z,17Z,20Z,23Z,26Z)-3-hydroxydotriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,13Z,16Z,19Z,22Z,25Z)-3-hydroxyoctacosapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,6Z,9Z,12Z,15Z,18Z)-tetracosahexaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,9Z,12Z,15Z,18Z)-3-hydroxytetracosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (16Z,19Z,22Z,25Z,28Z,31Z)-3-oxotetratriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,15Z)-3-hydroxytetracosenoyl-CoA: SMILES: CCCCCCCC\C=C/CCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - 3-oxodotriacontanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (23Z,26Z,29Z,32Z,35Z)-3-oxooctatriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3S,6Z,9Z,12Z,15Z,18Z)-3-hydroxytetracosapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC[C@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (11Z,14Z,17Z,20Z)-hexacosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (10Z,13Z,16Z,19Z,22Z,25Z)-octacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - 3-oxotetracosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (17Z,20Z,23Z,26Z)-3-oxodotriacontatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,11Z,14Z,17Z,20Z)-3-hydroxyhexacosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,15Z,18Z,21Z,24Z)-triacontapentaenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (11Z,14Z,17Z,20Z,23Z)-hexacosapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (10Z,13Z,16Z)-3-oxodocosatrienoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/CCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (3R,8Z,11Z,14Z,17Z,20Z,23Z)-hydroxyhexacosahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (14Z,17Z,20Z,23Z,26Z,29Z)-dotriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (R)-3-hydroxyhexacosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (15Z,18Z,21Z,24Z,27Z)-3-oxotriacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (15Z,18Z,21Z,24Z,27Z)-triacontapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (18Z,21Z,24Z,27Z,30Z)-hexatriacontapentaenoyl-CoA: SMILES: [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC([C@H](C(NCCC(NCCSC(CCCCCCCCCCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCCC)=O)=O)=O)O)(C)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O
- - (S)-3-hydroxyhexacosanoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC[C@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,12Z,15Z,18Z,21Z,24Z,27Z)-triacontaheptaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - trans-2-hexacosenoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCCCCCC\C=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (16Z,19Z,22Z,25Z,28Z,31Z)-tetratriacontahexaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (2E,17Z,20Z,23Z,26Z)-dotriacontapentaenoyl
+"""
+Classifies: CHEBI:XXXXX very long-chain fatty acyl-CoA (chain length > C22)
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+
+def is_very_long_chain_fatty_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is a very long-chain fatty acyl-CoA (chain length > C22).
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        bool: True if very long-chain fatty acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Match the CoA thioester pattern: C(=O)S-C-C-N...
+    # Using SMARTS to find [C]=O connected to S, which is connected to C-C-N
+    coa_thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2][CX4][CX4][NX2]")
+    if not mol.HasSubstructMatch(coa_thioester_pattern):
+        return False, "No CoA thioester group detected"
+    
+    # Find all thioester C=O-S groups
+    thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if not thioester_matches:
+        return False, "No thioester group found"
+    
+    max_chain_length = 0
+    for match in thioester_matches:
+        carbonyl_carbon = match[0]
+        visited = set()
+        stack = [(carbonyl_carbon, 0)]  # (atom index, current depth)
+        current_max = 0
+        
+        while stack:
+            atom_idx, depth = stack.pop()
+            if atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() != 6:  # Only consider carbon atoms in the chain
+                continue
+            
+            current_max = max(current_max, depth + 1)  # depth starts at 0, so +1 for current atom
+            # Traverse all neighboring carbons except those leading back to the thioester S
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                # Avoid going back towards the sulfur
+                if neighbor.GetAtomicNum() == 16 and neighbor.GetIdx() == match[2]:
+                    continue
+                # Avoid oxygen in the carbonyl
+                if neighbor.GetIdx() == match[1]:
+                    continue
+                stack.append((neighbor_idx, depth + 1))
+        
+        if current_max > max_chain_length:
+            max_chain_length = current_max
+    
+    if max_chain_length > 22:
+        return True, f"Fatty acyl chain length is {max_chain_length} (>C22)"
+    else:
+        return False, f"Fatty acyl chain length is {max_chain_length} (≤C22)"
