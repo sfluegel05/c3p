@@ -11,7 +11,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_triradylglycerol(smiles: str):
     """
     Determines if a molecule is a triradylglycerol based on its SMILES string.
-    A triradylglycerol has a glycerol backbone with three substituents (acyl, alkyl, or alkenyl).
+    A triradylglycerol has a glycerol backbone with three substituents, each being
+    acyl (ester), alkyl (ether), or alk-1-enyl (vinyl ether) groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,54 +26,44 @@ def is_triradylglycerol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for glycerol backbone with three O-linked substituents
-    backbone_pattern = Chem.MolFromSmarts('[CH2]([O][!H])-[CH]([O][!H])-[CH2]([O][!H])')
-    matches = mol.GetSubstructMatches(backbone_pattern)
-    if not matches:
+    backbone_pattern = Chem.MolFromSmarts('C(-O)-C(-O)-C(-O)')
+    if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No glycerol backbone with three O-linked groups"
 
-    # Extract O indices from the first match (positions 1,3,5 in SMARTS match tuple)
+    # Get O atoms from the first backbone match
+    matches = mol.GetSubstructMatches(backbone_pattern)
+    if not matches:
+        return False, "No backbone match found"
+    
+    # Extract O indices from the first match (C-O positions)
     try:
-        match = matches[0]  # Use first match
-        o_indices = [match[1], match[3], match[5]]
+        o_indices = [matches[0][1], matches[0][3], matches[0][5]]  # C-O positions in SMARTS
     except IndexError:
         return False, "Invalid backbone structure"
 
+    # Define patterns for substituent types
+    ester_pattern = Chem.MolFromSmarts('[OX2]-C(=O)')
+    vinyl_ether_pattern = Chem.MolFromSmarts('[OX2]-C=C')
+
     substituent_types = []
     for o_idx in o_indices:
-        o_atom = mol.GetAtomWithIdx(o_idx)
-        
-        neighbor = o_atom.GetNeighbors()[0]  # Carbon attached to O
-        if neighbor.GetAtomicNum() != 6:
-            return False, f"Non-carbon substituent at O {o_idx}"
-
-        # Check for acyl (ester: O-C=O)
-        acyl = False
-        for bond in neighbor.GetBonds():
-            if bond.GetBondType() == Chem.BondType.DOUBLE:
-                other_atom = bond.GetOtherAtom(neighbor)
-                if other_atom.GetAtomicNum() == 8:  # Double bond to oxygen (carbonyl)
-                    acyl = True
-                    break
-        if acyl:
+        # Check for ester (acyl)
+        ester_matches = mol.GetSubstructMatches(ester_pattern)
+        if any(o_idx == match[0] for match in ester_matches):
             substituent_types.append('acyl')
             continue
-
-        # Check for alkenyl (vinyl ether: O-C=C)
-        alkenyl = False
-        for bond in neighbor.GetBonds():
-            if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetOtherAtom(neighbor).GetAtomicNum() == 6:
-                alkenyl = True
-                break
-        if alkenyl:
+        
+        # Check for vinyl ether (alkenyl)
+        vinyl_matches = mol.GetSubstructMatches(vinyl_ether_pattern)
+        if any(o_idx == match[0] for match in vinyl_matches):
             substituent_types.append('alkenyl')
             continue
-
-        # Default to alkyl (ether) if no double bonds
+        
+        # Default to alkyl (ether)
         substituent_types.append('alkyl')
 
-    # Validate all substituent types
-    valid_types = {'acyl', 'alkyl', 'alkenyl'}
-    if all(st in valid_types for st in substituent_types):
+    # Verify all substituents are valid types
+    if all(st in ['acyl', 'alkyl', 'alkenyl'] for st in substituent_types):
         return True, f"Triradylglycerol with substituents: {substituent_types}"
     else:
-        return False, f"Invalid substituents: {substituent_types}"
+        return False, f"Invalid substituent types: {substituent_types}"
