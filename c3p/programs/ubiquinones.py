@@ -23,31 +23,30 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for benzoquinone core (cyclohexa-2,5-diene-1,4-dione)
-    benzoquinone_pattern = Chem.MolFromSmarts("O=C1C=CC(=O)C=C1")
+    # Look for benzoquinone core with proper substitution pattern
+    # Allows for both methoxy (-OC) and hydroxy (-O) groups
+    # Also matches charged forms with [O-]
+    benzoquinone_pattern = Chem.MolFromSmarts("O=C1C([O,OC])=C([O,OC])C(=O)C=C1")
     if not mol.HasSubstructMatch(benzoquinone_pattern):
-        return False, "No benzoquinone core found"
+        return False, "No properly substituted benzoquinone core found"
 
-    # Look for two methoxy groups (-OC) adjacent to quinone
-    dimethoxy_pattern = Chem.MolFromSmarts("O=C1C(OC)=C(OC)C(=O)C=C1")
-    if not mol.HasSubstructMatch(dimethoxy_pattern):
-        return False, "Missing required 2,3-dimethoxy pattern"
+    # At least one position must be methoxy (-OC)
+    methoxy_pattern = Chem.MolFromSmarts("O=C1[$(C([O,OC])=C([OC])),$([$(C(OC)=C([O,OC])))]C(=O)C=C1")
+    if not mol.HasSubstructMatch(methoxy_pattern):
+        return False, "Missing at least one methoxy group"
 
-    # Count methoxy groups (-OC) to ensure exactly 2
-    methoxy_pattern = Chem.MolFromSmarts("OC")
-    methoxy_matches = len(mol.GetSubstructMatches(methoxy_pattern))
-    if methoxy_matches < 2:
-        return False, "Insufficient methoxy groups"
-
-    # Look for at least one methyl group on the quinone ring
-    methyl_quinone_pattern = Chem.MolFromSmarts("O=C1C(OC)=C(OC)C(=O)C(C)=C1")
-    if not mol.HasSubstructMatch(methyl_quinone_pattern):
+    # Look for methyl group on the quinone ring
+    methyl_pattern = Chem.MolFromSmarts("O=C1C([O,OC])=C([O,OC])C(=O)C(C)=C1")
+    if not mol.HasSubstructMatch(methyl_pattern):
         return False, "Missing methyl group on quinone ring"
 
-    # Optional: Check for isoprenoid/polyprenoid side chain
-    # Pattern for isoprenoid unit CC=C(C)C or CC=C(C)CC
-    isoprenoid_pattern = Chem.MolFromSmarts("CC=C(C)[C,CC]")
-    has_isoprenoid = mol.HasSubstructMatch(isoprenoid_pattern)
+    # Check for proper side chain
+    # Either an isoprenoid unit or a long chain that could be derived from it
+    isoprenoid_pattern = Chem.MolFromSmarts("[$(CC=C(C)C),$(CC=C(C)CC),$(CCC=C(C)C)]")
+    long_chain_pattern = Chem.MolFromSmarts("CCCCCCC") # At least 7 carbons in chain
+    
+    if not (mol.HasSubstructMatch(isoprenoid_pattern) or mol.HasSubstructMatch(long_chain_pattern)):
+        return False, "Missing required side chain"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -56,8 +55,10 @@ def is_ubiquinones(smiles: str):
     if o_count < 4:
         return False, "Insufficient oxygen atoms for ubiquinone"
     
+    # Check for fused ring systems that would indicate wrong class
+    fused_rings_pattern = Chem.MolFromSmarts("[r6][r5]")
+    if mol.HasSubstructMatch(fused_rings_pattern):
+        return False, "Contains fused ring system not typical of ubiquinones"
+
     # Basic structure confirmed
-    if has_isoprenoid:
-        return True, "Contains benzoquinone core with 2,3-dimethoxy groups, methyl group, and isoprenoid side chain"
-    else:
-        return True, "Contains benzoquinone core with 2,3-dimethoxy groups and methyl group"
+    return True, "Contains benzoquinone core with proper substitution pattern and characteristic side chain"
