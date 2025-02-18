@@ -5,6 +5,7 @@ Classifies: CHEBI:88061 polyamine
 Classifies: CHEBI:53371 polyamine
 """
 from rdkit import Chem
+from rdkit.Chem import MolFromSmarts
 
 def is_polyamine(smiles: str):
     """
@@ -22,59 +23,28 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
+    # Predefined SMARTS patterns for exclusion groups
+    nitro_pattern = MolFromSmarts('[NX3](=[OX1])=[OX1]')  # Nitro groups
+    nitrile_pattern = MolFromSmarts('[C]#[N]')            # Nitriles
+    sulfonamide_pattern = MolFromSmarts('[SX4](=[OX1])(=[OX1])([#6])[NX3]')  # Sulfonamides
+    amide_pattern = MolFromSmarts('[CX3](=[OX1])[NX3H0,H1]')  # Amides excluding those with O substituents
+
     amine_count = 0
 
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 7:
             continue  # Only process nitrogen atoms
 
-        # Check for nitro groups (N with two double-bonded oxygens)
-        nitro_oxygens = 0
-        for bond in atom.GetBonds():
-            if bond.GetBondType() == Chem.BondType.DOUBLE:
-                neighbor = bond.GetOtherAtom(atom)
-                if neighbor.GetAtomicNum() == 8:
-                    nitro_oxygens += 1
-        if nitro_oxygens >= 2:
+        # Check if nitrogen is part of any exclusion group
+        is_excluded = False
+        for pattern in [nitro_pattern, nitrile_pattern, sulfonamide_pattern, amide_pattern]:
+            if mol.HasSubstructMatch(pattern) and atom.HasSubstructMatch(pattern):
+                is_excluded = True
+                break
+        if is_excluded:
             continue
 
-        # Check for nitriles (triple bond to carbon)
-        is_nitrile = any(bond.GetBondType() == Chem.BondType.TRIPLE 
-                        and bond.GetOtherAtom(atom).GetAtomicNum() == 6 
-                        for bond in atom.GetBonds())
-        if is_nitrile:
-            continue
-
-        # Check for amides (bonded to carbonyl group)
-        is_amide = False
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:
-                for bond in neighbor.GetBonds():
-                    if bond.GetBondType() == Chem.BondType.DOUBLE:
-                        other = bond.GetOtherAtom(neighbor)
-                        if other.GetAtomicNum() == 8:
-                            is_amide = True
-                            break
-                if is_amide:
-                    break
-        if is_amide:
-            continue
-
-        # Check for sulfonamides (bonded to sulfonyl group)
-        is_sulfonamide = False
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 16:  # Sulfur
-                sulfur_bonds = neighbor.GetBonds()
-                oxygen_double = sum(1 for b in sulfur_bonds 
-                                   if b.GetBondType() == Chem.BondType.DOUBLE 
-                                   and b.GetOtherAtom(neighbor).GetAtomicNum() == 8)
-                if oxygen_double >= 2:
-                    is_sulfonamide = True
-                    break
-        if is_sulfonamide:
-            continue
-
-        # Check if bonded to at least one carbon
+        # Check if nitrogen is bonded to at least one carbon (organic compound requirement)
         has_carbon = any(n.GetAtomicNum() == 6 for n in atom.GetNeighbors())
         if has_carbon:
             amine_count += 1
