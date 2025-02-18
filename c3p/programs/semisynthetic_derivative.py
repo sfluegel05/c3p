@@ -22,18 +22,21 @@ def is_semisynthetic_derivative(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define potential natural product core patterns
+    # Natural product core patterns (expanded with more diverse possible cores)
     core_patterns = [
-        Chem.MolFromSmarts("[#6]1-[#6]=[#6]-[#6]2-[#6]=[#6]-[#6]-[#6]3-[#6]-1-[#6]-[#6]4-[#6]-[#6](#[#6])-[#6]2-[#6]-[#6]3-[#6]-4"), # steroid-like
-        Chem.MolFromSmarts("c1ccccc1"),  # Aryl ring (present in many natural products)
-        Chem.MolFromSmarts("[#6]1-[#6]-[#8]-[#6]-[#6]=[#6]-[#8]-1"),  # lactone
+        Chem.MolFromSmarts("C1CCC(C2CCCC3CNC4C3=C2CCCC4)N1"),  # Example steroid-like core (e.g., tropane alkaloid)
+        Chem.MolFromSmarts("O=C1[C@H](OC)OC[C@@H](O)[C@@H]1O"),  # Simple lactone (cyclic ester) 
+        Chem.MolFromSmarts("CC1[C@H](O)CCC(=O)C1"),  # Ketone moiety in polyketides
+        Chem.MolFromSmarts("c1ccccc1"),  # Basic aromatic ring
     ]
     
-    # Define synthetic modification patterns
+    # Synthetic modification patterns (expanded with broader range)
     synthetic_patterns = [
-        Chem.MolFromSmarts("[#6][C](=[O,N])[O,N,c]"),  # general ester/amide
-        Chem.MolFromSmarts("[#8]C(=O)"),  # carboxylic ester
-        Chem.MolFromSmarts("[#6](=O)C"),  # amide linkage
+        Chem.MolFromSmarts("[C,c][C](=O)[O,N,c]"),  # wider ester/amide patterns
+        Chem.MolFromSmarts("[#6](=O)N"),  # Amide linkage
+        Chem.MolFromSmarts("Cl"),  # Presence of chlorine indicating likely synthetic modification
+        Chem.MolFromSmarts("[#7]C(=O)C"),  # N-1 carbon amide (peptide-like bond)
+        Chem.MolFromSmarts("[#8]C(=O)"),  # General ester linkage
     ]
     
     # Check for natural core patterns
