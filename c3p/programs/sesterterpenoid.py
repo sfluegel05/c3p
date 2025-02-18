@@ -7,8 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_sesterterpenoid(smiles: str):
     """
     Determines if a molecule is a sesterterpenoid based on its SMILES string.
-    A sesterterpenoid is derived from a sesterterpene, showcasing a modified 25-carbon backbone, rearranged 
-    or involving ring structures and diverse functional groups.
+    A sesterterpenoid is derived from a sesterterpene, showcasing a modified C25 backbone, 
+    rearranged or involving additional ring structures and diverse functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -26,24 +26,35 @@ def is_sesterterpenoid(smiles: str):
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Sesterterpenoids often have ~25 carbons; allow for minor modifications
-    if c_count < 20 or c_count > 30:
-        return False, f"Carbon count of {c_count} is outside the range typical for sesterterpenoids"
+    # Widely allow for structural variability in sesterterpenoids
+    if c_count < 20 or c_count > 40:
+        return False, f"Carbon count of {c_count} is outside the expanded range typical for sesterterpenoids"
 
     # Check for rings; sesterterpenoids frequently have multiple rings
     ring_count = mol.GetRingInfo().NumRings()
-    if ring_count < 2:
-        return False, "Contains less than 2 ring structures typical for sesterterpenoids"
+    if ring_count < 1:
+        return False, "Contains less than 1 ring, uncommon for sesterterpenoids"
 
-    # Look for common terpenoid structure indicator: isoprene (C5) like units
+    # Check for modified isoprene-like structures or large frameworks
+    modified_structure_count = 0
     isoprene_pattern = Chem.MolFromSmarts("C=C(C)C")
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "Lacks recognized terpenoid C5-like structural units"
+    for match in mol.GetSubstructMatches(isoprene_pattern):
+        modified_structure_count += 1
 
-    # Functional group diversity; check for heteroatom presence (N, O, S)
-    heteroatoms_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [7, 8, 16])
-    if heteroatoms_count < 1:
-        return False, "Insufficient heteroatoms indicating lack of functional group diversity common in sesterterpenoids"
+    if modified_structure_count < 2:
+        return False, "Lacks enough recognized isoprene-like structural units for sesterterpenoids"
+
+    # Look for specific terpenoid-like motifs: cyclohexane or cyclopentane units
+    cyclic_motif_pattern = Chem.MolFromSmarts("C1CCCCC1 | C1CCCC1")
+    if len(mol.GetSubstructMatches(cyclic_motif_pattern)) < 1:
+        return False, "Missing key cyclic motifs common in terpenoids"
+
+    # Functional group diversity; check for common sesterterpenoid traits
+    oxygen_pattern = Chem.MolFromSmarts("[OH]")
+    oxygen_matches = len(mol.GetSubstructMatches(oxygen_pattern))
+    
+    if oxygen_matches == 0:
+        return False, "No hydroxyl groups which are often present in sesterterpenoid moieties"
 
     # If all checks are satisfied, classify as sesterterpenoid
-    return True, "Molecule has characteristics typical of a sesterterpenoid: modified backbone, functional diversity, and sufficient ring structures"
+    return True, "Molecule exhibits a modified terpenoid backbone with requisite structural diversity typical of a sesterterpenoid."
