@@ -24,19 +24,38 @@ def is_polyunsaturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (-COOH)
+    # Check for exactly one carboxylic acid group
     carboxylic_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2H1]')
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    carboxylic_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(carboxylic_matches) != 1:
+        return False, f"Found {len(carboxylic_matches)} carboxylic acid groups (need exactly 1)"
 
-    # Count all carbon-carbon double bonds in the molecule
+    # Check for aromatic rings
+    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
+        return False, "Contains aromatic rings"
+
+    # Check for disqualifying functional groups (ester, amide, phosphate)
+    ester_pattern = Chem.MolFromSmarts('[OD1]-C(=O)-C')
+    amide_pattern = Chem.MolFromSmarts('[ND1]-C(=O)')
+    phosphate_pattern = Chem.MolFromSmarts('[P](=O)(O)(O)')
+    
+    if mol.HasSubstructMatch(ester_pattern):
+        return False, "Contains ester group"
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Contains amide group"
+    if mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Contains phosphate group"
+
+    # Count non-aromatic carbon-carbon double bonds
     double_bond_count = 0
     for bond in mol.GetBonds():
         if bond.GetBondType() == Chem.BondType.DOUBLE:
-            # Check if both atoms in bond are carbons
-            if (bond.GetBeginAtom().GetAtomicNum() == 6 and 
-                bond.GetEndAtom().GetAtomicNum() == 6):
-                double_bond_count += 1
+            begin = bond.GetBeginAtom()
+            end = bond.GetEndAtom()
+            if begin.GetAtomicNum() == 6 and end.GetAtomicNum() == 6:
+                # Exclude conjugated systems in non-aliphatic parts
+                if not bond.IsInRing() or bond.GetIsConjugated():
+                    double_bond_count += 1
 
     if double_bond_count > 1:
         return True, f"Contains {double_bond_count} carbon-carbon double bonds"
