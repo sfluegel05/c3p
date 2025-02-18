@@ -11,8 +11,8 @@ def is_N_acylsphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylsphingosine based on its SMILES string.
     Must contain:
-    1. Sphingosine backbone with amino alcohol and double bond
-    2. Amide-linked fatty acid chain
+    1. Sphingosine backbone with amino alcohol and double bond in the chain
+    2. Amide-linked fatty acyl group
     3. Minimum 12 carbons in sphingosine chain
     """
     mol = Chem.MolFromSmiles(smiles)
@@ -21,46 +21,67 @@ def is_N_acylsphingosine(smiles: str):
 
     # Check for amide group (N connected to carbonyl)
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
-    if not mol.HasSubstructMatch(amide_pattern):
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if not amide_matches:
         return False, "No amide group found"
 
-    # Find sphingosine backbone pattern: amino alcohol with double bond
-    # Pattern: NH connected to CH(OH)CH2... with a double bond in the chain
-    sphingosine_pattern = Chem.MolFromSmarts("[NH][C]([OH])([CH2])[CH2]/[CH]=[CH]/[CH2]")
-    if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "Missing sphingosine backbone features"
-
-    # Verify fatty acid chain length (amide-connected chain)
-    # Get amide nitrogen and follow R-group
-    matches = mol.GetSubstructMatches(amide_pattern)
-    for match in matches:
-        nitrogen_idx = match[0]
+    # Iterate through all amide matches to find valid structure
+    for amide_match in amide_matches:
+        nitrogen_idx = amide_match[0]
+        carbonyl_idx = amide_match[1]
         nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
         
-        # Get connected carbon chain (fatty acid)
-        fatty_acid_chain = []
+        # Find sphingosine carbon (connected to nitrogen and has OH)
+        sphingosine_carbon = None
         for neighbor in nitrogen.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != match[1]:
-                chain_atom = neighbor
+            if neighbor.GetIdx() == carbonyl_idx:
+                continue  # Skip the carbonyl carbon
+            # Check if this neighbor has an OH group
+            for nbr_bond in neighbor.GetBonds():
+                other_atom = nbr_bond.GetOtherAtom(neighbor)
+                if other_atom.GetAtomicNum() == 8 and nbr_bond.GetBondType() == Chem.BondType.SINGLE:
+                    sphingosine_carbon = neighbor
+                    break
+            if sphingosine_carbon:
                 break
-        else:
-            continue
+        if not sphingosine_carbon:
+            continue  # No amino alcohol found
         
-        # Traverse the fatty acid chain
-        chain_length = 0
-        stack = [(chain_atom, 0)]
+        # Traverse sphingosine chain to check length and double bond
         visited = set()
+        stack = [(sphingosine_carbon, 0)]
+        chain_atoms = set()
+        double_bond_found = False
+        
         while stack:
             atom, depth = stack.pop()
-            if atom.GetAtomicNum() != 6 or atom.GetIdx() in visited:
+            if atom.GetIdx() in visited:
                 continue
             visited.add(atom.GetIdx())
-            chain_length = max(chain_length, depth + 1)
-            for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited:
-                    stack.append((nbr, depth + 1))
+            if atom.GetAtomicNum() != 6:
+                continue  # Only track carbons
+            chain_atoms.add(atom.GetIdx())
+            
+            # Check bonds for double bonds in the chain
+            for bond in atom.GetBonds():
+                if bond.GetBondType() == Chem.BondType.DOUBLE:
+                    other = bond.GetOtherAtom(atom)
+                    if other.GetAtomicNum() == 6 and other.GetIdx() in chain_atoms:
+                        double_bond_found = True
+            
+            # Continue traversal avoiding backtracking to nitrogen/OH
+            for bond in atom.GetBonds():
+                other = bond.GetOtherAtom(atom)
+                if other.GetIdx() == nitrogen_idx:
+                    continue  # Don't go back to amide nitrogen
+                if other.GetAtomicNum() == 8 and other in [a for a in sphingosine_carbon.GetNeighbors()]:
+                    continue  # Skip OH oxygen
+                if other.GetAtomicNum() == 6 and other.GetIdx() not in visited:
+                    stack.append((other, depth + 1))
         
-        if chain_length >= 8:  # Minimum 8 carbons in fatty acid
+        # Verify chain requirements
+        chain_length = len(chain_atoms)
+        if chain_length >= 12 and double_bond_found:
             return True, "Contains sphingosine backbone with N-linked fatty acyl chain"
-
-    return False, "Fatty acid chain too short or missing required features"
+    
+    return False, "Missing sphingosine backbone features or chain too short"
