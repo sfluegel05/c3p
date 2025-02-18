@@ -16,33 +16,72 @@ def is_nonclassic_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check total carbons = 20 (derived from C20 fatty acid)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, f"Contains {c_count} carbons (requires 20)"
+    # Check for carboxylic acid or ester (essential for fatty acid derivatives)
+    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][#6]")
+    has_acid = mol.HasSubstructMatch(acid_pattern)
+    has_ester = mol.HasSubstructMatch(ester_pattern)
+    if not (has_acid or has_ester):
+        return False, "No carboxylic acid/ester group"
 
-    # Check for carboxylic acid or ester group (common in icosanoids)
-    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")  # Carboxylic acid
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][#6]")  # Ester
-    if not mol.HasSubstructMatch(acid_pattern) and not mol.HasSubstructMatch(ester_pattern):
-        return False, "No carboxylic acid or ester group"
+    # Collect positions of acid/ester carbonyl carbons for exclusion
+    acid_ester_carbonyls = set()
+    for match in mol.GetSubstructMatches(acid_pattern) + mol.GetSubstructMatches(ester_pattern):
+        acid_ester_carbonyls.add(match[0])
 
-    # Check oxygenation: at least one hydroxyl, epoxy, or ketone (excluding acid/ester)
-    hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[OH]"))
-    epoxy = mol.HasSubstructMatch(Chem.MolFromSmarts("C1OC1"))
-    ketone = mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3]=[OX1]"))  # Exclude acid/ester (already checked)
-    if not (hydroxyl or epoxy or ketone):
-        return False, "No hydroxyl, epoxy, or ketone groups"
+    # Oxygenation checks (must have at least one beyond acid/ester)
+    has_oxygenation = False
+    # Check hydroxyls not in acid group
+    acid_oxygens = {match[1] for match in mol.GetSubstructMatches(acid_pattern)}
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[OH]")) and any(oh[0] not in acid_oxygens for oh in mol.GetSubstructMatches("[OH]")):
+        has_oxygenation = True
+    # Check epoxy groups
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("C1OC1")):
+        has_oxygenation = True
+    # Check ketones not in acid/ester
+    if any(match[0] not in acid_ester_carbonyls for match in mol.GetSubstructMatches("[CX3]=[OX1]")):
+        has_oxygenation = True
 
-    # Exclude prostanoids (5-membered carbon ring)
+    if not has_oxygenation:
+        return False, "No hydroxyl/epoxy/ketone groups beyond acid/ester"
+
+    # Exclude prostanoids (5-membered all-carbon rings)
     ring_info = mol.GetRingInfo()
     for ring in ring_info.AtomRings():
         if len(ring) == 5 and all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
-            return False, "Contains 5-membered carbon ring (prostanoid)"
+            return False, "Contains prostanoid ring"
 
-    # Exclude leukotrienes (conjugated trienes: three consecutive double bonds)
-    triene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
-    if mol.HasSubstructMatch(triene_pattern):
-        return False, "Contains conjugated triene (leukotriene)"
-
-    return True, "C20 fatty acid derivative with oxygenation, not prostanoid/leukotriene"
+    # Check approximate C20 backbone via chain length from carboxylic acid
+    # Find longest chain starting from acid's alpha carbon
+    acid_matches = mol.GetSubstructMatches(acid_pattern)
+    chain_lengths = []
+    for match in acid_matches:
+        alpha_carbon = None
+        for neighbor in mol.GetAtomWithIdx(match[0]).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != match[1]:
+                alpha_carbon = neighbor.GetIdx()
+                break
+        if alpha_carbon is None:
+            continue
+        
+        visited = {match[0], alpha_carbon}
+        current = alpha_carbon
+        length = 1
+        
+        while True:
+            next_carbons = []
+            for neighbor in mol.GetAtomWithIdx(current).GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                    next_carbons.append(neighbor.GetIdx())
+            if len(next_carbons) != 1:
+                break
+            current = next_carbons[0]
+            visited.add(current)
+            length += 1
+        
+        chain_lengths.append(length)
+    
+    if chain_lengths and max(chain_lengths) >= 18:  # Account for possible oxidation shortening
+        return True, "C20-derived structure with oxygenation, not prostanoid"
+    
+    return False, "Doesn't meet C20 backbone requirements"
