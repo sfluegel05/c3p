@@ -1,0 +1,218 @@
+"""
+Classifies: CHEBI:36976 nucleotide
+"""
+ - 3'-L-histidyl-AMP: SMILES: NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(=O)(O)O)[C@@H](OC(=O)[C@@H](N)Cc4cnc[nH]4)[C@H]3O
+ - 3'-O-methyladenosine 5'-monophosphate: SMILES: CO[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c(N)ncnc12
+ - 3'-L-seryl-AMP: SMILES: NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(=O)(O)O)[C@@H](OC(=O)[C@@H](N)CO)[C@H]3O
+ - 3'-O-phosphonoadenosine: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O
+ - 2'-O-methylguanosine 5'-monophosphate: SMILES: CO[C@@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(N)[nH]c2=O
+ - 3'-L-alanyl-AMP: SMILES: NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(=O)(O)O)[C@@H](OC(=O)[C@@H](N)C)[C@H]3O
+ - 8-hydroxy-dAMP: SMILES: Nc1ncnc2n([C@H]3C[C@H](O)[C@@H](COP(O)(O)=O)O3)c(O)nc12
+ - 5'-O-phosphonoadenosine: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O
+ - 3'-L-lysyl-AMP: SMILES: NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(=O)(O)O)[C@@H](OC(=O)[C@@H](N)CCCCN)[C@H]3O
+ - 3'-O-phosphonoguanosine: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O
+ - 5'-O-phosphonouridine: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O
+ - 3'-O-phosphonocytidine: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1
+ - 5'-O-phosphonoguanosine: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O
+ - 3'-O-phosphonouridine: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O
+ - 3'-O-phosphonothymidine: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O
+ - 5'-O-phosphonocytidine: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1
+ - 5'-O-phosphonothymidine: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O
+ - 3'-O-phosphonoinosine: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O
+ - 5'-O-phosphonoinosine: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O
+ - 3'-O-phosphonoxanthosine: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1
+ - 5'-O-phosphonoxanthosine: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1
+ - 3'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-diphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-diphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-triphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-triphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-triphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-triphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-triphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-triphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-triphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-triphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-triphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-triphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-triphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-triphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-triphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-triphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-diphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-diphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-triphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-triphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-triphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-triphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-triphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-triphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-triphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-triphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-triphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-triphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-triphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-triphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-triphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-triphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-diphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-diphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-triphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-triphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-triphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-triphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-triphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-triphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-triphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-triphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-triphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-triphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-triphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-triphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-triphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-triphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-diphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-diphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-triphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-triphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-triphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-triphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-triphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-triphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-triphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-triphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-triphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-triphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-triphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-triphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-triphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-triphosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-monophosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-monophosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-monophosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-monophosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-monophosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-monophosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O
+ - 3'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 5'-O-phosphonoadenosine 5'-monophosphate: SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O
+ - 3'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonouridine 5'-diphosphate: SMILES: O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoguanosine 5'-diphosphate: SMILES: Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonocytidine 5'-diphosphate: SMILES: Nc1ccn([C@@H]2O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]2O)c(=O)n1.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonothymidine 5'-diphosphate: SMILES: Cc1c(C)[nH]c(=O)[nH]c1=O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoinosine 5'-diphosphate: SMILES: O[C@H]1[C@H](O)[C@@H](COP(O)(O)=O)O[C@H]1n1cnc2c1nc(O)[nH]c2=O.OP(O)(O)=O.OP(O)(O)=O
+ - 3'-O-phosphonoxanthosine 5'-diphosphate: SMILES: O=C1Nc2ncn([C@@H]3O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]3O)c2n1.OP(O)(O)=O.OP(O)(O)=O
+ - 5'-O-phosphonoxanthosine 5'-diph
