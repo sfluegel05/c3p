@@ -23,51 +23,62 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carbohydrate component: cyclic structure with multiple hydroxyl groups
-    # Look for a 5 or 6-membered ring with at least 3 oxygen atoms (as hydroxyl or ring oxygen)
-    carb_pattern = Chem.MolFromSmarts('[C;R5,R6][OH]')
-    carb_matches = mol.GetSubstructMatches(carb_pattern)
-    if len(carb_matches) < 3:
-        return False, "Insufficient carbohydrate features (cyclic structure with hydroxyls)"
+    # Improved carbohydrate detection: look for sugar-like rings (5/6 membered with multiple oxygens)
+    # Pattern matches rings with >=2 oxygen atoms (either in ring or as hydroxyls)
+    carb_pattern = Chem.MolFromSmarts('[O;r5,r6]~[C;r5,r6]~[O;r5,r6]')
+    if not mol.HasSubstructMatch(carb_pattern):
+        carb_pattern2 = Chem.MolFromSmarts('[C;r5,r6][OH]')
+        carb_matches = mol.GetSubstructMatches(carb_pattern2)
+        if len(carb_matches) < 2:
+            return False, "No carbohydrate moiety detected (cyclic structure with multiple oxygens)"
 
-    # Check for lipid component: long aliphatic chain (>=8 carbons) or ester/amide linkage
-    # Look for ester (O-C=O) or amide (N-C=O) groups connected to long chains
+    # Lipid component check: long aliphatic chain (>=8 carbons) connected via ester/amide
     lipid_found = False
     ester_amide_pattern = Chem.MolFromSmarts('[O,N][C]=O')
     ester_amide_matches = mol.GetSubstructMatches(ester_amide_pattern)
     
     for match in ester_amide_matches:
-        # Get the oxygen/nitrogen atom in the ester/amide
-        o_n_atom = mol.GetAtomWithIdx(match[0])
-        # Check neighboring carbons for long chains
-        for neighbor in o_n_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:
-                # Traverse the chain starting from this carbon
-                chain_length = 0
-                current = neighbor
-                visited = set()
-                stack = [(current, 0)]  # (atom, current_length)
-                max_length = 0
-                while stack:
-                    atom, length = stack.pop()
-                    if atom.GetIdx() in visited:
-                        continue
-                    visited.add(atom.GetIdx())
-                    if length > max_length:
-                        max_length = length
-                    # Follow non-ring, non-carbonyl carbons
+        # Start from carbonyl carbon (index 1 in match [O,N]-C=O)
+        carbonyl_carbon = mol.GetAtomWithIdx(match[1])
+        
+        # Traverse two directions from carbonyl carbon
+        for neighbor in carbonyl_carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() != 6 or neighbor.GetIdx() == match[0]:
+                continue  # Skip non-carbon atoms and back to O/N
+                
+            # Track longest chain in this direction
+            chain_length = 0
+            visited = set()
+            stack = [(neighbor, 0)]
+            
+            while stack:
+                atom, depth = stack.pop()
+                if atom.GetIdx() in visited:
+                    continue
+                visited.add(atom.GetIdx())
+                
+                # Only follow aliphatic carbons not in rings
+                if (atom.GetAtomicNum() == 6 and
+                    not atom.IsInRing() and
+                    not any(bond.GetBondType() == Chem.BondType.AROMATIC 
+                            for bond in atom.GetBonds())):
+                    
+                    chain_length = max(chain_length, depth + 1)
+                    # Continue traversing non-ring, non-carbonyl carbons
                     for next_atom in atom.GetNeighbors():
-                        if (next_atom.GetAtomicNum() == 6 and 
-                            not next_atom.IsInRing() and 
-                            next_atom.GetBondToAtom(atom).GetBondType() == Chem.BondType.SINGLE):
-                            stack.append((next_atom, length + 1))
-                if max_length >= 7:  # 8 carbons including starting point
-                    lipid_found = True
-                    break
+                        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), next_atom.GetIdx())
+                        if (bond.GetBondType() == Chem.BondType.SINGLE and
+                            next_atom.GetAtomicNum() == 6 and
+                            not next_atom.IsInRing()):
+                            stack.append((next_atom, depth + 1))
+            
+            if chain_length >= 7:  # 8 carbons including starting point
+                lipid_found = True
+                break
         if lipid_found:
             break
 
     if not lipid_found:
-        return False, "No lipid component (long chain with ester/amide) detected"
+        return False, "No lipid component (long chain >=8 carbons connected via ester/amide)"
 
     return True, "Contains carbohydrate and lipid components linked via ester/amide"
