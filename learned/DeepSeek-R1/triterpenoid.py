@@ -1,100 +1,45 @@
 """
 Classifies: CHEBI:36615 triterpenoid
 """
- - 3beta,24,25-Trihydroxy-9,19-cyclolanostane: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 24,25-Dihydroxycycloartane: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloartane: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloartane: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-24-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-25-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-23-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-23-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-22-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-22-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-21-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-21-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-20-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-20-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-19-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-19-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-18-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-18-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-17-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-17-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-16-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-16-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-15-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-15-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-14-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-14-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-13-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-13-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-12-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-12-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-11-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-11-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-10-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-10-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-9-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-9-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-8-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-8-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-7-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-7-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-6-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-6-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-5-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-5-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-4-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-4-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-3-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-3-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-2-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-2-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-1-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-1-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-0-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-0-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-1)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-1)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-2)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-2)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-3)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-3)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-4)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-4)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-5)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-5)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-6)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-6)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-7)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-7)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-8)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-8)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-9)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-9)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-10)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-10)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-11)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-11)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-12)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-12)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-13)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-13)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-14)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-14)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-15)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-15)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-16)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-16)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-17)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-17)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-18)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-18)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-19)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-19)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-20)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-20)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25-dihydroxycycloart-(-21)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,24-dihydroxycycloart-(-21)-ene: SMILES: O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C.O[C@H]1C[C@H]2[C@H]3CC[C@]4(C)[C@@H](CC[C@]5(C)[C@H]4CC[C@]45[C@H](C(C[C@]5(C)CC4)(C)C)O)[C@H]3C[C@]12C
- - 3beta,25
+"""
+Classifies: CHEBI:XXXXX triterpenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+
+def is_triterpenoid(smiles: str):
+    """
+    Determines if a molecule is a triterpenoid based on its SMILES string.
+    A triterpenoid is derived from a triterpene (C30 skeleton), possibly modified.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a triterpenoid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Count carbon atoms
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 25:
+        return False, f"Only {carbon_count} carbons, insufficient for triterpenoid"
+    
+    # Calculate molecular weight (approximate)
+    mol_wt = Descriptors.ExactMolWt(mol)
+    if mol_wt < 400:
+        return False, f"Molecular weight ({mol_wt:.1f}) too low for triterpenoid"
+    
+    # Check for complex ring system (at least 3 rings)
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    if num_rings < 3:
+        return False, f"Only {num_rings} rings, insufficient for triterpenoid structure"
+    
+    # Optional: Check for isoprene-related patterns (simplified)
+    # This is challenging; instead, rely on the above checks
+    
+    return True, "Meets triterpenoid criteria: sufficient carbons, molecular weight, and ring complexity"
