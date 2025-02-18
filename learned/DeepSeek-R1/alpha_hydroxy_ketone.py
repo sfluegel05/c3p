@@ -1,189 +1,46 @@
 """
 Classifies: CHEBI:139588 alpha-hydroxy ketone
 """
- - 2,3-dihydroxybutan-2-one: SMILES: CC(O)(CO)C(=O)O
- - 2-hydroxy-3-oxobutanoic acid: SMILES: CC(=O)C(O)C(=O)O
- - 2,3-dihydroxy-3-methylpentanoic acid: SMILES: CC(C)(C(O)C(=O)O)O
- - 3-hydroxy-3-methyl-2-oxopentanoic acid: SMILES: CCC(C)(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohexanoic acid: SMILES: CCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxopentanoic acid: SMILES: CCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoheptanoic acid: SMILES: CCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxooctanoic acid: SMILES: CCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxononanoic acid: SMILES: CCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxodecanoic acid: SMILES: CCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoundecanoic acid: SMILES: CCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxododecanoic acid: SMILES: CCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotridecanoic acid: SMILES: CCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotetradecanoic acid: SMILES: CCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxopentadecanoic acid: SMILES: CCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohexadecanoic acid: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoheptadecanoic acid: SMILES: CCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxooctadecanoic acid: SMILES: CCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxononadecanoic acid: SMILES: CCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoeicosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoheneicosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxodocosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotricosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotetracosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxopentacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohexacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoheptacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxooctacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxononacosanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohentriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxodotriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotritriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotetratriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxopentatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohexatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoheptatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxooctatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxononatriacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotetracontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohenpentacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohexapentacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoheptapentacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxooctapentacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxononapentacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohenhexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxodotrihexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotritrihexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxotetratrihexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxopentatrihexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxohexatrihexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoheptatrihexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxooctatrihexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxononatrihexacontanoic acid: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)C(=O)O
- - 3-hydroxy-2-oxoheptadecanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxooctadecanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxononadecanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxoeicosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxoheneicosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxodocosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxotricosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxotetracosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxopentacosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxohexacosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxoheptacosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxooctacosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxononacosanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxotriacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxohenpentacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxohexapentacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxoheptapentacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxooctapentacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxononapentacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxohexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxohenhexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxodotrihexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxotritrihexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxotetratrihexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxopentatrihexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxohexatrihexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxoheptatrihexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxooctatrihexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxononatrihexacontanedioic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)O
- - 3-hydroxy-2-oxoheptadecanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxooctadecanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxononadecanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxoeicosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxoheneicosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxodocosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxotricosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxotetracosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxopentacosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxohexacosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxoheptacosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxooctacosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxononacosanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxotriacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxohenpentacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxohexapentacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxoheptapentacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxooctapentacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxononapentacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxohexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxohenhexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxodotrihexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxotritrihexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxotetratrihexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxopentatrihexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxohexatrihexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxoheptatrihexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxooctatrihexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxononatrihexacontanetriolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)O
- - 3-hydroxy-2-oxoheptadecanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxooctadecanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxononadecanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoeicosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoheneicosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxodocosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxotricosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxotetracosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxopentacosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxohexacosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoheptacosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxooctacosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxononacosanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxotriacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxohenpentacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxohexapentacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoheptapentacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxooctapentacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxononapentacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxohexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxohenhexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxodotrihexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxotritrihexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxotetratrihexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxopentatrihexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxohexatrihexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoheptatrihexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxooctatrihexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxononatrihexacontanetetroic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoheptadecanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxooctadecanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxononadecanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxoeicosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxoheneicosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxodocosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxotricosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxotetracosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxopentacosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxohexacosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxoheptacosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxooctacosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxononacosanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxotriacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxohenpentacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxohexapentacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxoheptapentacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxooctapentacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxononapentacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxohexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxohenhexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxodotrihexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxotritrihexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxotetratrihexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxopentatrihexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxohexatrihexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxoheptatrihexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxooctatrihexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxononatrihexacontanepentolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)O
- - 3-hydroxy-2-oxoheptadecanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxooctadecanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxononadecanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoeicosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoheneicosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxodocosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxotricosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxotetracosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxopentacosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxohexacosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxoheptacosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxooctacosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxononacosanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxotriacontanehexolic acid: SMILES: O=C(O)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)C(O)C(=O)O
- - 3-hydroxy-2-oxohenpentacontanehexolic acid: SMILES: O=C(O)CCCCCCCCCC
+"""
+Classifies: alpha-hydroxy ketone (CHEBI:59805)
+"""
+from rdkit import Chem
+from rdkit.Chem import MolFromSmiles, MolFromSmarts
+
+def is_alpha_hydroxy_ketone(smiles: str):
+    """
+    Determines if a molecule is an alpha-hydroxy ketone based on its SMILES string.
+    An alpha-hydroxy ketone has a ketone group with a hydroxyl group on the adjacent (alpha) carbon.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an alpha-hydroxy ketone, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+
+    # Find all ketone groups (C=O where the carbon is bonded to two other carbons)
+    ketone_pattern = MolFromSmarts('[CX3]([#6])([#6])=O')
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    if not ketone_matches:
+        return False, "No ketone group found"
+
+    # Check each ketone's adjacent carbons for hydroxyl groups
+    for match in ketone_matches:
+        ketone_carbon = mol.GetAtomWithIdx(match[0])
+        # Get neighboring carbons (alpha carbons)
+        alpha_carbons = [neighbor for neighbor in ketone_carbon.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+        for alpha in alpha_carbons:
+            # Check if this alpha carbon has a hydroxyl group
+            for bond in alpha.GetBonds():
+                other = bond.GetOtherAtom(alpha)
+                if (other.GetAtomicNum() == 8 and 
+                    bond.GetBondType() == Chem.BondType.SINGLE and 
+                    other.GetTotalNumHs() >= 1):
+                    return True, f"Hydroxyl group found on alpha carbon adjacent to ketone at position {ketone_carbon.GetIdx()+1}"
+
+    return False, "No hydroxyl group on alpha carbon of any ketone"
