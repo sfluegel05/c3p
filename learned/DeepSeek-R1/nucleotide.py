@@ -24,20 +24,59 @@ def is_nucleotide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for nucleoside: sugar (ribose-like) connected to a heterocyclic base
-    # Sugar pattern: O-C1-C-O-C-O (approximate furanose structure)
-    # Base: aromatic nitrogen-containing ring (e.g., purine/pyrimidine)
-    nucleoside_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](O)[C@H](O1)n2cnc3c2ncnc3N")
-    if not mol.HasSubstructMatch(nucleoside_pattern):
-        return False, "No nucleoside moiety detected"
+    # Improved nucleoside detection: sugar + nitrogenous base
+    # 1. Find furanose sugar pattern (C1OCC(O)CO with stereochemistry)
+    sugar_pattern = Chem.MolFromSmarts("[C@H]1([C@H](O)[C@@H](O)C(O)[CH]1)")
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
+        return False, "No ribose-like sugar detected"
 
-    # Check for phosphate group attached to 3' or 5' oxygen
-    # Phosphate ester pattern: O-P(=O)(O)-O connected to sugar
-    phosphate_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](OP(=O)(O)O)[C@H](O1)n")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        # Check alternative positions (5' or 3')
-        alt_phosphate = Chem.MolFromSmarts("[C@H]1[C@H](OP(=O)(O)O)[C@@H](O)[C@H](O1)n")
-        if not mol.HasSubstructMatch(alt_phosphate):
-            return False, "No phosphate group attached to 3' or 5' position"
+    # 2. Check for nitrogenous base attached to C1' (first carbon in sugar)
+    base_attached = False
+    for sugar_match in sugar_matches:
+        sugar_atoms = list(sugar_match)
+        c1 = sugar_atoms[0]  # First atom in sugar pattern is C1'
+        for neighbor in mol.GetAtomWithIdx(c1).GetNeighbors():
+            if neighbor.GetAtomicNum() == 7 and neighbor.GetIsAromatic():
+                base_attached = True
+                break
+        if base_attached:
+            break
+    if not base_attached:
+        return False, "No nitrogenous base attached to sugar"
 
-    return True, "Nucleoside with phosphate group at 3' or 5' position"
+    # 3. Check phosphate groups attached to 3' or 5' positions
+    # 5' is first carbon in pattern (C1'), 3' is third carbon (index 2 in sugar_match)
+    phosphate_found = False
+    phosphate_pattern = Chem.MolFromSmarts("[O][P](=O)([O])[O]")
+    
+    for sugar_match in sugar_matches:
+        c3 = sugar_match[2]  # Third carbon (3' position)
+        c5 = sugar_match[0]  # First carbon (5' position)
+        
+        # Check 5' position
+        for bond in mol.GetAtomWithIdx(c5).GetBonds():
+            if bond.GetBondType() == Chem.BondType.SINGLE:
+                neighbor = bond.GetOtherAtomIdx(c5)
+                if mol.GetAtomWithIdx(neighbor).GetAtomicNum() == 15:  # Phosphorus
+                    phosphate_found = True
+                    break
+        # Check 3' position
+        for bond in mol.GetAtomWithIdx(c3).GetBonds():
+            if bond.GetBondType() == Chem.BondType.SINGLE:
+                neighbor = bond.GetOtherAtomIdx(c3)
+                if mol.GetAtomWithIdx(neighbor).GetAtomicNum() == 15:  # Phosphorus
+                    phosphate_found = True
+                    break
+        if phosphate_found:
+            break
+
+    if not phosphate_found:
+        return False, "No phosphate attached to 3' or 5' position"
+
+    # 4. Exclude CoA-like structures with bridge phosphates
+    # Look for thioester linkages (common in CoA derivatives)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("SCCNC(=O)")):
+        return False, "Contains CoA-like thioester group"
+
+    return True, "Contains nucleoside with phosphate at 3' or 5' position"
