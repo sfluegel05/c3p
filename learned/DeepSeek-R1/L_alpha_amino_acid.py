@@ -1,0 +1,256 @@
+"""
+Classifies: CHEBI:15705 L-alpha-amino acid
+"""
+ - L-tyrosine: SMILES: N[C@@H](Cc1ccc(O)cc1)C(O)=O
+ - 4-hydroxy-L-proline: SMILES: O=C(O)[C@@H]1CC(O)CN1
+ - 5-hydroxy-L-lysine: SMILES: NCCCC(C[C@H](N)C(O)=O)O
+ - L-arginine: SMILES: N[C@@H](CCCNC(=N)N)C(O)=O
+ - L-histidine: SMILES: N[C@@H](Cc1cnc[nH]1)C(O)=O
+ - L-lysine: SMILES: N[C@@H](CCCCN)C(O)=O
+ - L-asparagine: SMILES: N[C@@H](CC(=O)N)C(O)=O
+ - L-glutamine: SMILES: N[C@@H](CCC(=O)N)C(O)=O
+ - L-aspartic acid: SMILES: N[C@@H](CC(=O)O)C(O)=O
+ - L-glutamic acid: SMILES: N[C@@H](CCC(=O)O)C(O)=O
+ - L-alanine: SMILES: C[C@@H](C(=O)O)N
+ - L-serine: SMILES: C([C@@H](C(=O)O)N)O
+ - L-cysteine: SMILES: C([C@@H](C(=O)O)N)S
+ - L-valine: SMILES: CC(C)[C@@H](C(=O)O)N
+ - L-leucine: SMILES: CC(C)C[C@@H](C(=O)O)N
+ - L-isoleucine: SMILES: CC[C@H](C)[C@@H](C(=O)O)N
+ - L-proline: SMILES: C1C[C@H](NC1)C(=O)O
+ - L-tryptophan: SMILES: C1=CC=C2C(=C1)C(=CN2)C[C@@H](C(=O)O)N
+ - L-threonine: SMILES: C[C@H]([C@H](C(=O)O)N)O
+ - L-methionine: SMILES: CSCC[C@@H](C(=O)O)N
+ - L-ornithine: SMILES: C(CCN)C[C@@H](C(=O)O)N
+ - L-citrulline: SMILES: C(CCNC(=N)N)C[C@@H](C(=O)O)N
+ - L-hydroxyproline: SMILES: C1[C@H](C[C@@H](O)N1)C(=O)O
+ - L-selenocysteine: SMILES: C([C@@H](C(=O)O)N)[SeH]
+ - L-pipecolic acid: SMILES: C1CCN[C@@H](C1)C(=O)O
+ - L-azetidine-2-carboxylic acid: SMILES: C1C[N@H](C1)C(=O)O
+ - L-cycloserine: SMILES: C1[C@@H](N)NC(=O)O1
+ - L-allothreonine: SMILES: C[C@H](O)[C@@H](C(=O)O)N
+ - L-2-aminobutyric acid: SMILES: CCC[C@@H](C(=O)O)N
+ - L-norleucine: SMILES: CCCCC[C@@H](C(=O)O)N
+ - L-norvaline: SMILES: CCCC[C@@H](C(=O)O)N
+ - L-homoserine: SMILES: C(CO)C[C@@H](C(=O)O)N
+ - L-theanine: SMILES: C(CC(=O)N)C[C@@H](C(=O)O)N
+ - L-canavanine: SMILES: C(CNC(=N)N)C[C@@H](C(=O)O)N
+ - L-2,4-diaminobutyric acid: SMILES: C(CN)C[C@@H](C(=O)O)N
+ - L-3,4-dihydroxyphenylalanine: SMILES: C1=CC(=C(C=C1C[C@@H](C(=O)O)N)O)O
+ - L-phosphoserine: SMILES: C([C@@H](C(=O)O)N)OP(=O)(O)O
+ - L-phosphothreonine: SMILES: C[C@H](O[C@@H](C(=O)O)N)OP(=O)(O)O
+ - L-phosphotyrosine: SMILES: C1=CC(=CC=C1C[C@@H](C(=O)O)N)OP(=O)(O)O
+ - L-selenomethionine: SMILES]C[Se]CC[C@@H](C(=O)O)N
+ - L-djenkolic acid: SMILES: C(C(SC[C@@H](C(=O)O)N)SC[C@@H](C(=O)O)N)N
+ - L-thyroxine: SMILES: C1=C(C(=C(C(=C1I)C[C@@H](C(=O)O)N)O)I)I
+ - L-3,5-diiodotyrosine: SMILES: C1=C(C=C(C(=C1I)C[C@@H](C(=O)O)N)I)O
+ - L-3-iodotyrosine: SMILES: C1=CC(=C(C=C1C[C@@H](C(=O)O)N)I)O
+ - L-5-hydroxytryptophan: SMILES: C1=CC2=C(NC=C2)C(=C1O)C[C@@H](C(=O)O)N
+ - L-5-methyltryptophan: SMILES: C1=CC2=C(NC=C2)C(=C1)C(C[C@@H](C(=O)O)N)N
+ - L-6-fluorotryptophan: SMILES: C1=CC2=C(NC=C2)C(=C1F)C[C@@H](C(=O)O)N
+ - L-4-fluorophenylalanine: SMILES: C1=CC(=C(C=C1F)C[C@@H](C(=O)O)N)N
+ - L-3-fluorophenylalanine: SMILES: C1=CC(=CC(=C1)F)C[C@@H](C(=O)O)N
+ - L-2-fluorophenylalanine: SMILES: C1=CC=CC(=C1F)C[C@@H](C(=O)O)N
+ - L-4-chlorophenylalanine: SMILES: C1=CC(=C(C=C1Cl)C[C@@H](C(=O)O)N)N
+ - L-3-chlorophenylalanine: SMILES: C1=CC(=CC(=C1)Cl)C[C@@H](C(=O)O)N
+ - L-2-chlorophenylalanine: SMILES: C1=CC=CC(=C1Cl)C[C@@H](C(=O)O)N
+ - L-4-bromophenylalanine: SMILES: C1=CC(=C(C=C1Br)C[C@@H](C(=O)O)N)N
+ - L-3-bromophenylalanine: SMILES: C1=CC(=CC(=C1)Br)C[C@@H](C(=O)O)N
+ - L-2-bromophenylalanine: SMILES: C1=CC=CC(=C1Br)C[C@@H](C(=O)O)N
+ - L-4-iodophenylalanine: SMILES: C1=CC(=C(C=C1I)C[C@@H](C(=O)O)N)N
+ - L-3-iodophenylalanine: SMILES: C1=CC(=CC(=C1)I)C[C@@H](C(=O)O)N
+ - L-2-iodophenylalanine: SMILES: C1=CC=CC(=C1I)C[C@@H](C(=O)O)N
+ - L-4-nitrophenylalanine: SMILES: C1=CC(=C(C=C1[N+](=O)[O-])C[C@@H](C(=O)O)N)N
+ - L-3-nitrophenylalanine: SMILES: C1=CC(=CC(=C1)[N+](=O)[O-])C[C@@H](C(=O)O)N
+ - L-2-nitrophenylalanine: SMILES: C1=CC=CC(=C1[N+](=O)[O-])C[C@@H](C(=O)O)N
+ - L-4-methylphenylalanine: SMILES: C1=CC(=C(C=C1C)C[C@@H](C(=O)O)N)N
+ - L-3-methylphenylalanine: SMILES: C1=CC(=CC(=C1)C)C[C@@H](C(=O)O)N
+ - L-2-methylphenylalanine: SMILES: C1=CC=CC(=C1C)C[C@@H](C(=O)O)N
+ - L-4-aminophenylalanine: SMILES: C1=CC(=C(C=C1N)C[C@@H](C(=O)O)N)N
+ - L-3-aminophenylalanine: SMILES: C1=CC(=CC(=C1)N)C[C@@H](C(=O)O)N
+ - L-2-aminophenylalanine: SMILES: C1=CC=CC(=C1N)C[C@@H](C(=O)O)N
+ - L-4-hydroxyproline: SMILES: C1C[C@H](NC1O)C(=O)O
+ - L-3-hydroxyproline: SMILES: C1C[C@H](NC1O)C(=O)O
+ - L-2-hydroxyproline: SMILES: C1C[C@H](NC1O)C(=O)O
+ - L-4-oxoproline: SMILES: C1C[C@H](NC1=O)C(=O)O
+ - L-3-oxoproline: SMILES: C1C[C@H](NC1=O)C(=O)O
+ - L-2-oxoproline: SMILES: C1C[C@H](NC1=O)C(=O)O
+ - L-4-mercaptoproline: SMILES: C1C[C@H](NC1S)C(=O)O
+ - L-3-mercaptoproline: SMILES: C1C[C@H](NC1S)C(=O)O
+ - L-2-mercaptoproline: SMILES: C1C[C@H](NC1S)C(=O)O
+ - L-4-fluoroproline: SMILES: C1C[C@H](NC1F)C(=O)O
+ - L-3-fluoroproline: SMILES: C1C[C@H](NC1F)C(=O)O
+ - L-2-fluoroproline: SMILES: C1C[C@H](NC1F)C(=O)O
+ - L-4-chloroproline: SMILES: C1C[C@H](NC1Cl)C(=O)O
+ - L-3-chloroproline: SMILES: C1C[C@H](NC1Cl)C(=O)O
+ - L-2-chloroproline: SMILES: C1C[C@H](NC1Cl)C(=O)O
+ - L-4-bromoproline: SMILES: C1C[C@H](NC1Br)C(=O)O
+ - L-3-bromoproline: SMILES: C1C[C@H](NC1Br)C(=O)O
+ - L-2-bromoproline: SMILES: C1C[C@H](NC1Br)C(=O)O
+ - L-4-iodoproline: SMILES: C1C[C@H](NC1I)C(=O)O
+ - L-3-iodoproline: SMILES: C1C[C@H](NC1I)C(=O)O
+ - L-2-iodoproline: SMILES: C1C[C@H](NC1I)C(=O)O
+ - L-4-nitrosoproline: SMILES: C1C[C@H](NC1N=O)C(=O)O
+ - L-3-nitrosoproline: SMILES: C1C[C@H](NC1N=O)C(=O)O
+ - L-2-nitrosoproline: SMILES: C1C[C@H](NC1N=O)C(=O)O
+ - L-4-cyanoproline: SMILES: C1C[C@H](NC1C#N)C(=O)O
+ - L-3-cyanoproline: SMILES: C1C[C@H](NC1C#N)C(=O)O
+ - L-2-cyanoproline: SMILES: C1C[C@H](NC1C#N)C(=O)O
+ - L-4-azidoproline: SMILES: C1C[C@H](NC1N=[N+]=[N-])C(=O)O
+ - L-3-azidoproline: SMILES: C1C[C@H](NC1N=[N+]=[N-])C(=O)O
+ - L-2-azidoproline: SMILES: C1C[C@H](NC1N=[N+]=[N-])C(=O)O
+ - L-4-phosphonoproline: SMILES: C1C[C@H](NC1P(=O)(O)O)C(=O)O
+ - L-3-phosphonoproline: SMILES: C1C[C@H](NC1P(=O)(O)O)C(=O)O
+ - L-2-phosphonoproline: SMILES: C1C[C@H](NC1P(=O)(O)O)C(=O)O
+ - L-4-sulfonatoproline: SMILES: C1C[C@H](NC1S(=O)(=O)O)C(=O)O
+ - L-3-sulfonatoproline: SMILES: C1C[C@H](NC1S(=O)(=O)O)C(=O)O
+ - L-2-sulfonatoproline: SMILES: C1C[C@H](NC1S(=O)(=O)O)C(=O)O
+ - L-4-selenoproline: SMILES: C1C[C@H](NC1[SeH])C(=O)O
+ - L-3-selenoproline: SMILES: C1C[C@H](NC1[SeH])C(=O)O
+ - L-2-selenoproline: SMILES: C1C[C@H](NC1[SeH])C(=O)O
+ - L-4-telluroproline: SMILES: C1C[C@H](NC1[TeH])C(=O)O
+ - L-3-telluroproline: SMILES: C1C[C@H](NC1[TeH])C(=O)O
+ - L-2-telluroproline: SMILES: C1C[C@H](NC1[TeH])C(=O)O
+ - L-4-guanidinoproline: SMILES: C1C[C@H](NC1NC(=N)N)C(=O)O
+ - L-3-guanidinoproline: SMILES: C1C[C@H](NC1NC(=N)N)C(=O)O
+ - L-2-guanidinoproline: SMILES: C1C[C@H](NC1NC(=N)N)C(=O)O
+ - L-4-ureidoproline: SMILES: C1C[C@H](NC1NC(=O)N)C(=O)O
+ - L-3-ureidoproline: SMILES: C1C[C@H](NC1NC(=O)N)C(=O)O
+ - L-2-ureidoproline: SMILES: C1C[C@H](NC1NC(=O)N)C(=O)O
+ - L-4-thioureidoproline: SMILES: C1C[C@H](NC1NC(=S)N)C(=O)O
+ - L-3-thioureidoproline: SMILES: C1C[C@H](NC1NC(=S)N)C(=O)O
+ - L-2-thioureidoproline: SMILES: C1C[C@H](NC1NC(=S)N)C(=O)O
+ - L-4-carbamoylproline: SMILES: C1C[C@H](NC1C(=O)N)C(=O)O
+ - L-3-carbamoylproline: SMILES: C1C[C@H](NC1C(=O)N)C(=O)O
+ - L-2-carbamoylproline: SMILES: C1C[C@H](NC1C(=O)N)C(=O)O
+ - L-4-thiocarbamoylproline: SMILES: C1C[C@H](NC1C(=S)N)C(=O)O
+ - L-3-thiocarbamoylproline: SMILES: C1C[C@H](NC1C(=S)N)C(=O)O
+ - L-2-thiocarbamoylproline: SMILES: C1C[C@H](NC1C(=S)N)C(=O)O
+ - L-4-sulfamoylproline: SMILES: C1C[C@H](NC1S(=O)(=O)N)C(=O)O
+ - L-3-sulfamoylproline: SMILES: C1C[C@H](NC1S(=O)(=O)N)C(=O)O
+ - L-2-sulfamoylproline: SMILES: C1C[C@H](NC1S(=O)(=O)N)C(=O)O
+ - L-4-azetidinecarboxylic acid: SMILES: C1CNC1C(=O)O
+ - L-3-azetidinecarboxylic acid: SMILES: C1CNC1C(=O)O
+ - L-2-azetidinecarboxylic acid: SMILES: C1CNC1C(=O)O
+ - L-4-pyrrolidinecarboxylic acid: SMILES: C1CNCC1C(=O)O
+ - L-3-pyrrolidinecarboxylic acid: SMILES: C1CNCC1C(=O)O
+ - L-2-pyrrolidinecarboxylic acid: SMILES: C1CNCC1C(=O)O
+ - L-4-piperidinecarboxylic acid: SMILES: C1CCNCC1C(=O)O
+ - L-3-piperidinecarboxylic acid: SMILES: C1CCNCC1C(=O)O
+ - L-2-piperidinecarboxylic acid: SMILES: C1CCNCC1C(=O)O
+ - L-4-morpholinecarboxylic acid: SMILES: C1COCCN1C(=O)O
+ - L-3-morpholinecarboxylic acid: SMILES: C1COCCN1C(=O)O
+ - L-2-morpholinecarboxylic acid: SMILES: C1COCCN1C(=O)O
+ - L-4-thiomorpholinecarboxylic acid: SMILES: C1CSCCN1C(=O)O
+ - L-3-thiomorpholinecarboxylic acid: SMILES: C1CSCCN1C(=O)O
+ - L-2-thiomorpholinecarboxylic acid: SMILES: C1CSCCN1C(=O)O
+ - L-4-piperazinecarboxylic acid: SMILES: C1CNCCN1C(=O)O
+ - L-3-piperazinecarboxylic acid: SMILES: C1CNCCN1C(=O)O
+ - L-2-piperazinecarboxylic acid: SMILES: C1CNCCN1C(=O)O
+ - L-4-homopiperazinecarboxylic acid: SMILES: C1CCNCCN1C(=O)O
+ - L-3-homopiperazinecarboxylic acid: SMILES: C1CCNCCN1C(=O)O
+ - L-2-homopiperazinecarboxylic acid: SMILES: C1CCNCCN1C(=O)O
+ - L-4-azepanecarboxylic acid: SMILES: C1CCCCNC1C(=O)O
+ - L-3-azepanecarboxylic acid: SMILES: C1CCCCNC1C(=O)O
+ - L-2-azepanecarboxylic acid: SMILES: C1CCCCNC1C(=O)O
+ - L-4-azocanecarboxylic acid: SMILES: C1CCCCCNC1C(=O)O
+ - L-3-azocanecarboxylic acid: SMILES: C1CCCCCNC1C(=O)O
+ - L-2-azocanecarboxylic acid: SMILES: C1CCCCCNC1C(=O)O
+ - L-4-azacyclononanecarboxylic acid: SMILES: C1CCCCCCCNC1C(=O)O
+ - L-3-azacyclononanecarboxylic acid: SMILES: C1CCCCCCCNC1C(=O)O
+ - L-2-azacyclononanecarboxylic acid: SMILES: C1CCCCCCCNC1C(=O)O
+ - L-4-azacyclodecanecarboxylic acid: SMILES: C1CCCCCCCCNC1C(=O)O
+ - L-3-azacyclodecanecarboxylic acid: SMILES: C1CCCCCCCCNC1C(=O)O
+ - L-2-azacyclodecanecarboxylic acid: SMILES: C1CCCCCCCCNC1C(=O)O
+ - L-4-azacycloundecanecarboxylic acid: SMILES: C1CCCCCCCCCNC1C(=O)O
+ - L-3-azacycloundecanecarboxylic acid: SMILES: C1CCCCCCCCCNC1C(=O)O
+ - L-2-azacycloundecanecarboxylic acid: SMILES: C1CCCCCCCCCNC1C(=O)O
+ - L-4-azacyclododecanecarboxylic acid: SMILES: C1CCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclododecanecarboxylic acid: SMILES: C1CCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclododecanecarboxylic acid: SMILES: C1CCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclotridecanecarboxylic acid: SMILES: C1CCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclotridecanecarboxylic acid: SMILES: C1CCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclotridecanecarboxylic acid: SMILES: C1CCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclotetradecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclotetradecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclotetradecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclopentadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclopentadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclopentadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclohexadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclohexadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclohexadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacycloheptadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacycloheptadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacycloheptadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclooctadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclooctadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclooctadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclononadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclononadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclononadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacycloeicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacycloeicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacycloeicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacycloheneicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacycloheneicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacycloheneicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclodocosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclodocosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclodocosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclotricosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclotricosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclotricosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclotetracosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclotetracosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclotetracosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclopentacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclopentacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclopentacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclohexacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclohexacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclohexacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacycloheptacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacycloheptacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacycloheptacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclooctacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclooctacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclooctacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclononacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclononacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclononacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclotetradecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclotetradecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclotetradecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclopentadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclopentadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclopentadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclohexadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclohexadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclohexadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacycloheptadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacycloheptadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacycloheptadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclooctadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclooctadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclooctadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclononadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclononadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclononadecanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacycloeicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacycloeicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacycloeicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacycloheneicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacycloheneicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacycloheneicosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclodocosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclodocosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclodocosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclotricosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclotricosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclotricosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclotetracosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclotetracosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-2-azacyclotetracosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-4-azacyclopentacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCNC1C(=O)O
+ - L-3-azacyclopentacosanecarboxylic acid: SMILES: C1CCCCCCCCCCCCCCCCCCCCCCCNC1C(=
