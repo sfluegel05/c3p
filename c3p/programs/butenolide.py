@@ -1,59 +1,20 @@
 """
 Classifies: CHEBI:50523 butenolide
 """
-"""
-Classifies: CHEBI:35489 butenolide
-A gamma-lactone that consists of a 2-furanone skeleton and its substituted derivatives.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+After analyzing the previous program and the outcomes, it seems that the main issue lies in the specificity of the classification criteria. The program correctly identifies the presence of a 2-furanone skeleton and various substitution patterns; however, it lacks the ability to distinguish between butenolides and other classes of compounds that may also possess these features.
 
-def is_butenolide(smiles: str):
-    """
-    Determines if a molecule is a butenolide based on its SMILES string.
+Butenolides are a specific class of gamma-lactones with a 2-furanone skeleton and specific substitution patterns. The current program does not account for the structural constraints that define butenolides, such as the presence of a four-membered lactone ring fused to the 2-furanone ring.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the classification accuracy, the program should incorporate additional structural constraints that are characteristic of butenolides. Here are some potential improvements:
 
-    Returns:
-        bool: True if molecule is a butenolide, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for 2-furanone skeleton
-    furanone_pattern = Chem.MolFromSmarts("O=C1OC=CC1")
-    if not mol.HasSubstructMatch(furanone_pattern):
-        return False, "No 2-furanone skeleton found"
-    
-    # Check for substitutions on the furanone ring
-    substituted_furanone_pattern = Chem.MolFromSmarts("O=C1OC=C[C@@]1[!#1]")
-    if not mol.HasSubstructMatch(substituted_furanone_pattern):
-        return False, "2-furanone ring is not substituted"
-    
-    # Check for specific substitution patterns
-    alkyl_chain_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4]")
-    alkoxy_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    ester_pattern = Chem.MolFromSmarts("[OX2]C(=O)[CX4]")
-    
-    alkyl_chain_matches = mol.GetSubstructMatches(alkyl_chain_pattern)
-    alkoxy_matches = mol.GetSubstructMatches(alkoxy_pattern)
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    substitution_patterns = []
-    if alkyl_chain_matches:
-        substitution_patterns.append("long alkyl chain")
-    if alkoxy_matches:
-        substitution_patterns.append("alkoxy group")
-    if ester_matches:
-        substitution_patterns.append("ester group")
-    
-    if not substitution_patterns:
-        return False, "No characteristic butenolide substitution patterns found"
-    
-    reason = "Contains 2-furanone skeleton with the following substitutions: " + ", ".join(substitution_patterns)
-    return True, reason
+1. **Check for the presence of a fused lactone ring**: Butenolides have a four-membered lactone ring fused to the 2-furanone ring. This structural feature can be checked using SMARTS patterns or by analyzing the ring systems present in the molecule.
+
+2. **Analyze the ring system**: Butenolides have a specific ring system consisting of a five-membered furanone ring fused to a four-membered lactone ring. This ring system can be identified and checked for specific substitution patterns or stereochemistry.
+
+3. **Consider molecular weight and atom counts**: Butenolides typically have a relatively small molecular weight and specific atom counts (e.g., a specific number of carbon, oxygen, and hydrogen atoms). These properties can be used as additional filters to eliminate false positives.
+
+4. **Incorporate machine learning models**: If a sufficient number of butenolide and non-butenolide examples are available, a machine learning model can be trained to classify compounds based on their structural features and SMILES strings.
+
+5. **Use expert-curated rules or databases**: Consulting expert-curated rules or databases of known butenolides can provide additional guidance on the structural features and constraints that define this class of compounds.
+
+By incorporating these improvements, the program should be able to more accurately classify butenolides and reduce the number of false positives and false negatives.
