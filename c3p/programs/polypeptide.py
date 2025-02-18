@@ -15,20 +15,20 @@ def is_polypeptide(smiles: str):
         bool: True if molecule is a polypeptide, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Peptide bond SMARTS pattern: represents an amide bond typically found between amino acids
-    peptide_bond_pattern = Chem.MolFromSmarts('C(=O)N')
+    # General amino acid residue pattern, including common side chains
+    amino_acid_pattern = Chem.MolFromSmarts('N[C@@H](C(=O))')
 
-    # Find all matches of the peptide bond pattern
-    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    # Find all matches of the amino acid pattern
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
 
-    # Estimate number of amino acids: because each peptide bond connects two amino acids
-    num_amino_acids = len(peptide_bond_matches) + 1
+    # Count number of amino acids based on the pattern
+    num_amino_acids = len(amino_acid_matches)
 
     if num_amino_acids >= 10:
         return True, f"Contains {num_amino_acids} amino acid residues, classifying as polypeptide"
