@@ -2,12 +2,12 @@
 Classifies: CHEBI:46761 dipeptide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdChemReactions
 
 def is_dipeptide(smiles: str):
     """
     Determines if a molecule is a dipeptide based on its SMILES string.
-    A dipeptide is a molecule that contains two amino acid residues connected by peptide bonds.
+    A dipeptide is a molecule that contains two amino acid residues connected by peptide linkages.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,48 +22,67 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define peptide bond pattern (amide bond between two amino acids)
-    peptide_bond_smarts = '[NX3][CX3](=O)'
+    # Define patterns for peptide bond (amide bond between amino acids)
+    peptide_bond_smarts = '[C;$(C(=O))]-[N;$(N[^$(N=C)])]'
     peptide_bond = Chem.MolFromSmarts(peptide_bond_smarts)
 
-    # Find all peptide bonds
+    # Identify peptide bonds
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond)
-    num_peptide_bonds = len(peptide_bond_matches)
 
-    if num_peptide_bonds != 1:
-        return False, f"Found {num_peptide_bonds} peptide bonds, need exactly 1 for dipeptide"
+    # Build a graph where nodes are amino acid residues, edges are peptide bonds
+    # Initialize atom-to-residue mapping
+    atom_residue_map = {}
+    residue_idx = 0
 
-    # Define amino acid residue pattern (alpha amino acid backbone)
-    # N-C(alpha)-C(=O)
-    amino_acid_smarts = '[NX3][CX4H1][CX3](=O)'
-    amino_acid = Chem.MolFromSmarts(amino_acid_smarts)
+    # Define a pattern for the backbone nitrogen of an amino acid residue
+    backbone_nitrogen = Chem.MolFromSmarts('[N;!H0;!$(N[C]=O)]')
 
-    # Find all amino acid residues
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid)
-    num_amino_acids = len(amino_acid_matches)
+    # Identify the backbone nitrogens to define residues
+    backbone_nitrogen_matches = mol.GetSubstructMatches(backbone_nitrogen)
 
-    if num_amino_acids != 2:
-        return False, f"Found {num_amino_acids} amino acid residues, need exactly 2"
+    for match in backbone_nitrogen_matches:
+        atom_idx = match[0]
+        if atom_idx not in atom_residue_map:
+            residue_atoms = Chem.GetMolFragment(mol, atom_idx)
+            for atom in residue_atoms:
+                atom_residue_map[atom.GetIdx()] = residue_idx
+            residue_idx += 1
 
-    # Check if the amino acids are connected via the peptide bond
-    # Map the atoms involved in peptide bond
-    peptide_bond_atoms = [match for match in peptide_bond_matches[0]]
-    amino_acid_atoms = [list(match) for match in amino_acid_matches]
+    # Create a dictionary to represent the graph
+    residue_graph = {}
+    for i in range(residue_idx):
+        residue_graph[i] = set()
 
-    # Verify that the peptide bond connects the two amino acid residues
-    connected = False
-    for aa1 in amino_acid_atoms:
-        for aa2 in amino_acid_atoms:
-            if aa1 != aa2:
-                # Check if peptide bond connects aa1 and aa2
-                if (peptide_bond_atoms[0] in aa1 and peptide_bond_atoms[1] in aa2) or \
-                   (peptide_bond_atoms[0] in aa2 and peptide_bond_atoms[1] in aa1):
-                    connected = True
-                    break
-        if connected:
-            break
+    # Add edges between residues connected by peptide bonds
+    for match in peptide_bond_matches:
+        c_idx, n_idx = match
+        res1 = atom_residue_map.get(c_idx, None)
+        res2 = atom_residue_map.get(n_idx, None)
+        if res1 is not None and res2 is not None and res1 != res2:
+            residue_graph[res1].add(res2)
+            residue_graph[res2].add(res1)
 
-    if not connected:
-        return False, "Peptide bond does not connect the two amino acid residues"
+    # Find connected components (peptide chains)
+    visited = set()
+    chains = []
 
-    return True, "Contains two amino acid residues connected by a peptide bond"
+    for residue in residue_graph:
+        if residue not in visited:
+            chain = []
+            stack = [residue]
+            while stack:
+                current = stack.pop()
+                if current not in visited:
+                    visited.add(current)
+                    chain.append(current)
+                    stack.extend(residue_graph[current] - visited)
+            chains.append(chain)
+
+    # Determine the length of each peptide chain
+    chain_lengths = [len(chain) for chain in chains]
+
+    # Check if the longest chain has exactly two residues
+    if 2 in chain_lengths and max(chain_lengths) == 2:
+        return True, "Contains two amino acid residues connected by peptide bonds"
+    else:
+        return False, "Does not contain exactly two amino acid residues connected by peptide bonds"
