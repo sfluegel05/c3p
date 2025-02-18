@@ -41,43 +41,37 @@ def is_wax_ester(smiles: str):
     if len(fragments) != 2:
         return False, "Ester does not split molecule into two parts"
 
-    # Determine which fragment is alcohol (RO-) and which is acid (RCOO-)
+    # Determine which fragment is acid (RCOO-) and which is alcohol (RO-)
     def is_acid_fragment(frag):
-        return any(atom.GetAtomicNum() == 8 and atom.GetDegree() == 2 for atom in frag.GetAtoms() if atom.GetIdx() != ester_matches[0][1])
+        # Acid fragment has the carbonyl oxygen
+        return any(atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 0 for atom in frag.GetAtoms())
     
     acid_frag, alcohol_frag = (fragments[0], fragments[1]) if is_acid_fragment(fragments[0]) else (fragments[1], fragments[0])
 
-    # Check chain lengths using longest carbon chain
-    def get_longest_chain(fragment):
-        chains = []
-        for atom in fragment.GetAtoms():
-            if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1:  # Start from terminal carbon
-                chain = rdMolDescriptors.CalcNumAtomStereoCenters(fragment, atom.GetIdx())
-                chains.append(rdMolDescriptors.CalcLongestChain(fragment, atom.GetIdx()))
-        return max(chains) if chains else 0
+    # Calculate longest carbon chain for each fragment
+    acid_chain = rdMolDescriptors.CalcLongestChain(acid_frag)
+    alcohol_chain = rdMolDescriptors.CalcLongestChain(alcohol_frag)
 
-    alcohol_chain = get_longest_chain(alcohol_frag)
-    acid_chain = get_longest_chain(acid_frag) - 1  # Subtract carboxyl carbon
+    # Adjust acid chain length (subtract 1 for the carbonyl carbon in the ester)
+    acid_chain -= 1
+    if acid_chain < 8:
+        return False, f"Acid chain too short ({acid_chain} carbons)"
+    if alcohol_chain < 8:
+        return False, f"Alcohol chain too short ({alcohol_chain} carbons)"
 
-    if alcohol_chain < 12 or acid_chain < 12:
-        return False, f"Chains too short (alcohol: {alcohol_chain}, acid: {acid_chain})"
+    # Check for exactly two oxygen atoms (ester group only)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count != 2:
+        return False, f"Expected exactly 2 oxygen atoms, found {o_count}"
 
-    # Check for other functional groups
-    forbidden_patterns = [
-        "[N,S,P]",  # No heteroatoms besides O in ester
-        "[#6][F,Cl,Br,I]",  # No halogens
-        "[*]=O",  # No other carbonyl groups
-        "[*]=[*]=[*]",  # No allenes
-        "[*]#[*]",  # No triple bonds
-        "[*]O[C,S,N]",  # No ethers/thioesters/amides
-    ]
-    for pattern in forbidden_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return False, f"Contains forbidden pattern: {pattern}"
+    # Check for absence of other heteroatoms (N, S, P, halogens)
+    heteroatoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [6, 8, 1]]
+    if heteroatoms:
+        return False, f"Contains forbidden heteroatoms: {heteroatoms}"
 
-    # Check molecular weight (typical wax esters >350 g/mol)
+    # Check molecular weight (typical wax esters are >350 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 350:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da)"
 
-    return True, "Contains single ester linking two long hydrocarbon chains"
+    return True, "Single ester of long-chain fatty acid and fatty alcohol"
