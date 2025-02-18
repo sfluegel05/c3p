@@ -23,38 +23,32 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern to match peptide backbone with four residues
-    # Accounts for linear (3 bonds) and cyclic (4 bonds) structures
-    # The pattern matches four amino groups connected via alpha carbons and carbonyls
-    tetrapeptide_pattern = Chem.MolFromSmarts(
-        "[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)"
-    )
-    cyclic_pattern = Chem.MolFromSmarts(
-        "C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)"
+    # Improved patterns accounting for linear (3 bonds) and cyclic (4 bonds) structures
+    # Linear pattern allows modified termini (e.g. acetylated N-term or amidated C-term)
+    linear_pattern = Chem.MolFromSmarts(
+        "[$([NH2]-[CH]),$(C(=O)-[NH]-[CH])]"  # N-term
+        "[CH](-[!#1])-C(=O)-[NH]-[CH](-[!#1])-C(=O)-[NH]-[CH](-[!#1])-C(=O)-[NH]-[CH](-[!#1])"  # Core 3 bonds
+        "-C(=O)-[$([OH]),$([NH2]),$([O-]),$([NH]-[!#1])]"  # C-term
     )
     
-    # Check for linear tetrapeptide (3 peptide bonds) or cyclic (4 bonds)
-    has_linear = mol.HasSubstructMatch(tetrapeptide_pattern)
+    # Cyclic pattern requires 4 peptide bonds in a ring
+    cyclic_pattern = Chem.MolFromSmarts(
+        "C(=O)-[NH]-[CH](-[!#1])-C(=O)-[NH]-[CH](-[!#1])-C(=O)-[NH]-[CH](-[!#1])-C(=O)-[NH]-[CH](-[!#1])-C(=O)"
+    )
+    
+    # Check for matches
+    has_linear = mol.HasSubstructMatch(linear_pattern)
     has_cyclic = mol.HasSubstructMatch(cyclic_pattern)
     
     if has_linear or has_cyclic:
         return True, "Contains four amino acid residues connected by peptide bonds"
     
-    # Additional check for modified termini (e.g., acetylated N-terminus or amidated C-terminus)
-    modified_linear_pattern = Chem.MolFromSmarts(
-        "[C;H0](=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[NH]-[CH](-[!#1])(-[!#1])-C(=O)-[OH0]"
-    )
-    if mol.HasSubstructMatch(modified_linear_pattern):
-        return True, "Modified tetrapeptide backbone detected"
+    # Fallback: Verify peptide bond count and alpha carbons
+    peptide_bonds = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=[OX1])-[NX3]")))
+    alpha_carbons = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CH](-[!#1])(-C(=O)-[NX3])")))
     
-    # Count peptide bonds as fallback (may catch some edge cases)
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[NX3]")
-    num_peptide_bonds = len(mol.GetSubstructMatches(peptide_bond_pattern))
-    
-    if num_peptide_bonds >= 3 and num_peptide_bonds <=4:
-        # Verify there are exactly four amino acid residues
-        amino_groups = rdMolDescriptors.CalcNumAmideBonds(mol)
-        if amino_groups >=4:
-            return True, f"Found {num_peptide_bonds} peptide bonds and four amino groups"
+    # Linear requires 3 bonds, cyclic 4. Alpha carbons should be >=4 (modified residues may have more)
+    if (peptide_bonds == 3 and alpha_carbons >=4) or (peptide_bonds ==4 and alpha_carbons ==4):
+        return True, f"Found {peptide_bonds} peptide bonds and {alpha_carbons} alpha carbons"
     
     return False, "Does not match tetrapeptide structural requirements"
