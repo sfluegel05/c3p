@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_hydroxynaphthoquinone(smiles: str):
     """
     Determines if a molecule is a hydroxynaphthoquinone based on its SMILES string.
-    A hydroxynaphthoquinone is a naphthoquinone with at least one hydroxy group attached to the naphthalene ring.
+    A hydroxynaphthoquinone is a naphthoquinone with at least one hydroxy group attached to the naphthoquinone moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,25 +27,25 @@ def is_hydroxynaphthoquinone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more general naphthoquinone pattern (matches both 1,2 and 1,4-naphthoquinones)
-    naphthoquinone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)C(=O)C=C2")
+    naphthoquinone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)C(=O)C=C2|c1ccc2c(c1)C(=O)C=C(C2=O)")
     if not mol.HasSubstructMatch(naphthoquinone_pattern):
         return False, "No naphthoquinone moiety found"
 
-    # Look for at least one hydroxy group attached to the naphthalene ring
+    # Look for at least one hydroxy group attached to the naphthoquinone moiety
     hydroxy_pattern = Chem.MolFromSmarts("[OH]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     if len(hydroxy_matches) == 0:
         return False, "No hydroxy group found"
 
-    # Ensure the hydroxy group is directly attached to the naphthalene ring
-    naphthalene_atoms = set()
+    # Ensure the hydroxy group is directly attached to the naphthoquinone moiety
+    naphthoquinone_atoms = set()
     for match in mol.GetSubstructMatches(naphthoquinone_pattern):
-        naphthalene_atoms.update(match)
+        naphthoquinone_atoms.update(match)
 
     for hydroxy_match in hydroxy_matches:
         hydroxy_atom = mol.GetAtomWithIdx(hydroxy_match[0])
         neighbor_atom = hydroxy_atom.GetNeighbors()[0]
-        if neighbor_atom.GetIdx() not in naphthalene_atoms:
-            return False, "Hydroxy group not directly attached to the naphthalene ring"
+        if neighbor_atom.GetIdx() not in naphthoquinone_atoms:
+            return False, "Hydroxy group not directly attached to the naphthoquinone moiety"
 
-    return True, "Contains a naphthoquinone moiety with at least one hydroxy group directly attached to the naphthalene ring"
+    return True, "Contains a naphthoquinone moiety with at least one hydroxy group directly attached to the naphthoquinone moiety"
