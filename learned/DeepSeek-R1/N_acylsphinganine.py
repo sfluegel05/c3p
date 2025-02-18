@@ -24,44 +24,36 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define two possible core patterns without stereochemistry constraints
-    # Pattern 1: N-C(=O)-C(CO)-C(O)
-    pattern1 = Chem.MolFromSmarts('[NH1]C(=O)C(CO)C(O)')
-    # Pattern 2: N-C(=O)-C(O)-C(CO)
-    pattern2 = Chem.MolFromSmarts('[NH1]C(=O)C(O)C(CO)')
-    
-    # Check for either pattern
-    if not (mol.HasSubstructMatch(pattern1) or mol.HasSubstructMatch(pattern2)):
+    # Define core sphinganine pattern with stereochemistry
+    # Pattern matches: [NH]C(=O)-[C@...]-[C@...](O)-CH2OH and long carbon chain
+    sphinganine_pattern = Chem.MolFromSmarts(
+        '[NH1]C(=O)[C@H]([C@H](O)CCCCCCCCCCCCCCC)CO'  # Adjust chain length as needed
+    )
+    if not mol.HasSubstructMatch(sphinganine_pattern):
         return False, "Missing core sphinganine backbone with acyl group"
 
-    # Verify the fatty acyl chain has at least 2 carbons (acetyl is minimal example)
-    # Find the amide bond atom indices
-    amide_matches = mol.GetSubstructMatches(Chem.MolFromSmarts('[NH1]C(=O)'))
-    if not amide_matches:
-        return False, "No amide group found"
-    
-    # Get the carbonyl carbon (index 1 in the match [N, C=O])
-    carbonyl_carbon = amide_matches[0][1]
-    neighbor_atoms = mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors()
-    
-    # The acyl chain is the neighbor of carbonyl carbon not part of the amide
-    acyl_chain_start = [n for n in neighbor_atoms if n.GetIdx() != amide_matches[0][0]][0]
-    
-    # Traverse the acyl chain to count carbons
+    # Verify fatty acyl chain length (at least 8 carbons in acyl group)
+    amide_n = mol.GetSubstructMatch(Chem.MolFromSmarts('[NH1]C(=O)'))[0]
+    acyl_start = mol.GetAtomWithIdx(amide_n).GetNeighbors()[1]  # Carbonyl carbon
     chain_length = 0
     visited = set()
-    stack = [(acyl_chain_start, 0)]
+    stack = [(acyl_start, 0)]
+    
     while stack:
         atom, depth = stack.pop()
-        if atom.GetAtomicNum() == 6 and atom.GetIdx() not in visited:
-            visited.add(atom.GetIdx())
-            chain_length += 1
-            # Follow non-carbonyl, non-amide connections
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() not in visited and neighbor.GetIdx() != carbonyl_carbon:
+        if atom.GetIdx() in visited or atom.GetAtomicNum() != 6:
+            continue
+        visited.add(atom.GetIdx())
+        chain_length += 1
+        # Follow single bonds only, exclude branches
+        for bond in atom.GetBonds():
+            if bond.GetBondType() == Chem.BondType.SINGLE:
+                neighbor = bond.GetOtherAtom(atom)
+                if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6:
                     stack.append((neighbor, depth + 1))
     
-    if chain_length < 2:  # At least acetyl (2 carbons including carbonyl)
-        return False, f"Acyl chain too short (length {chain_length})"
+    # Subtract 1 for the carbonyl carbon itself
+    if (chain_length - 1) < 8:
+        return False, f"Acyl chain too short (length {chain_length-1})"
 
     return True, "Contains N-acylsphinganine structure with proper acyl chain"
