@@ -15,37 +15,47 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a 3-oxo-fatty acyl-CoA based on its SMILES string.
     The defined criteria are:
-      1. Presence of a 3-oxo fatty acyl thioester moiety. This is captured by the substructure
-         pattern [CX3](=O)[CH2]C(=O)S representing R-C(=O)-CH2-C(=O)-S.
-      2. Presence of a coenzyme A moiety. One of the hallmarks is the adenine substructure 
-         (as part of the ADP portion of CoA). We capture a typical adenine using the SMARTS pattern
-         n1cnc2ncnc(c12).
-    
+      1. Presence of a 3-oxo fatty acyl thioester moiety. Previously the pattern required an exact
+         "[CX3](=O)[CH2]C(=O)S" (as in acetoacetyl-CoA), but that misses substituted or cyclic systems.
+         Here we use a more flexible pattern "[CX3](=O)[#6]C(=O)S" so that the CH2 can be replaced by any aliphatic carbon.
+      2. Presence of a Coenzyme A moiety. A key hallmark is the adenine fragment. We capture a typical adenine
+         using the SMARTS pattern "n1cnc2ncnc(c12)".
+      3. To avoid classifying ionized (deprotonated) CoA derivatives, we check that the SMILES does not contain any
+         explicit deprotonated oxygens "[O-]".
+         
     Args:
-        smiles (str): A SMILES string representing the molecule.
+        smiles (str): SMILES string representing the molecule.
     
     Returns:
-        bool: True if the molecule is a 3-oxo-fatty acyl-CoA, False otherwise.
+        bool: True if the molecule matches the 3-oxo fatty acyl-CoA criteria, False otherwise.
         str: Explanation for the classification.
     """
-    # Parse the SMILES string into an RDKit molecule object.
+    # Parse the SMILES string to an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the substructure pattern for the 3-oxo fatty acyl thioester fragment.
-    # This pattern looks for a carbonyl group directly attached to a CH2 that is connected to 
-    # a second carbonyl which is bonded to a sulfur atom.
-    acyl_pattern = Chem.MolFromSmarts("[CX3](=O)[CH2]C(=O)S")
+    
+    # Exclude molecules that have explicit deprotonated phosphate groups (which appear as [O-]) 
+    # since we expect a neutral CoA moiety.
+    if "[O-]" in smiles:
+        return False, "Contains deprotonated phosphate groups, not a neutral CoA moiety"
+    
+    # Define a substructure SMARTS for the 3-oxo fatty acyl thioester fragment.
+    # This pattern now allows any aliphatic carbon (using [#6]) between the two carbonyls.
+    acyl_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]C(=O)S")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "Does not contain a 3-oxo fatty acyl thioester substructure"
-
-    # Define a substructure pattern for a key adenine fragment that is part of Coenzyme A.
-    # Many 3-oxo-fatty acyl-CoA molecules contain this adenine ring.
+    
+    # Define the adenine substructure pattern that is part of the coenzyme A moiety.
     coa_pattern = Chem.MolFromSmarts("n1cnc2ncnc(c12)")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Does not contain a Coenzyme A adenine fragment"
-
-    # Optionally one can further check for phosphate groups or other CoA-specific fragments.
-    # For the purposes of classification, the above two matches are sufficient.
+    
     return True, "Contains a 3-oxo fatty acyl thioester linked to a coenzyme A moiety"
+
+# Below is an example of usage:
+if __name__ == "__main__":
+    # Example SMILES for 3-oxoadipyl-CoA:
+    smiles_example = "CC(C)(COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12)[C@@H](O)C(=O)NCCC(=O)NCCSC(=O)CC(=O)CCC(O)=O"
+    result, reason = is_3_oxo_fatty_acyl_CoA(smiles_example)
+    print(result, reason)
