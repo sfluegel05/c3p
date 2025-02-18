@@ -29,35 +29,33 @@ def is_diterpenoid(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
     # Diterpenoids typically have around 20 carbons, but can vary due to modifications
-    if c_count < 15 or c_count > 25:
+    if c_count < 15 or c_count > 30:  # Wider range to accommodate modifications
         return False, f"Carbon count ({c_count}) is outside the typical range for diterpenoids"
 
-    # Check for the presence of multiple rings or long carbon chains
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings < 1:
-        return False, "No rings found, which is uncommon for diterpenoids"
-
-    # Check for functional groups commonly found in diterpenoids
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
-    
-    if not (len(ester_matches) > 0 or len(hydroxyl_matches) > 0 or len(carbonyl_matches) > 0):
-        return False, "No common functional groups (ester, hydroxyl, carbonyl) found"
-
-    # Check for long carbon chains or complex ring systems
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 3:
-        return False, "Too few rotatable bonds for a typical diterpenoid"
-
-    # Check molecular weight - diterpenoids typically have a molecular weight between 250 and 500 Da
+    # Check molecular weight - diterpenoids typically have a molecular weight between 250 and 600 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
+    if mol_wt < 250 or mol_wt > 600:  # Wider range
         return False, f"Molecular weight ({mol_wt:.2f} Da) is outside the typical range for diterpenoids"
 
-    return True, "Molecule has characteristics consistent with a diterpenoid (C20 skeleton, functional groups, rings, and rotatable bonds)"
+    # Check for the presence of rings or long carbon chains
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    
+    # Check for rotatable bonds - diterpenoids typically have some flexibility
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 1:  # Lower threshold
+        return False, "Too few rotatable bonds for a typical diterpenoid"
+
+    # Check for common terpenoid features (not all need to be present)
+    isoprene_pattern = Chem.MolFromSmarts("CC(=C)C")  # Basic isoprene unit
+    ring_pattern = Chem.MolFromSmarts("[R]")  # Any ring
+    long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]")  # Long carbon chain
+    
+    has_isoprene = mol.HasSubstructMatch(isoprene_pattern)
+    has_rings = mol.HasSubstructMatch(ring_pattern)
+    has_long_chain = mol.HasSubstructMatch(long_chain_pattern)
+    
+    if not (has_isoprene or has_rings or has_long_chain):
+        return False, "No characteristic terpenoid features found"
+
+    return True, "Molecule has characteristics consistent with a diterpenoid (C20 skeleton, terpenoid features, and appropriate size)"
