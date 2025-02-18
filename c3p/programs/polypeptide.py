@@ -2,6 +2,7 @@
 Classifies: CHEBI:15841 polypeptide
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_polypeptide(smiles: str):
     """
@@ -21,16 +22,25 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a broader range of amino acid residue patterns
-    # Common peptide bond: -C(=O)-NH-
-    peptide_bond_pattern = Chem.MolFromSmarts('C(=O)N')
+    # Generate a list of common amino acid SMILES patterns to identify amino acids in a polypeptide
+    # These are simplified, representative substructures of amino acids at the amine or carboxyl terminus.
+    amino_acid_patterns = [
+        Chem.MolFromSmarts('[NX3][CX4](C)C=O'),  # Glycine pattern, extends to other amino acids with similar backbone
+        Chem.MolFromSmarts('[NX3][CX4H2]CC=O'),  # Alanine pattern
+        Chem.MolFromSmarts('[NX3][CX4](CC)[CX3](=O)'),  # Random extended pattern to cover potential modifications
+        # Add more patterns or variations for common and modified amino acids
+    ]
 
-    # Count the number of peptide bonds as a proxy for the number of amino acid residues
-    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    num_peptide_bonds = len(peptide_bond_matches)
+    # Function to match and count amino acid patterns in the given molecule
+    num_amino_acids = 0
+    for pattern in amino_acid_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        num_amino_acids += len(matches)
 
-    # For polypeptides with 10+ residues, there should be at least 9 peptide bonds
-    if num_peptide_bonds >= 9:
-        return True, f"Contains {num_peptide_bonds + 1} amino acid residues, classifying as polypeptide"
+    # Consider each peptide bond (represented correctly) represents two amino acids, adjust as necessary
+    # This is a simplification, real molecules may need closer inspection
+    # Typically each peptide bond implies the presences of two amino acids in chain, so half the simple counts
+    if num_amino_acids / 2 >= 10:
+        return True, f"Contains approximately {num_amino_acids // 2} amino acid residues, classifying as polypeptide"
     else:
-        return False, f"Contains {num_peptide_bonds + 1} amino acid residues, not enough for a polypeptide"
+        return False, f"Contains approximately {num_amino_acids // 2} amino acid residues, not enough for a polypeptide"
