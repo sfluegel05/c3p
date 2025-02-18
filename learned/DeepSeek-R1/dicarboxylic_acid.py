@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_dicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a dicarboxylic acid based on its SMILES string.
-    A dicarboxylic acid has exactly two carboxy (-COOH) groups.
+    A dicarboxylic acid has exactly two carboxy (-COOH) groups that are not part of an anhydride.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,8 +23,8 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define carboxy group pattern (accounts for different tautomers/protonation states)
-    carboxy_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")  # Matches -COOH or -COO-
+    # Define carboxy group pattern (accounts for -COOH or -COO-)
+    carboxy_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
 
     # Find all matches
     matches = mol.GetSubstructMatches(carboxy_pattern)
@@ -33,16 +33,19 @@ def is_dicarboxylic_acid(smiles: str):
     if len(matches) != 2:
         return False, f"Found {len(matches)} carboxy groups, need exactly 2"
 
-    # Ensure the two groups are not conjugated (e.g., not part of an anhydride)
-    # Check if the two carboxylic acids share oxygen atoms (common in anhydrides)
+    # Collect all atoms in the carboxy groups
     atoms_in_groups = set()
     for match in matches:
-        atoms_in_groups.update(match.GetIndices())
-    
-    # If any oxygen is shared between the two groups, it's likely an anhydride
+        atoms_in_groups.update(match)  # match is a tuple of atom indices
+
+    # Get all oxygen atoms in the molecule
     o_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8]
-    shared_os = len([o for o in o_atoms if o in atoms_in_groups])
-    if shared_os < 4:  # Each COOH has 2 O atoms, total 4 if not shared
+    
+    # Count oxygen atoms that are part of the carboxy groups
+    shared_os = sum(1 for o in o_atoms if o in atoms_in_groups)
+    
+    # Valid dicarboxylic acid must have exactly 4 oxygen atoms in the carboxy groups (no sharing)
+    if shared_os == 4:
         return True, "Contains two distinct carboxy groups"
     else:
-        return False, "Carboxy groups share oxygen atoms (likely anhydride)"
+        return False, "Carboxy groups share oxygen atoms (likely anhydride or conjugated)"
