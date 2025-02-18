@@ -1,58 +1,36 @@
 """
 Classifies: CHEBI:75659 O-acyl-L-carnitine
 """
- - O-(3-methylglutaryl)-L-carnitine: SMILES: CC(C)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxybutanoyl)-L-carnitine: SMILES: CC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(2-methylbutanoyl)-L-carnitine: SMILES: CCC(C)C(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxyhexadecanoyl)-L-carnitine: SMILES: CCCCCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(2-hydroxyhexadecanoyl)-L-carnitine: SMILES: CCCCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxytetradecanoyl)-L-carnitine: SMILES: CCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxyoctanoyl)-L-carnitine: SMILES: CCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxyoctadecanoyl)-L-carnitine: SMILES: CCCCCCCCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxydodecanoyl)-L-carnitine: SMILES: CCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxydecanoyl)-L-carnitine: SMILES: CCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxyoctadecadienoyl)-L-carnitine: SMILES: CCCCC\C=C/C\C=C/CCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxypalmitoyl)-L-carnitine: SMILES: CCCCCCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis-tetradecenoyl)-L-carnitine: SMILES: CCCCCC\C=C/CCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-4-pentadecenoyl)-L-carnitine: SMILES: CCCCCCCCCCC\C=C/CC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis-octadecenoyl)-L-carnitine: SMILES: CCCCCCC\C=C/CCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis,8-cis,11-cis,14-cis-eicosatetraenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis-octadecenoyl)-L-carnitine: SMILES: CCCCCCC\C=C/CCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis-octadecenoyl)-L-carnitine: SMILES: CCCCC\C=C/CCCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-4-cis,7-cis,10-cis,13-cis-hexadecatetraenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/CC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis-dodecenoyl)-L-carnitine: SMILES: CCCCC\C=C/CCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-7-cis-tetradecenoyl)-L-carnitine: SMILES: CCCCCCC\C=C/CCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-8-cis-tetradecenoyl)-L-carnitine: SMILES: CCCCCCCC\C=C/CCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis-octadecenoyl)-L-carnitine: SMILES: CCCCC\C=C/CCCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis,12-cis-octadecadienoyl)-L-carnitine: SMILES: CCCCC\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis,8-cis,11-cis,14-cis,17-cis-eicosapentaenoyl)-L-carnitine: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis,12-cis,15-cis-octadecatrienoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis,9-cis,12-cis-octadecatrienoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/CCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-4-cis,7-cis,10-cis,13-cis,16-cis-docosapentaenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis,8-cis,11-cis,14-cis,17-cis-eicosapentaenoyl)-L-carnitine: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis,9-cis,12-cis,15-cis-octadecatetraenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-4-cis,7-cis,10-cis,13-cis,16-cis,19-cis-docosahexaenoyl)-L-carnitine: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis,12-cis-octadecadienoyl)-L-carnitine: SMILES: CCCCC\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis,8-cis,11-cis,14-cis-eicosatetraenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis,9-cis-octadecadienoyl)-L-carnitine: SMILES: CCCCC\C=C/C\C=C/CCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis-octadecenoyl)-L-carnitine: SMILES: CCCCCCC\C=C/CCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis,8-cis,11-cis-eicosatrienoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-4-cis,7-cis,10-cis,13-cis,16-cis-docosapentaenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis,9-cis,12-cis-octadecatrienoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/CCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-4-cis,7-cis,10-cis,13-cis-hexadecatetraenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/CC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis-dodecenoyl)-L-carnitine: SMILES: CCCCC\C=C/CCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-7-cis-tetradecenoyl)-L-carnitine: SMILES: CCCCCCC\C=C/CCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-8-cis-tetradecenoyl)-L-carnitine: SMILES: CCCCCCCC\C=C/CCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis-octadecenoyl)-L-carnitine: SMILES: CCCCC\C=C/CCCCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis,12-cis-octadecadienoyl)-L-carnitine: SMILES: CCCCC\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis,8-cis,11-cis,14-cis,17-cis-eicosapentaenoyl)-L-carnitine: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis,12-cis,15-cis-octadecatrienoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis,9-cis,12-cis-octadecatrienoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/CCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-4-cis,7-cis,10-cis,13-cis,16-cis-docosapentaenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis,8-cis,11-cis,14-cis,17-cis-eicosapentaenoyl)-L-carnitine: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis,9-cis,12-cis,15-cis-octadecatetraenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-4-cis,7-cis,10-cis,13-cis,16-cis,19-cis-docosahexaenoyl)-L-carnitine: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis,12-cis-octadecadienoyl)-L-carnitine: SMILES: CCCCC\C=C/C\C=C/CCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-5-cis,8-cis,11-cis,14-cis-eicosatetraenoyl)-L-carnitine: SMILES: CCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-6-cis,9-cis-octadecadienoyl)-L-carnitine: SMILES: CCCCC\C=C/C\C=C/CCCCCCCCCC(O)CC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C
- - O-(3-hydroxy-9-cis-octadecenoyl)-L-carnitine: SMILES: CCCCCCC\C=C/CCCCCCCCCC(O)CC(=O)O[C@H
+"""
+Classifies: O-acyl-L-carnitine (CHEBI:74544)
+"""
+from rdkit import Chem
+
+def is_O_acyl_L_carnitine(smiles: str):
+    """
+    Determines if a molecule is an O-acyl-L-carnitine based on its SMILES string.
+    An O-acyl-L-carnitine has a carnitine backbone with L-configuration and an O-acyl group attached via ester bond.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is O-acyl-L-carnitine, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define SMARTS pattern for the core structure:
+    # - Trimethylammonium group ([N+](C)(C)C)
+    # - Chiral center (R configuration) connected to:
+    #   - Ammonium group
+    #   - Ester oxygen (OC(=O))
+    #   - Carboxylate group (CC(=O)[O-])
+    core_smarts = Chem.MolFromSmarts('[N+](C)(C)C[C@H](CC(=O)[O-])OC(=O)')
+    if not mol.HasSubstructMatch(core_smarts):
+        return False, "Does not match O-acyl-L-carnitine core structure"
+    
+    return True, "Matches O-acyl-L-carnitine core structure"
