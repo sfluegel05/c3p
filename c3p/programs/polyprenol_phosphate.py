@@ -31,15 +31,15 @@ def is_polyprenol_phosphate(smiles: str):
 
     # Check for polyprenol chain (long chain of isoprene units)
     # Look for at least 5 isoprene units (C=C-C-C-C=C)
-    # Relaxed pattern to account for different bond types and stereochemistry
-    isoprene_pattern = Chem.MolFromSmarts("[CX3]=[CX3]-[CX4]-[CX4]-[CX3]=[CX4]")
+    # Use a more flexible pattern to account for different bond types and stereochemistry
+    isoprene_pattern = Chem.MolFromSmarts("[C]=[C]-[C]-[C]-[C]=[C]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 5:
         return False, f"Found {len(isoprene_matches)} isoprene units, need at least 5"
 
     # Check that the phosphate is attached to the terminal hydroxyl of the polyprenol chain
     # The phosphate should be connected to a carbon with a single hydroxyl group
-    terminal_phosphate_pattern = Chem.MolFromSmarts("[CX4][OX2]P(=O)([OX2])[OX2]")
+    terminal_phosphate_pattern = Chem.MolFromSmarts("[C][OX2]P(=O)([OX2])[OX2]")
     if not mol.HasSubstructMatch(terminal_phosphate_pattern):
         return False, "Phosphate not attached to terminal hydroxyl of polyprenol chain"
 
@@ -49,7 +49,7 @@ def is_polyprenol_phosphate(smiles: str):
         return False, "Molecular weight too low for polyprenol phosphate"
 
     # Additional check for long carbon chain
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    carbon_chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "No long carbon chain found"
 
