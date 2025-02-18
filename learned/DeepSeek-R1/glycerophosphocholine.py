@@ -5,7 +5,6 @@ Classifies: CHEBI:36313 glycerophosphocholine
 Classifies: CHEBI:17585 glycerophosphocholine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 
 def is_glycerophosphocholine(smiles: str):
@@ -30,22 +29,32 @@ def is_glycerophosphocholine(smiles: str):
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "Phosphocholine group not found"
 
-    # Identify the glycerol backbone (C-O-C-O-C with phosphate attachment)
-    # The glycerol is typically C1-O-C2-O-C3, where C2 is connected to the phosphate
-    # Look for a central carbon connected to two ether/ester oxygens and one phosphate oxygen
-    glycerol_pattern = Chem.MolFromSmarts("[CH2]-[O]-[C;!$(C=O)]")  # Adjust as needed
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone not identified"
+    # Check glycerol backbone connected to phosphate
+    # Glycerol pattern: C-O-C-O-C where middle C is connected to phosphate
+    # SMARTS for glycerol part connected to phosphate: [CH2]-O-[CH](OP(=O)([O-])OCC[N+])-O-[CH2]
+    # More precise pattern to ensure correct connectivity
+    glycerol_phosphate = Chem.MolFromSmarts("[CH2]-[O]-[CH](-[O]-P(=O)([O-])-[O]-C-C-[N+](C)(C)C)-[O]-[CH2]")
+    if not mol.HasSubstructMatch(glycerol_phosphate):
+        return False, "Glycerol-phosphate backbone not found"
 
-    # Check for two ester/ether-linked fatty acid chains
-    ester_ether = Chem.MolFromSmarts("[CX4]-[OX2]-[CX4](=O) | [CX4]-[OX2]-[CX4]")  # Ester or ether
-    matches = mol.GetSubstructMatches(ester_ether)
-    if len(matches) < 2:
-        return False, f"Found {len(matches)} ester/ether groups, need at least 2"
+    # Check for two ester or ether-linked fatty acid chains
+    ester_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-C(=O)")  # Ester group
+    ether_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[CX4]")  # Ether group (no carbonyl)
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    total_fatty = len(ester_matches) + len(ether_matches)
+    
+    # Subtract the phosphate oxygen (part of phosphocholine) from ether matches
+    # Phosphate has three oxygens: two in P=O and one connecting to glycerol
+    # The ether oxygen in the phosphate group is part of the backbone, not a fatty chain
+    # Adjust count by subtracting the phosphate's ether oxygen
+    adjusted_total = total_fatty - 1  # subtract the phosphate oxygen
+    if adjusted_total < 2:
+        return False, f"Found {adjusted_total} fatty acid chains (need 2)"
 
-    # Verify molecular weight is consistent with fatty acids (optional)
+    # Check molecular weight (adjust threshold as needed)
     mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 600:  # Adjust threshold based on typical glycerophosphocholines
-        return False, f"Molecular weight {mol_wt:.1f} too low for glycerophosphocholine"
+    if mol_wt < 400:  # Lowered threshold to accommodate shorter chains
+        return False, f"Molecular weight {mol_wt:.1f} too low"
 
-    return True, "Contains glycerol backbone with phosphocholine and two fatty acid chains"
+    return True, "Glycerol backbone with phosphocholine and two fatty acid chains"
