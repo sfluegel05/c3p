@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_amino_acid(smiles: str):
     """
     Determines if a molecule is an amino acid based on its SMILES string.
-    An amino acid is defined as having a carboxylic acid group and an amino group
-    both connected to a potential common carbon center (often the alpha carbon).
+    An amino acid is defined as having at least one carboxylic acid group
+    and at least one amino group within the same molecule, excluding polymeric chains.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,17 +22,22 @@ def is_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern allowing for variation in the connection of amino and carboxyl groups
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3H2,NX3H1][CX4]([CX3](=O)[OX2H1])")
+    # Pattern for an amino group
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1]")
     
-    # This pattern attempts to recognize an amino group possibly attached to a carbon that also connects to a carboxyl group
-    if mol.HasSubstructMatch(amino_acid_pattern):
-        return True, "Contains amino acid backbone structure"
-
-    # Additional check: compound must not be a peptide or other polymer but single amino acid or modified single amino acid
-    # This can be refined and expanded with more detailed structural checks or multiple patterns
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
-    if mol.HasSubstructMatch(peptide_bond_pattern):
-        return False, "Contains peptide bond indicative of polymers or peptide sequences"
-
-    return False, "No amino acid backbone structure found"
+    # Pattern for a carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    
+    # Check for both amino and carboxyl patterns within the molecule
+    has_amino = mol.HasSubstructMatch(amino_pattern)
+    has_carboxyl = mol.HasSubstructMatch(carboxyl_pattern)
+    
+    if has_amino and has_carboxyl:
+        # Ensure it is not part of a known peptide or polymeric structure by looking for peptide linkages
+        peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N[C]")
+        if not mol.HasSubstructMatch(peptide_bond_pattern):
+            return True, "Contains both amino and carboxylic acid groups without peptide linkages"
+        else:
+            return False, "Contains peptide bond indicative of polymers or peptide sequences"
+    
+    return False, "Missing amino or carboxylic acid group"
