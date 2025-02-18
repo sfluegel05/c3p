@@ -23,9 +23,9 @@ def is_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define improved aldoxime SMARTS pattern:
-    # [C;D2] = [NX2] - [OX2H] where the carbon must be connected to exactly one other carbon (from aldehyde)
-    aldoxime_pattern = Chem.MolFromSmarts('[C;D2]([#6])=[NX2]-[OX2H]')
+    # Define aldoxime SMARTS pattern: any carbon connected via double bond to N-OH
+    # [C]=[NX2]-[OX2H] matches the core aldoxime group
+    aldoxime_pattern = Chem.MolFromSmarts('[C]=[NX2]-[OX2H]')
     
     # Check for substructure match
     if mol.HasSubstructMatch(aldoxime_pattern):
