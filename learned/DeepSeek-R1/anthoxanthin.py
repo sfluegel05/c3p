@@ -1,79 +1,128 @@
 """
 Classifies: CHEBI:192499 anthoxanthin
 """
-</think>
+But wait, the previous code had an error: unterminated string literal. Let me check. Oh, in the docstring, maybe there was a missing triple quote. Let me make sure the code is properly formatted.
 
-Okay, let's try to figure out how to create a function to detect anthoxanthins. From the problem statement, anthoxanthins are a type of flavonoid that are water-soluble and range from white to yellow. The examples given are mostly flavonoid glycosides, like kaempferol and quercetin derivatives with sugar groups attached.
+Another possible issue: the SMARTS patterns might not correctly identify the flavone core. For example, the flavone_pattern as written might be too strict. Let me adjust the SMARTS to be more flexible. The actual structure is two benzene rings connected via a pyrone (oxygen in the ring and a ketone). The SMARTS could be:
 
-First, I need to recall that flavonoids typically have a 15-carbon skeleton structure, consisting of two aromatic rings (A and B) connected by a three-carbon bridge (C). The presence of hydroxyl groups and glycosylation (sugar attachments) can influence solubility and color. Anthoxanthins are usually flavones or flavonols with hydroxyl groups and often O-glycosylation or C-glycosylation, which increases water solubility.
+Flavone: c1c(=O)c2ccccc2oc1c3ccccc3 → but this is very specific. Real structures might have substitutions. So perhaps a more general pattern that looks for the chromone part (the fused benzene and pyrone) connected to another aromatic ring.
 
-So the plan is:
-1. Check if the molecule is a flavonoid. This involves finding the flavone/flavonol backbone. Flavones have a double bond between C2 and C3, and a ketone at C4. Flavonols have a hydroxyl group on C3.
-2. Look for glycosylation (sugar attachments) which would increase solubility. These are often O-linked or C-linked sugars.
-3. Check the hydroxylation pattern. Anthoxanthins might have multiple hydroxyl groups on the aromatic rings, contributing to their color and solubility.
-4. Exclude anthocyanins, which are another class of flavonoids but are red/blue and typically have a different structure (anthocyanidins with a positive charge). But maybe that's not necessary here.
+Alternatively, use a SMARTS that looks for the chromone (benzopyran-4-one) structure:
 
-Possible steps in code:
-- Use RDKit to parse the SMILES.
-- Check for the flavone/flavonol core structure using SMARTS patterns.
-- Detect glycosidic attachments (sugar groups) either via oxygen (O-glycosides) or carbon (C-glycosides).
-- Count hydroxyl groups to ensure sufficient solubility.
-- Check molecular weight to ensure it's not too large, but glycosides can be bigger. However, anthoxanthins are water-soluble, so maybe they have multiple polar groups.
+[c]1[c](=[O])[c]2[c][c][c][c][c]2[o][c]1-[c]3[c][c][c][c][c]3
 
-Let me draft some SMARTS patterns. The flavone core could be something like:
-c1c(=O)c2cc(O)ccc2oc1c3ccccc3
+But allowing any substitution. Maybe using:
 
-But maybe more general. Flavonoids have the benzopyran structure. For flavones, the C ring is a chromone (oxygen in the ring and a ketone). For flavonols, there's a hydroxyl on the C ring.
+[#6]1-,=:[#6](=[#8])-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-[#8]:1-[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3
 
-Another approach: look for the 2-phenylchromen-4-one structure. A SMARTS pattern for that might be:
-c1c(=[O])c2c(oc1)ccc(c2)-c3ccccc3
+But this might not capture all variations. Alternatively, split into two parts: the chromone (benzopyranone) and the phenyl group.
 
-But perhaps better to split into two aromatic rings connected via a ketone and oxygen.
+Another approach: find a benzene ring fused to a pyrone (O-containing ring with a ketone). The SMARTS for the chromone part could be:
 
-Alternatively, using a more precise SMARTS for the flavone skeleton:
-[O;R]=[C;R]([a;R])[a;R] 
-
-Wait, maybe a better way is to find the chromone part (ring with oxygen and ketone) connected to a phenyl group.
-
-For example, the chromone part is a benzene ring fused to a pyrone (which has a ketone). The SMARTS for chromone could be:
 c1c(=O)c2ccccc2oc1
 
-Then attached to another benzene ring (the B ring) via a single bond. So the full flavone pattern would be:
+Then check if this is connected to another aromatic ring (the B ring). But how to represent that connection?
+
+Alternatively, use a SMARTS that allows any substitution on the chromone's C2 (the position where the B ring is attached).
+
+But perhaps a better approach is to use two separate substructures: the chromone and the attached aromatic ring.
+
+Alternatively, use a more generic pattern. For example, any structure with a ketone adjacent to an oxygen in a ring, connected to another aromatic ring.
+
+But this might be too vague. Maybe the previous approach was too restrictive. Let's look at the example SMILES.
+
+Take kaempferol: Oc1ccc(cc1)-c1oc2cc(O)cc(O)c2c(=O)c1O
+
+The structure is two benzene rings connected via a pyrone (with the ketone). The SMILES is:
+
+Oc1ccc(cc1)-c1oc2cc(O)cc(O)c2c(=O)c1O
+
+So the core is c1oc2cc(O)cc(O)c2c(=O)c1 connected to another benzene ring.
+
+So the SMARTS pattern for the core could be:
+
+[#6]1:[#6](=[#8]):[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-[#8]:1-[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3
+
+But allowing for substitutions (like hydroxyl groups). So perhaps the SMARTS should be:
+
 c1c(=O)c2ccccc2oc1-c3ccccc3
 
-But maybe allowing substitutions. So in SMARTS, something like:
-[#6]1:[#6](=[#8]):[#6]2:[#6](:[#6]:[#6]:[#6]:2)-[#8]:1-[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3
+But with wildcards for substituents. Wait, in the example, the B ring is attached to the pyrone's C2. So the SMARTS pattern would be:
 
-But perhaps a more flexible approach. Let me check RDKit's SMARTS syntax.
-
-Alternatively, using:
 c1c(=O)c2ccccc2oc1-c3ccccc3
 
-But allowing any substitution on the rings. Maybe the exact structure isn't necessary, but the presence of the flavone core.
+But this exact structure might not match if there are substituents. So maybe using a more flexible pattern that allows any substitution on the benzene rings.
 
-Once the core is identified, check for glycosylation. Glycosides have a sugar moiety attached via an oxygen (O-glycoside) or directly to a carbon (C-glycoside). So looking for substructures where a hydroxyl oxygen is connected to a sugar (like glucose, rhamnose, etc.), which might be represented as a chain of multiple oxygen-containing groups.
+Alternatively, use a SMARTS pattern that finds the pyrone ring (with the ketone) connected to any aromatic ring. For example:
 
-But detecting all possible glycosides is tricky. Maybe look for any occurrence of a glycosidic bond, which is an oxygen connected to a carbon that's part of a sugar ring. Alternatively, check for the presence of a carbohydrate-like structure attached via O or C.
+[#6]1(-[#6]):[#6](=[#8]):[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-[#8]:1-[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3
 
-Alternatively, count the number of hydroxyl groups and sugar moieties. Anthoxanthins are often glycosylated, which adds hydroxyls from the sugar, increasing solubility.
+But I'm not sure. Alternatively, use a SMARTS that finds a ketone adjacent to an oxygen in a ring, connected to another aromatic ring.
 
-Also, check the number of hydroxyl groups on the flavone core. For example, flavonols like quercetin have multiple hydroxyls.
+Alternatively, use the following approach: check for the presence of a flavone-like core by looking for the 2-phenylchromen-4-one structure, allowing for substitutions.
 
-So steps in code:
-1. Check if the molecule has a flavone/flavonol core.
-2. Check for the presence of sugar substituents (glycosylation).
-3. Ensure sufficient hydroxylation for solubility.
-4. Maybe exclude structures with certain features (like anthocyanidins, but perhaps not necessary here).
+Another possible issue in the previous code: the glycosylation check. The SMARTS patterns for glycosidic bonds might not be sufficient. For example, the glycoside_o_pattern was [O;!H0]-[C;!$(C=O)], which matches an oxygen with a hydrogen (like -O-) attached to a carbon that's not a carbonyl. But this could match any ether, not just glycosides. Similarly, the sugar_pattern [C;H1][OH] is too vague.
 
-Potential issues:
-- Some anthoxanthins might not be glycosylated (like simple flavones), but the examples provided are mostly glycosides. Need to check the class definition.
-- The presence of methoxy groups might reduce solubility, but some examples have methoxy groups (like xanthomicrol has OCH3). However, the class description says they are water-soluble, so maybe methoxy groups are less common or compensated by glycosylation.
+To detect glycosylation, perhaps look for a carbohydrate moiety. But detecting all possible sugars is complex. A heuristic could be to check for a chain of at least 4 contiguous carbons with multiple hydroxyl groups. But that's error-prone.
 
-Possible code outline:
-- Use SMARTS to find the flavone core.
-- Check for glycosidic bonds (O- or C-linked sugars).
-- Count hydroxyl groups and check molecular weight for solubility.
+Alternatively, use the presence of multiple hydroxyl groups and a certain number of oxygen atoms. But glycosides have multiple oxygens from the sugar.
 
-Testing with the example SMILES strings. For example, kaempferol 3-O-beta-D-allopyranoside has a flavone core (kaempferol) with a sugar attached. The code should detect the core and the glycoside.
+Alternatively, use the number of oxygen atoms. For example, if the molecule has more than a certain number of oxygens, it might indicate glycosylation. But this is not reliable.
 
-So the function is_anthoxanthin would return
+Another approach: check for the presence of a glycosidic bond (O-linkage to a sugar). The SMARTS for an O-glycoside could be [O;R]-[C;R], where the oxygen is part of a ring (the sugar) connected to another carbon. But I'm not sure.
+
+Alternatively, use RDKit's functionality to identify carbohydrate structures. However, RDKit doesn't have built-in carbohydrate detection, so this would require custom code.
+
+Given the time constraints, perhaps the best approach is to check for the presence of at least one glycosidic oxygen (O connected to a carbon that's part of a ring with multiple oxygens). For example:
+
+glycoside_pattern = Chem.MolFromSmarts("[O]-C1C(O)C(O)C(O)CO1")  # example for glucose
+
+But this is specific to certain sugars. Alternatively, look for any oxygen connected to a carbon in a ring that has at least two other oxygen atoms.
+
+But this might not cover all cases. For example, rhamnose is a sugar with a methyl group and oxygen in the ring.
+
+Alternatively, look for any six-membered or five-membered ring containing at least two oxygen atoms, connected via an oxygen. But this is getting complicated.
+
+Perhaps, given the examples, the presence of a glycosidic bond (O-linked) is common. So the code can check for O-linked substituents. But how?
+
+Alternatively, check if there's an oxygen atom that is connected to a carbon which is part of a ring and has multiple hydroxyl groups. For example:
+
+glyco_pattern = Chem.MolFromSmarts("[O]-[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)O1")  # glucose
+
+But this is specific to a certain sugar configuration. Since the examples have various sugars (glucose, rhamnose, etc.), this approach might miss some.
+
+Given the difficulty, perhaps the code should check for the presence of any sugar-like rings (like pyranose or furanose rings) attached via an oxygen. But without a comprehensive SMARTS pattern, this is challenging.
+
+Alternatively, accept that detecting glycosylation accurately is difficult and use a heuristic: check if there's at least one oxygen connected to a carbon that's part of a ring with at least two oxygen atoms. This would capture most sugars.
+
+The SMARTS pattern for that could be:
+
+[O]-[C]1-[C](-[O])-[C](-[O])-[C](-[O])-[C]-1
+
+But this is a rough approximation. Alternatively:
+
+[O]-C1-C(-O)-C(-O)-C(-O)-C-O1 (for a pyranose ring with multiple hydroxyls)
+
+But this is too specific. Instead, use a more general pattern that looks for a ring with at least two oxygen atoms and an adjacent oxygen.
+
+Maybe:
+
+[O]-[C]@;=,-[C]@;=,-[O]
+
+Not sure. Alternatively, use a ring with at least two oxygen atoms, and an exocyclic oxygen attached to the ring.
+
+Alternatively, use the following SMARTS for a sugar ring:
+
+[O]-C1-C(-O)-C(-O)-C(-O)-C-O1
+
+But again, this is too specific. For example, rhamnose has a methyl group and fewer hydroxyls.
+
+Another idea: count the number of oxygen atoms in the molecule. Anthoxanthins, especially glycosides, have a high number of oxygens. For example, kaempferol (C15H10O6) has 6 oxygens. Its glycosides would have more. So maybe require at least 6 oxygens.
+
+But some examples might have fewer. For instance, 5,6,7-trimethoxyflavone has OCH3 groups. Let's see: C18H16O5 (if three methoxys and the flavone core). So oxygen count is 5. But according to the examples, the SMILES for 5,6,7-trimethoxyflavone is COc1cc2oc(cc(=O)c2c(OC)c1OC)-c1ccccc1. That's three methoxys (3 O's), the ketone (1 O), and the ether oxygens in the rings (two O's). Total O's: 3*2 (from OCH3) + 1 (ketone) + 2 (ring oxygens) = 3*1 (since OCH3 has one O each) + 1 + 2 = 3 +1 +2=6. So O count is 6. So maybe requiring at least 5 oxygens.
+
+But this is just a heuristic. The code can check for oxygen count.
+
+Alternatively, combine multiple checks: flavone core, presence of glycosylation (even if heuristic), and sufficient hydroxyl groups.
+
+Putting it all together, here's the revised code:
