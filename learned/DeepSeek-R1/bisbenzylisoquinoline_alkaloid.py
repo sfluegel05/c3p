@@ -1,58 +1,12 @@
 """
 Classifies: CHEBI:133004 bisbenzylisoquinoline alkaloid
 """
-"""
-Classifies: CHEBI:???? bisbenzylisoquinoline alkaloid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+</think>
 
-def is_bisbenzylisoquinoline_alkaloid(smiles: str):
-    """
-    Determines if a molecule is a bisbenzylisoquinoline alkaloid based on its SMILES string.
-    These compounds consist of two benzylisoquinoline units linked by ether bridges.
+Okay, let's see why the previous code didn't work. The main issue was that all the test cases were failing because the code couldn't find any isoquinoline units. The error messages said "Found 0 isoquinoline units, need at least 2". So the problem must be with how the isoquinoline pattern was defined.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+Looking at the previous code, the isoquinoline pattern was set as "c1ccc2cnccc2c1". That's supposed to represent a benzene ring fused to a pyridine ring. But maybe the SMARTS pattern isn't correct. Let me check the SMARTS for isoquinoline. Isoquinoline has a benzene ring fused to a pyridine where the nitrogen is in position 2. The correct SMARTS should be "c1c2c[nH]ccc2ccc1" or something similar. Wait, maybe the original pattern didn't account for the correct ring fusion or aromaticity.
 
-    Returns:
-        bool: True if molecule is a bisbenzylisoquinoline alkaloid, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES"
+Another possibility is that in the actual molecules, the isoquinoline units might be substituted with various groups (like methoxy), so the basic pattern might not match if the code is looking for unsubstituted rings. The original SMARTS uses lowercase 'c' which is for aromatic carbons, but maybe the actual structures have substitutions that break the aromaticity in certain positions, or the rings are part of larger systems.
 
-    # Define isoquinoline core pattern (benzene fused to pyridine)
-    isoquinoline_pattern = Chem.MolFromSmarts("c1ccc2cnccc2c1")
-    # Check for at least two isoquinoline units
-    isoq_matches = mol.GetSubstructMatches(isoquinoline_pattern)
-    if len(isoq_matches) < 2:
-        return False, f"Found {len(isoq_matches)} isoquinoline units, need at least 2"
-
-    # Look for ether bridges (O connecting two aromatic carbons)
-    ether_pattern = Chem.MolFromSmarts("[c,a]-[O]-[c,a]")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    if len(ether_matches) < 2:
-        return False, f"Found {len(ether_matches)} ether bridges, need at least 2"
-
-    # Check for tertiary amines (common in these alkaloids)
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3;H0;R]")
-    amine_matches = mol.GetSubstructMatches(tertiary_amine_pattern)
-    if len(amine_matches) < 2:
-        return False, f"Found {len(amine_matches)} tertiary amines, need at least 2"
-
-    # Check for methylenedioxy groups (O-C-O)
-    methylenedioxy_pattern = Chem.MolFromSmarts("O-C-O")
-    methylenedioxy_matches = mol.GetSubstructMatches(methylenedioxy_pattern)
-    if methylenedioxy_matches:
-        return True, "Contains two isoquinoline units, ether bridges, and methylenedioxy groups"
-
-    # Check molecular weight (typically >500 for dimers)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, f"Molecular weight {mol_wt} too low for dimer"
-
-    return True, "Contains two isoquinoline units linked by ether bridges"
+Also, the code checks for tertiary amines, but some examples might have different nitrogen environments. For instance, if the nitrogen is part of an aromatic ring (like in isoquinoline), it's not a tertiary amine. Wait, in isoquinoline, the nitrogen is in a pyridine-like
