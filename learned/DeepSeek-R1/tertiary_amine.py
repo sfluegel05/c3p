@@ -5,6 +5,7 @@ Classifies: CHEBI:32876 tertiary amine
 Classifies: CHEBI:32876 tertiary amine
 """
 from rdkit import Chem
+from rdkit.Chem import HybridizationType
 
 def is_tertiary_amine(smiles: str):
     """
@@ -22,29 +23,31 @@ def is_tertiary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Iterate through all atoms in the molecule
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 7:  # Nitrogen atom
-            # Skip aromatic nitrogens (e.g., in pyridine)
+            # Skip aromatic nitrogens (e.g., in pyridine/pyrrole)
             if atom.GetIsAromatic():
                 continue
-            # Check if nitrogen has exactly three substituents
-            if atom.GetDegree() == 3:
-                # Check all bonds are single bonds (exclude cases with double bonds to nitrogen)
-                if all(bond.GetBondType() == Chem.BondType.SINGLE for bond in atom.GetBonds()):
-                    # Check that all substituents are carbon-based (excluding hydrogen)
-                    # Since H is implicit, if degree is 3, all substituents are non-H
-                    # Now check each neighbor is a carbon (hydrocarbyl group)
-                    all_carbon = True
-                    for neighbor in atom.GetNeighbors():
-                        if neighbor.GetAtomicNum() != 6:
-                            all_carbon = False
-                            break
-                    if all_carbon:
-                        return True, "Tertiary amine with three carbon-based substituents"
-                    else:
-                        # Some substituents may have heteroatoms, but according to examples, still count
-                        # Modify to accept any substituents (non-hydrogen)
-                        return True, "Tertiary amine with three substituents"
+            
+            # Check for SP3 hybridization (excludes conjugated/planar nitrogens)
+            if atom.GetHybridization() != HybridizationType.SP3:
+                continue
+            
+            # Check valence: exactly three bonds (excluding hydrogen)
+            if atom.GetDegree() != 3:
+                continue
+            
+            # Check all bonds are single bonds
+            if any(bond.GetBondType() != Chem.BondType.SINGLE for bond in atom.GetBonds()):
+                continue
+            
+            # Check formal charge (neutral amine)
+            if atom.GetFormalCharge() != 0:
+                continue
+            
+            # Verify all three substituents are carbon-based
+            substituents = [neighbor.GetAtomicNum() for neighbor in atom.GetNeighbors()]
+            if all(atomic_num == 6 for atomic_num in substituents):
+                return True, "Tertiary amine with three carbon-based substituents"
     
     return False, "No tertiary amine group detected"
