@@ -4,15 +4,16 @@ Classifies: CHEBI:83813 proteinogenic amino acid
 #!/usr/bin/env python3
 """
 Classifies: proteinogenic amino acid
-Defined as one of the 23 canonical α‐amino acids (including glycine, L-proline, selenocysteine,
-pyrrolysine, and N-formylmethionine) that are incorporated into proteins by translation.
-This implementation checks that the molecule:
-  - Parses correctly.
-  - Contains only allowed elements (C, N, O, S, and Se).
-  - Is small (≤25 heavy atoms).
-  - Contains one of the free α–amino acid motifs.
-For canonical (or glycine) motifs it further verifies that the free -NH2 and -COOH groups are not substituted.
-For proline (cyclic) cases a separate SMARTS is used.
+Defined as one of the 23 canonical α–amino acids (including glycine, L–proline, selenocysteine,
+pyrrolysine, and N–formylmethionine) incorporated into proteins by translation.
+This implementation verifies that:
+  - The molecule parses correctly.
+  - It contains only allowed heavy atoms (C, N, O, S, and Se) and is small (≤25 heavy atoms).
+  - It contains one of the free α–amino acid motifs (using SMARTS patterns for canonical, glycine, and proline).
+  - For canonical motifs (and for proline) the free –NH2 and –COOH groups are unsubstituted and
+    the α–carbon connectivity is as expected.
+  - For chiral (non–glycine) amino acids, the α–carbon must have the L configuration (CIP code “S”).
+If any check fails the function returns False with a reason.
 """
 
 from rdkit import Chem
@@ -22,52 +23,42 @@ def is_proteinogenic_amino_acid(smiles: str):
     """
     Determines if a molecule is a proteinogenic amino acid based on its SMILES string.
 
-    The function first ensures that the molecule only contains allowed heavy atoms (C, N, O, S, Se)
-    and that its heavy atom count is ≤25. It then uses a set of SMARTS patterns that capture the free
-    α–amino acid motif. For canonical chiral amino acids and for glycine, further connectivity checks are made:
-      - For chiral amino acids (canonical), the α–carbon (first atom in the pattern) must have exactly
-        three heavy neighbours (amino N, carboxyl C, and the side chain) and the terminal amino nitrogen must
-        be bonded only to that α–carbon.
-      - For glycine, the α–carbon (which in the glycine pattern is the second atom) must have exactly two heavy neighbours.
-      - For both, the carboxyl carbon must have exactly three heavy neighbours (the α–carbon and two O atoms),
-        and one O bond should be double while the other single.
-    For proline patterns the substructure is accepted as is.
-
     Args:
         smiles (str): SMILES string of the molecule.
-
+        
     Returns:
         bool: True if the molecule is classified as a proteinogenic amino acid, False otherwise.
-        str: Description of the classification decision.
+        str: Explanation of the classification decision.
     """
-    # Parse the SMILES string.
+    # Parse SMILES and remove explicit hydrogens (for consistency)
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Remove explicit hydrogens for consistent connectivity (this also minimizes isotope label issues).
     mol = Chem.RemoveHs(mol)
     
-    # Check for allowed elements (heavy atoms only: C, N, O, S, and optionally Se).
+    # Check allowed heavy atoms (C, N, O, S, Se)
     allowed_atomic_nums = {6, 7, 8, 16, 34}
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 1:  # Skip hydrogen.
+        if atom.GetAtomicNum() == 1:
             continue
         if atom.GetAtomicNum() not in allowed_atomic_nums:
-            return False, f"Contains disallowed element: atomic number {atom.GetAtomicNum()}"
+            return False, f"Disallowed element found: atomic number {atom.GetAtomicNum()}"
     
-    # Check overall size: free amino acids are small (≤25 heavy atoms).
+    # Check molecule size: free amino acids are small (≤25 heavy atoms)
     heavy_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1)
     if heavy_atom_count > 25:
         return False, "Molecule is too large to be a single proteinogenic amino acid"
     
-    # Define SMARTS patterns along with a type tag.
-    # For canonical amino acids the expected ordering is:
-    #    canonical patterns: [C@H](N)C(=O)[O] or [C@@H](N)C(=O)[O]
-    #       match order: alpha-carbon, amino nitrogen, carboxyl carbon.
-    #    For glycine, which is achiral: the pattern "NCC(=O)[O]" yields
-    #       match order: amino nitrogen, alpha-carbon, carboxyl carbon.
-    #    For proline we use patterns that account for the cyclic structure.
+    # Assign stereochemistry so that CIP codes (R/S) are computed.
+    Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
+    
+    # Define SMARTS patterns along with type tags.
+    # For canonical amino acids (chiral, non glycine):
+    #    Expected order: Atom0 = α–carbon, Atom1 = free amino nitrogen, Atom2 = carboxyl carbon.
+    # For glycine, pattern "NCC(=O)[O]":
+    #    Expected order: Atom0 = amino nitrogen, Atom1 = α–carbon, Atom2 = carboxyl carbon.
+    # For proline, the pattern covers the cyclic structure; here we assume the chiral (α–carbon)
+    #    is at index 2.
     patterns = [
         {"smarts": "[C@H](N)C(=O)[O]", "type": "canonical"},
         {"smarts": "[C@@H](N)C(=O)[O]", "type": "canonical"},
@@ -76,50 +67,50 @@ def is_proteinogenic_amino_acid(smiles: str):
         {"smarts": "OC(=O)[C@@H]1CCCN1", "type": "proline"},
     ]
     
-    # Try to match one of the defined patterns.
+    # Iterate through each pattern and try to match.
     for entry in patterns:
         patt = Chem.MolFromSmarts(entry["smarts"])
         if patt is None:
-            continue  # Skip bad SMARTS.
+            continue
         matches = mol.GetSubstructMatches(patt, useChirality=True)
         if not matches:
-            continue  # No match for this pattern.
-        # For each match, perform additional connectivity validations for canonical and glycine types.
+            continue
+        
+        # Evaluate each match.
         for match in matches:
             if entry["type"] in ("canonical", "glycine"):
-                # Require at least three atoms in the match.
+                # Ensure the match contains at least three atoms.
                 if len(match) < 3:
                     continue
-                # Use proper ordering of atoms:
+                
                 if entry["type"] == "canonical":
-                    # Expected order: [0]: α–carbon, [1]: amino nitrogen, [2]: carboxyl carbon.
+                    # For canonical patterns, the order is: [0]: α–carbon, [1]: amino nitrogen, [2]: carboxyl carbon.
                     alpha_idx = match[0]
                     amino_idx = match[1]
                     carboxyl_idx = match[2]
-                    expected_alpha_degree = 3  # chiral α–carbon has an extra side-chain group.
+                    expected_alpha_degree = 3  # free amino acid: α–carbon has three heavy neighbors.
                 else:  # glycine
-                    # For glycine "NCC(=O)[O]", order: [0]: amino nitrogen, [1]: α–carbon, [2]: carboxyl carbon.
+                    # For glycine pattern "NCC(=O)[O]", order: [0]: amino nitrogen, [1]: α–carbon, [2]: carboxyl carbon.
                     amino_idx = match[0]
                     alpha_idx = match[1]
                     carboxyl_idx = match[2]
-                    expected_alpha_degree = 2  # glycine has no side-chain.
+                    expected_alpha_degree = 2  # glycine: no side chain.
                 
-                # (a) Check that the amino nitrogen is “free” (bonded only to the α–carbon).
+                # (a) Check amino nitrogen: it should be free (only attached to α–carbon).
                 amino_atom = mol.GetAtomWithIdx(amino_idx)
-                amino_heavy_neighbors = [nbr.GetIdx() for nbr in amino_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-                if set(amino_heavy_neighbors) != {alpha_idx}:
-                    continue  # The amino nitrogen appears substituted.
+                amino_neighbors = [nbr.GetIdx() for nbr in amino_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+                if set(amino_neighbors) != {alpha_idx}:
+                    continue  # amino nitrogen appears substituted.
                 
-                # (b) Check the carboxyl carbon – it must bond only to the α–carbon and two oxygens.
+                # (b) Check carboxyl carbon connectivity: should be bonded to α–carbon and two oxygens,
+                # with one O in a double bond and one in a single bond.
                 carboxyl_atom = mol.GetAtomWithIdx(carboxyl_idx)
-                nbh = [nbr for nbr in carboxyl_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-                if len(nbh) != 3:
+                nbrs = [nbr for nbr in carboxyl_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+                if len(nbrs) != 3:
                     continue
-                # Identify oxygen neighbors.
-                oxygens = [nbr for nbr in nbh if nbr.GetAtomicNum() == 8]
+                oxygens = [nbr for nbr in nbrs if nbr.GetAtomicNum() == 8]
                 if len(oxygens) != 2:
                     continue
-                # Check that one oxygen is double-bonded and the other is single-bonded.
                 dbl_found = False
                 sgl_found = False
                 for o in oxygens:
@@ -133,21 +124,52 @@ def is_proteinogenic_amino_acid(smiles: str):
                 if not (dbl_found and sgl_found):
                     continue
                 
-                # (c) Check the α–carbon connectivity.
+                # (c) Check α–carbon connectivity: it should have the expected number of heavy atom neighbors.
                 alpha_atom = mol.GetAtomWithIdx(alpha_idx)
-                alpha_heavy_neighbors = [nbr.GetIdx() for nbr in alpha_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-                if len(alpha_heavy_neighbors) != expected_alpha_degree:
+                alpha_neighbors = [nbr.GetIdx() for nbr in alpha_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+                if len(alpha_neighbors) != expected_alpha_degree:
                     continue
                 
-                # Passed all checks for a free α–amino acid motif.
+                # (d) For canonical amino acids (non–glycine), check that the α–carbon has L configuration,
+                # i.e. CIP code should be "S". (Glycine is achiral.)
+                if entry["type"] == "canonical":
+                    if not alpha_atom.HasProp('_CIPCode'):
+                        continue
+                    if alpha_atom.GetProp('_CIPCode') != "S":
+                        continue  # wrong configuration (likely D amino acid)
+                        
                 return True, f"Matches canonical amino acid criteria: {entry['smarts']}"
-            
+                
             elif entry["type"] == "proline":
-                # For proline, we accept the SMARTS match without extra connectivity checks.
+                # For proline, use the match and assume the cyclic backbone.
+                # We assume that the chiral (α–carbon) appears at index 2 in the substructure match.
+                if len(match) < 3:
+                    continue
+                alpha_idx = match[2]
+                alpha_atom = mol.GetAtomWithIdx(alpha_idx)
+                
+                # For proline, we also check that the free carboxyl (or its ester equivalent) and amino groups are not substituted.
+                # We will simply check that the amino nitrogen (which is in the ring) is not extra substituted.
+                # Identify the amino nitrogen in the ring.
+                ring_nitrogens = [nbr for nbr in alpha_atom.GetNeighbors() if nbr.GetAtomicNum() == 7]
+                valid_ring_nitrogen = False
+                for n in ring_nitrogens:
+                    n_neighbors = [nbr.GetIdx() for nbr in n.GetNeighbors() if nbr.GetAtomicNum() > 1]
+                    # If the nitrogen is connected only to atoms within the ring (typically 2 heavy neighbors) then accept.
+                    if len(n_neighbors) <= 2:
+                        valid_ring_nitrogen = True
+                if not valid_ring_nitrogen:
+                    continue
+                    
+                # Also enforce L configuration (α–carbon CIP code "S")
+                if not alpha_atom.HasProp('_CIPCode'):
+                    continue
+                if alpha_atom.GetProp('_CIPCode') != "S":
+                    continue
+                    
                 return True, f"Matches canonical amino acid criteria (proline): {entry['smarts']}"
     
-    # If no pattern passed all checks, report failure.
-    return False, "No appropriate free α–amino acid motif (with terminal amino and carboxyl groups) found"
+    return False, "No appropriate free α–amino acid motif (with unsubstituted amino and carboxyl groups and L configuration) found"
 
 # For ad-hoc testing when run as a script:
 if __name__ == "__main__":
@@ -178,7 +200,7 @@ if __name__ == "__main__":
         "L-aspartic acid": "N[C@@H](CC(O)=O)C(O)=O",
         "L-leucine-d3": "OC(=O)[C@@H](N)CC(C([2H])([2H])[2H])C",
         "L-methionine": "CSCC[C@H](N)C(O)=O",
-        # Some examples noted as false positives previously:
+        # Examples noted as false positives previously:
         "gamma-Glu-Trp(1-)": "[NH3+][C@H](C([O-])=O)CCC(=O)N[C@H](C(=O)[O-])CC1=CNC2=C1C=CC=C2",
         "4-dimethylamino-L-phenylalanine zwitterion": "C1=CC(=CC=C1C[C@@H](C([O-])=O)[NH3+])N(C)C",
         "D-citrulline": "N[C@H](CCCNC(N)=O)C(O)=O",
