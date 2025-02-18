@@ -29,6 +29,13 @@ def is_aldehyde(smiles: str):
     
     # Check if the molecule contains the aldehyde pattern
     if mol.HasSubstructMatch(aldehyde_pattern):
+        # Additional check to ensure it's not part of a carboxylic acid or ester
+        carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+        ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][CX4]")
+        
+        if mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(ester_pattern):
+            return False, "Contains carbonyl group but is part of a carboxylic acid or ester"
+        
         return True, "Contains the aldehyde functional group (RC(=O)H)"
     else:
         return False, "Does not contain the aldehyde functional group (RC(=O)H)"
