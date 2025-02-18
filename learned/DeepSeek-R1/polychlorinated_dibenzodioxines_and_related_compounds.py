@@ -22,16 +22,21 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Define core structure SMARTS patterns
-    dioxin_core = Chem.MolFromSmarts("c12c3ccccc3Oc4ccccc4c1")  # Dibenzodioxin structure
-    furan_core = Chem.MolFromSmarts("c12c3ccccc3Oc4cccc1c4")    # Dibenzofuran structure
-    biphenyl_core = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")     # Biphenyl structure
+    # Define valid core structure SMARTS patterns
+    # Dibenzodioxin: two benzene rings connected by two oxygen atoms
+    dioxin_core = Chem.MolFromSmarts("O1c2ccccc2Oc3ccccc13")
+    # Dibenzofuran: two benzene rings connected by one oxygen atom
+    furan_core = Chem.MolFromSmarts("O1c2ccccc2c3ccccc13")
+    # Biphenyl core (for PCBs/PBBs)
+    biphenyl_core = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
     
-    # Check for any of the core structures
-    core_found = (mol.HasSubstructMatch(dioxin_core) or 
-                  mol.HasSubstructMatch(furan_core) or 
-                  mol.HasSubstructMatch(biphenyl_core))
+    # Verify SMARTS compilation
+    core_structures = [dioxin_core, furan_core, biphenyl_core]
+    if any(core is None for core in core_structures):
+        return None, None  # Handle invalid SMARTS patterns
     
+    # Check for any core structure match
+    core_found = any(mol.HasSubstructMatch(core) for core in core_structures)
     if not core_found:
         return False, "No dioxin, furan, or biphenyl core found"
     
@@ -41,4 +46,4 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if halogen_count < 2:
         return False, f"Only {halogen_count} halogen atoms (needs ≥2)"
     
-    return True, "Contains core structure with ≥2 halogen atoms (Cl/Br)"
+    return True, f"Contains core structure with {halogen_count} halogen atoms (Cl/Br)"
