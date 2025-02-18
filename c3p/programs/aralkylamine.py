@@ -24,19 +24,15 @@ def is_aralkylamine(smiles: str):
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No primary, secondary, or tertiary amine group found"
 
-    # Find aromatic ring
+    # Identify aromatic atoms
     aromatic_atoms = [atom.GetIdx() for atom in mol.GetAromaticAtoms()]
     if not aromatic_atoms:
         return False, "No aromatic group found"
 
     # Look for connections: Amine to alkyl chain to aromatic group
-    # We use enhanced pattern with optional variables
-    aralkylamine_patterns = [
-        Chem.MolFromSmarts("[NX3][C,c]*[c]"),  # N-C-aromatic
-        Chem.MolFromSmarts("[NX3][C,c][C,c][a]")  # N-C-C-aromatic
-    ]
-    for pattern in aralkylamine_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Molecule is an aralkylamine"
-    
+    # A simple aromatic group connected through a flexible alkyl chain to an amine
+    aralkylamine_pattern = Chem.MolFromSmarts("[NX3][C,c][C,c]*[a]")  # Broad N-C-C-aromatic pattern
+    if mol.HasSubstructMatch(aralkylamine_pattern):
+        return True, "Molecule is an aralkylamine"
+
     return False, "No alkyl group substituted by aromatic group found attached to amine."
