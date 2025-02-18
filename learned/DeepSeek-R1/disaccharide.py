@@ -5,6 +5,7 @@ Classifies: CHEBI:36233 disaccharide
 Classifies: CHEBI:15953 disaccharide
 """
 from rdkit import Chem
+from rdkit.Chem import Mol
 
 def is_disaccharide(smiles: str):
     """
@@ -23,42 +24,48 @@ def is_disaccharide(smiles: str):
         return False, "Invalid SMILES"
     
     ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
     
-    # Must have exactly two rings (monosaccharide units)
-    if num_rings != 2:
-        return False, f"Expected 2 rings, found {num_rings}"
-    
-    # Find bridging oxygen (not in any ring) connecting two different rings
-    bridging_oxygens = 0
+    # Find all oxygen atoms not in any ring
+    bridging_oxygens = []
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:
-            # Check if oxygen is not in any ring
-            in_ring = False
-            for ring in ring_info.AtomRings():
-                if atom.GetIdx() in ring:
-                    in_ring = True
+        if atom.GetAtomicNum() != 8:
+            continue
+        
+        # Check if oxygen is in any ring
+        in_ring = False
+        for ring in ring_info.AtomRings():
+            if atom.GetIdx() in ring:
+                in_ring = True
+                break
+        if in_ring:
+            continue
+        
+        # Check oxygen has exactly two neighbors (carbon or other)
+        neighbors = atom.GetNeighbors()
+        if len(neighbors) != 2:
+            continue
+        
+        # Check if neighbors are in different connected components when oxygen is removed
+        # Create a copy of the molecule without the oxygen
+        modified_mol = Chem.RWMol(mol)
+        modified_mol.RemoveAtom(atom.GetIdx())
+        modified_mol = modified_mol.GetMol()
+        
+        # Get connected components
+        parts = list(Chem.GetMolFrags(modified_mol, asMols=True))
+        if len(parts) == 2:
+            # Check if each part has characteristics of a monosaccharide
+            # (at least 3 oxygen atoms as a heuristic)
+            valid = True
+            for part in parts:
+                o_count = sum(1 for a in part.GetAtoms() if a.GetAtomicNum() == 8)
+                if o_count < 3:
+                    valid = False
                     break
-            if in_ring:
-                continue
-            
-            # Check oxygen has exactly two carbon neighbors
-            neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
-            if len(neighbors) != 2:
-                continue
-            
-            # Check neighbors are in different rings
-            neighbor_rings = []
-            for n in neighbors:
-                for ring in ring_info.AtomRings():
-                    if n.GetIdx() in ring:
-                        neighbor_rings.append(ring)
-                        break  # each atom can be in only one main ring
-            
-            if len(neighbor_rings) == 2 and neighbor_rings[0] != neighbor_rings[1]:
-                bridging_oxygens += 1
+            if valid:
+                bridging_oxygens.append(atom.GetIdx())
     
-    if bridging_oxygens == 1:
-        return True, "Two monosaccharide rings connected by a glycosidic bond"
+    if len(bridging_oxygens) == 1:
+        return True, "Two monosaccharide units connected by a glycosidic bond"
     else:
-        return False, f"Found {bridging_oxygens} bridging oxygens, need exactly 1"
+        return False, f"Found {len(bridging_oxygens)} valid glycosidic bonds, need exactly 1"
