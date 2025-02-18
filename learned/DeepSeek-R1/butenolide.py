@@ -1,0 +1,295 @@
+"""
+Classifies: CHEBI:50523 butenolide
+"""
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - 4,5-dihydroxy-2-methyl-5-(4-methylpent-3-en-1-yl)-2,5-dihydrofuran-3-carboxylic acid: SMILES: O=C1OC(C)(C(=C1C(=O)O)O)C(C)CC=C(C)C
+ - 3-(1-carboxyethyl)-4-hydroxy-5-methylfuran-2(5H)-one: SMILES: O=C1OC(C)C(=C(O)C1)C(C)C(=O)O
+ - (4R)-4-hydroxy-5-oxo-2,5-dihydrofuran-3-carboxylic acid: SMILES: O=C1OC[C@H](O)C(=C1)C(=O)O
+ - 3-[(2E)-3-carboxyprop-2-enoyloxy]-4-hydroxy-5-methylfuran-2(5H)-one: SMILES: O=C1OC(C)C(=C(O)C1)OC(=O)/C=C/C(=O)O
+ - 3-[(2Z)-3-carboxyprop-2-enoyloxy]-4-hydroxy-5-methylfuran-2(5H)-one: SMILES: O=C1OC(C)C(=C(O)C1)OC(=O)/C=C\C(=O)O
+ - 3-[(2E)-3-carboxyprop-2-enoyl]-4-hydroxy-5-methylfuran-2(5H)-one: SMILES: O=C1OC(C)C(=C(O)C1)C(=O)/C=C/C(=O)O
+ - 3-[(2Z)-3-carboxyprop-2-enoyl]-4-hydroxy-5-methylfuran-2(5H)-one: SMILES: O=C1OC(C)C(=C(O)C1)C(=O)/C=C\C(=O)O
+ - (R)-4,5-dihydroxy-5-methyl-2-(2-oxopropyl)furan-3-carboxylic acid: SMILES: O=C1O[C@](C)(O)C(=C(O)C1=O)CC(=O)C
+ - (R)-4,5-dihydroxy-5-methyl-2-(2-oxopropyl)furan-3-carboxylic acid: SMILES: O=C1O[C@](C)(O)C(=C(O)C1=O)CC(=O)C
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@H](O)C(=O)OC1
+ - (3R,4S)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@H](O)C(=O)OC1
+ - (3S,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@@]1(O)[C@@H](O)C(=O)OC1
+ - (3R,4R)-3,4-dihydroxy-5-oxo-2,5-dihydrofuran-2-yl)methyl acetate: SMILES: CC(=O)OC[C@]1(O)[C@@H](O)C(=O)OC1
+ - (3S,4S)-3,4极简例子：
+ - Gamma-Butyrolactone: SMILES O=C1OCCCC1
+ - 5-Methyl-2(5H)-furanone: SMILES O=C1OC=CC1C
+</think>
+
+Okay, I need to create a function called is_butenolide that takes a SMILES string and determines if it's a butenolide. The definition says butenolides are gamma-lactones with a 2-furanone skeleton or substituted derivatives. Let me break this down.
+
+First, gamma-lactone means the lactone ring has five members (gamma is the third carbon, so the ester is between C1 and C4). The 2-furanone part is a furan ring with a ketone at position 2. So the core structure should be a five-membered ring with an ester (O-C=O) and a double bond adjacent to the ketone.
+
+Using RDKit, I can check for the presence of the lactone (ester) group and the ring structure. The SMARTS pattern for 2-furanone would be something like O=C1OC=CC1. But I need to account for substitutions. Maybe the core is a five-membered ring with one oxygen, a ketone (O=C), and a double bond.
+
+Wait, gamma-lactone is a cyclic ester where the ester oxygen is part of a five-membered ring. So the general structure is a five-membered ring with an oxygen atom and a ketone. The 2-furanone skeleton has the ketone at position 2 and a double bond, probably between C2 and C3.
+
+So the SMARTS pattern should look for a five-membered ring with one oxygen, a carbonyl group (C=O), and a double bond adjacent to the carbonyl. Let me try creating that.
+
+Maybe the pattern is [O;R][C;R]=O connected in a ring. Let's see: the ring should have five atoms. The lactone would have the ester group as part of the ring. So the SMARTS could be O-C(=O)-C=C in a five-membered ring. But how to represent that?
+
+Alternatively, a SMARTS pattern that matches the 2-furanone core: O=C1C=CC(O1). Wait, in 2-furanone, the oxygen is at position 1, the ketone at 2, and the double bond between 2 and 3. So the ring is O1C(=O)C=CC1. So the SMARTS would be O1C(=O)C=CC1. But maybe the double bond can be in different positions depending on substitution. Alternatively, the ring could have the carbonyl and a conjugated double bond.
+
+I need to find all molecules that have a five-membered ring with exactly one oxygen atom, a carbonyl group, and at least one double bond in the ring. Let's create a SMARTS pattern for that.
+
+The SMARTS pattern for a five-membered ring with one oxygen, a carbonyl group, and a double bond:
+
+Ring of five atoms: [O;r5]. The carbonyl is C(=O). The ring should have O connected to C(=O), and a double bond somewhere. Maybe:
+
+O-C(=O)-C=C in a ring. Wait, but the exact positions might vary. So perhaps a more general approach: check for a five-membered ring
