@@ -22,12 +22,16 @@ def is_quaternary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a nitrogen with four carbon attachments and a positive charge
-    # Each substituent must be a carbon atom (including aromatic or aliphatic)
+    # SMARTS pattern for nitrogen with four carbon substituents and positive charge
     quaternary_n_pattern = Chem.MolFromSmarts("[N+]([#6])([#6])([#6])[#6]")
-    
-    # Check if the molecule contains the pattern
+    # Pattern to detect carboxylate groups (common in false positives like carnitine)
+    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=O)[O-]")
+
+    # Check for quaternary nitrogen and absence of carboxylate groups
     if mol.HasSubstructMatch(quaternary_n_pattern):
-        return True, "Contains a nitrogen atom with four organic substituents and a positive charge"
+        if not mol.HasSubstructMatch(carboxylate_pattern):
+            return True, "Contains a nitrogen atom with four organic substituents and a positive charge"
+        else:
+            return False, "Quaternary nitrogen present but molecule contains carboxylate group (common false positive)"
     
     return False, "No quaternary ammonium group found"
