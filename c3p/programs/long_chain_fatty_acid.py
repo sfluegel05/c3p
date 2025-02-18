@@ -52,9 +52,15 @@ def is_long_chain_fatty_acid(smiles: str):
     if longest_chain < 13 or longest_chain > 22:
         return False, f"Chain length is {longest_chain}, must be between 13 and 22"
 
-    # Check for excessive branching (allow minimal branching)
+    # Check for excessive branching (allow more branches)
     n_branches = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() > 2)
-    if n_branches > 4:  # Allow up to 4 branches
+    if n_branches > 6:  # Allow up to 6 branches
         return False, "Excessive branching detected"
+
+    # Check for additional functional groups that might disqualify the molecule
+    additional_functional_groups = ["[NX3]", "[SX2]", "[PX3]", "[OX2H0]"]  # Exclude amines, sulfides, phosphines, and ethers
+    for pattern in additional_functional_groups:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, f"Contains additional functional group: {pattern}"
 
     return True, "Contains a carboxylic acid group and a carbon chain length between 13 and 22"
