@@ -15,69 +15,67 @@ def is_ganglioside(smiles: str):
     Gangliosides are complex molecules containing a ceramide (sphingolipid)
     linked to an oligosaccharide that bears one or more sialic acid residues.
 
-    Heuristics used:
-      1. Add explicit hydrogens for better ring perception.
-      2. Require an amide bond ("C(=O)N") as a proxy for the ceramide part.
-      3. Require at least one carboxyl group (either "C(=O)O" or "C(=O)[O-]") which is common in sialic acids.
-      4. Detect sugar rings by scanning all nonaromatic rings of size 5–7 and counting them
-         as “sugar‐like” if the fraction of oxygen atoms in the ring is at least 0.5.
-         (At least two such rings are required to confirm the oligosaccharide part.)
-      5. Require a long aliphatic chain (nonaromatic sp3 carbon chain) of at least 16 carbons,
-         a proxy for the lipid tail.
-      6. Set an overall molecular weight threshold (at least 700 Da).
+    Heuristics used in this implementation:
+      1. Convert SMILES and add explicit hydrogens.
+      2. Look for an amide bond ("C(=O)N") as a proxy for a ceramide portion.
+      3. Look for at least one carboxyl group (C(=O)O or C(=O)[O-]) indicating a sialic acid (or similar).
+      4. Search for sugar rings. Instead of the original 50% oxygen threshold,
+         we now check nonaromatic rings of size 5–7 and call a ring “sugar‐like” if the fraction
+         of oxygen atoms is at least 0.2. We require at least two such rings to flag an oligosaccharide.
+      5. Assess the presence of a long aliphatic chain (nonaromatic sp3 carbon chain) of at least 16 carbons,
+         to represent the lipid (fatty acid) portion of the ceramide.
+      6. Require that the overall molecular weight is at least 700 Da.
 
     Args:
         smiles (str): SMILES string of the molecule.
-        
+
     Returns:
-        bool: True if the molecule is classified as a ganglioside, False otherwise.
-        str: Explanation or reason for the classification.
+        bool: True if molecule is classified as a ganglioside, False otherwise.
+        str: Explanation of the classification decision.
     """
-    # Parse the SMILES string.
+    # Parse the molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens for better perception.
+    # Add explicit hydrogens to help with perception.
     mol = Chem.AddHs(mol)
     
-    # Heuristic 1: Look for an amide bond ("C(=O)N") as a fingerprint for a ceramide.
+    # Heuristic 1: Look for an amide bond as a probe for the ceramide portion.
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond found—missing ceramide signature"
     
-    # Heuristic 2: Look for carboxylic acid group(s) (protonated or deprotonated) as proxy for sialic acid.
+    # Heuristic 2: Look for carboxyl groups as a proxy for sialic acids.
     ca_pattern1 = Chem.MolFromSmarts("C(=O)O")
     ca_pattern2 = Chem.MolFromSmarts("C(=O)[O-]")
     if not (mol.HasSubstructMatch(ca_pattern1) or mol.HasSubstructMatch(ca_pattern2)):
         return False, "No carboxyl group found—sialic acid marker appears to be missing"
     
-    # Heuristic 3: Identify sugar rings (oligosaccharide portion).
-    # Instead of a fixed SMARTS, we scan all rings that are nonaromatic with size 5-7.
-    # We count a ring as sugar-like if the fraction of oxygen atoms is at least 0.5.
+    # Heuristic 3: Identify sugar rings (oligosaccharide part).
     ring_info = mol.GetRingInfo()
     sugar_ring_count = 0
+    # For each ring, check size and count oxygen atoms. We now lower the fraction threshold to 0.2.
     for ring in ring_info.AtomRings():
         if len(ring) not in (5, 6, 7):
             continue
-        # Skip rings that are aromatic.
+        # Skip aromatic rings.
         if any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
             continue
-        # Count oxygen atoms in the ring.
         oxy_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
-        if oxy_count / len(ring) >= 0.5:
+        if (oxy_count / len(ring)) >= 0.2:
             sugar_ring_count += 1
-
     if sugar_ring_count < 2:
         return False, f"Only {sugar_ring_count} sugar-like ring(s) detected; oligosaccharide portion appears insufficient"
     
-    # Heuristic 4: Check for a long aliphatic (nonaromatic sp3 carbon) chain to represent the ceramide fatty acid chain.
+    # Heuristic 4: Check for a long aliphatic chain representing the fatty acid tail.
     longest_chain = 0
+    # Iterate over all carbon atoms that are sp3 and nonaromatic.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 6:
-            continue  # Only carbon
+            continue  # not carbon
         if atom.GetIsAromatic() or atom.GetHybridization().name != "SP3":
-            continue  # Must be a nonaromatic sp3 carbon
+            continue
         chain_length = 1
         visited = {atom.GetIdx()}
         stack = [(atom, chain_length)]
@@ -94,12 +92,12 @@ def is_ganglioside(smiles: str):
     if longest_chain < 16:
         return False, f"Longest aliphatic chain is too short ({longest_chain} carbons) for the ceramide part"
     
-    # Heuristic 5: Overall molecular weight check.
+    # Heuristic 5: Check overall molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 700:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) for a typical ganglioside"
     
-    return True, "Contains the ceramide, oligosaccharide and sialic acid features characteristic of a ganglioside"
+    return True, "Contains ceramide, oligosaccharide and sialic acid features characteristic of a ganglioside"
 
 # Example usage:
 # result, reason = is_ganglioside("CCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)...")
