@@ -1,54 +1,92 @@
 """
 Classifies: CHEBI:28892 ganglioside
 """
-"""
-Classifies: CHEBI:28800 ganglioside
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-
-def is_ganglioside(smiles: str):
-    """
-    Determines if a molecule is a ganglioside based on its SMILES string.
-    A ganglioside is a glycosphingolipid (ceramide + oligosaccharide) with one or more sialic acids.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a ganglioside, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Check for ceramide (amide-linked sphingosine and fatty acid)
-    # Amide group: CON with adjacent chains
-    amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3H][CX4]")
-    if not mol.HasSubstructMatch(amide_pattern):
-        return False, "No ceramide amide group found"
-
-    # Check for sphingosine (long chain with amino and hydroxyl groups)
-    # Simplified: look for adjacent amino and hydroxyl groups in a chain
-    sphingo_pattern = Chem.MolFromSmarts("[NH2][CX4H][CX4H]([OH])[CX4H2]")
-    if not mol.HasSubstructMatch(sphingo_pattern):
-        return False, "No sphingosine backbone detected"
-
-    # Check for oligosaccharide (multiple sugar rings)
-    # Look for at least two pyranose rings (approximate)
-    pyranose_pattern = Chem.MolFromSmarts("[O]1~C~C~C~C~C~1")
-    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
-    if len(pyranose_matches) < 2:
-        return False, f"Only {len(pyranose_matches)} pyranose rings, need at least 2"
-
-    # Check for sialic acid (Neu5Ac: has N-acetyl and carboxylate groups)
-    # SMARTS pattern for Neu5Ac core structure
-    sialic_acid_pattern = Chem.MolFromSmarts(
-        "[C@@H]1([C@H](O)[C@H](O[C@H]2[C@H](O)[C@H](O[C@H]([C@H]2O)CO)NC(=O)C)[C@@H](C(=O)O)O1)"
-    )
-    if not mol.HasSubstructMatch(sialic_acid_pattern):
-        return False, "No sialic acid (Neu5Ac) detected"
-
-    return True, "Contains ceramide, oligosaccharide, and sialic acid(s)"
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/19:0): SMILES: CCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:1(11Z)): SMILES: CCCCCCCCCCC\C=C\[C@@H](O)[C@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)NC(=O)CCCCCCCCCC\C=C/CCCCCCCC
+ - ganglioside GM2 (18:0) (NeuAc-C9-deoxy): SMILES: [C@@]1(O[C@]([C@H](NC(=O)C)[C@H](C1)O)([C@@H]([C@H](O)CO)O)[H])(C(O)=O)O[C@H]2[C@H]([C@H](O[C@H]([C@@H]2O)O[C@@H]3[C@H](O[C@@H](OC[C@@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)NC(=O)CCCCCCCCCCCCCCCCC)[C@@H]([C@H]3O)O)CO)CO)O[C@H]4[C@@H]([C@H]([C@@H](O)[C@H](O4)CO)O)NC(C)=O
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->3)-beta-D-GalNAc-(1->4)-[alpha-Neu5Ac-(2->3)]-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: [C@@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O[C@H]2[C@@H]([C@H]([C@H]([C@H](O2)CO)O)O[C@@H]3O[C@@H]([C@@H]([C@@H]([C@H]3O)O[C@]4(O[C@]([C@@H]([C@H](C4)O)NC(C)=O)([C@@H]([C@@H](CO)O)O)[H])C(O)=O)O)CO)NC(=O)C)O[C@]5(O[C@]([C@H](NC(=O)C)[C@H](C5)O)([C@@H]([C@H](O)CO)O)[H])C(O)=O)O)O[C@H]6[C@@H]([C@H]([C@@H](O[C@@H]6CO)OC[C@@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)NC(=O)CCCCCCCCCCCCCCCCCCCC)O)O
+ - ganglioside GM2 (20:1): SMILES: [C@@]1(O[C@]([C@H](NC(=O)C)[C@H](C1)O)([C@@H]([C@H](O)CO)O)[H])(C(O)=O)O[C@H]2[C@H]([C@H](O[C@H]([C@@H]2O)O[C@@H]3[C@H](O[C@@H](OC[C@@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)NC(=O)CCCCCCCCCCCCCC=CCCCCCCC)[C@@H]([C@H]3O)O)CO)CO)O[C@H]4[C@@H]([C@H]([C@@H](O)[C@H](O4)CO)O)NC(C)=O
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/17:0): SMILES: CCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - ganglioside GM2 (18:0) (NeuAc-C7-deoxy): SMILES: [C@@]1(O[C@]([C@H](NC(=O)C)[C@H](C1)O)([C@@H]([C@H](O)CO)O)[H])(C(O)=O)O[C@H]2[C@H]([C@H](O[C@H]([C@@H]2O)O[C@@H]3[C@H](O[C@@H](OC[C@@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)NC(=O)CCCCCCCCCCCCCCCCC)[C@@H]([C@H]3O)O)CO)CO)O[C@H]4[C@@H]([C@H]([C@@H](O)[C@H](O4)CO)O)NC(C)=O
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:1(9Z)): SMILES: CCCCCCCCCCC\C=C\[C@@H](O)[C@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)NC(=O)CCCCCCCCCC\C=C/CCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:1(15Z)): SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
+ - ganglioside GM2 (18:0) (NeuAc-C8-deoxy): SMILES: [C@@]1(O[C@]([C@H](NC(=O)C)[C@H](C1)O)([C@@H]([C@H](O)CO)O)[H])(C(O)=O)O[C@H]2[C@H]([C@H](O[C@H]([C@@H]2O)O[C@@H]3[C@H](O[C@@H](OC[C@@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)NC(=O)CCCCCCCCCCCCCCCCC)[C@@H]([C@H]3O)O)CO)CO)O[C@H]4[C@@H]([C@H]([C@@H](O)[C@H](O4)CO)O)NC(C)=O
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/16:0): SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/22:0): SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/20:0): SMILES: CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/18:0): SMILES: CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
+ - alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0): SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=
