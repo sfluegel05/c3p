@@ -24,8 +24,9 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Define flavanone core pattern (dihydrofuran with ketone and phenyl group)
-    flavanone_core = Chem.MolFromSmarts("[O]=C1C[C@H](c2ccccc2)CC1")
+    # Generalized flavanone core SMARTS without stereochemistry requirements
+    # Matches O=C1CC(Ph)CC1 where Ph is any aromatic ring (B ring)
+    flavanone_core = Chem.MolFromSmarts("[O]=C1CC(c2ccccc2)CC1")
     if not flavanone_core:
         return False, "Failed to parse flavanone core SMARTS"
 
@@ -34,50 +35,35 @@ def is_3__hydroxyflavanones(smiles: str):
     if not matches:
         return False, "Flavanone core not found"
 
-    # Get the attachment atom (where B ring connects to C ring)
-    # In the SMARTS, the phenyl group is atom 3 in the core (0-based index)
-    # The core atoms in the match are ordered as per the SMARTS:
-    # [O]=C1C[C@H](c2ccccc2)CC1
-    # Atoms: 0 (O), 1 (C=O), 2 (C), 3 (C@H), 4 (c2ccccc2), etc.
-    # Wait, the SMARTS may have different atom ordering. Let's check:
-    # The SMARTS [O]=C1C[C@H](c2ccccc2)CC1 has atoms:
-    # 0: O
-    # 1: C (double bond to O)
-    # 2: C connected to C1
-    # 3: C[@H] connected to c2...
-    # So the phenyl group is attached to atom 3.
-
-    # For each match, get the attachment atom (atom 3 in the match)
+    # Iterate through all core matches (handle multiple possible conformations)
     for match in matches:
-        attachment_atom = match[3]
-        # Find the B ring (phenyl group connected to attachment_atom)
-        # Get the atom's neighbors
-        atom = mol.GetAtomWithIdx(attachment_atom)
-        neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
-        # Find the B ring (should be a benzene ring)
-        rings = mol.GetRingInfo()
-        b_ring = None
-        for ring in rings.AtomRings():
-            if len(ring) == 6 and attachment_atom in ring:
-                # Check if it's a benzene ring (all carbons)
-                if all(mol.GetAtomWithIdx(a).GetAtomicNum() == 6 for a in ring):
-                    b_ring = ring
-                    break
-        if not b_ring:
-            continue  # No B ring found in this match
-
-        # Check for hydroxyl at 3' position in B ring
-        # Find all hydroxyl oxygens in B ring
-        hydroxyls = []
-        for a in b_ring:
-            atom = mol.GetAtomWithIdx(a)
-            if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1:
-                hydroxyls.append(a)
-
-        # Check if any hydroxyl is two bonds away from attachment_atom
-        for oh in hydroxyls:
-            path = rdmolops.GetShortestPath(mol, attachment_atom, oh)
-            if len(path) == 3:  # Path length 2 bonds (3 atoms)
-                return True, "3'-hydroxy group present on B ring"
+        try:
+            # The phenyl group (B ring) is attached to atom index 3 in the SMARTS pattern
+            # SMARTS breakdown: [O]=C1(atom0)-C(atom1)-C(atom2)-(c2ccccc2)(atom3)-C(atom4)-C(atom5)-1
+            attachment_atom_idx = match[3]  # Atom connecting to B ring
+            
+            # Get the actual B ring atom connected to the flavanone core
+            core_atom = mol.GetAtomWithIdx(attachment_atom_idx)
+            b_ring_atoms = [n for n in core_atom.GetNeighbors() if n.GetAtomicNum() == 6]
+            
+            for b_ring_atom in b_ring_atoms:
+                # Verify B ring is a benzene ring
+                ring_info = mol.GetRingInfo()
+                for ring in ring_info.AtomRings():
+                    if b_ring_atom.GetIdx() in ring and len(ring) == 6:
+                        # Check if all atoms in ring are carbons (allowing substituents)
+                        if all(mol.GetAtomWithIdx(a).GetAtomicNum() == 6 for a in ring):
+                            b_ring = ring
+                            # Check hydroxyl positions in B ring
+                            for atom_idx in b_ring:
+                                atom = mol.GetAtomWithIdx(atom_idx)
+                                if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1:
+                                    # Calculate path from core attachment to hydroxyl oxygen
+                                    path = rdmolops.GetShortestPath(mol, attachment_atom_idx, atom_idx)
+                                    # Path length 4 means 3 bonds between core attachment and hydroxyl (positions 1->2->3)
+                                    if len(path) == 4:
+                                        return True, "3'-hydroxy group present on B ring"
+        except IndexError:
+            continue  # Handle potential index errors in match processing
 
     return False, "No 3'-hydroxy group found on B ring"
