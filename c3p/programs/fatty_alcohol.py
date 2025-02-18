@@ -53,8 +53,16 @@ def is_fatty_alcohol(smiles: str):
 
     # Check for other functional groups that are not typical in fatty alcohols
     # For example, carboxylic acids, esters, etc.
-    other_functional_groups = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")  # Carboxylic acid
-    if mol.HasSubstructMatch(other_functional_groups):
-        return False, "Molecule contains carboxylic acid groups, not a fatty alcohol"
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")  # Carboxylic acid
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")  # Ester
+    if mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(ester_pattern):
+        return False, "Molecule contains carboxylic acid or ester groups, not a fatty alcohol"
+
+    # Ensure the molecule is primarily aliphatic
+    # Check if the molecule has more than 2 non-aliphatic functional groups
+    non_aliphatic_groups = Chem.MolFromSmarts("[!#6&!#1]")
+    non_aliphatic_count = len(mol.GetSubstructMatches(non_aliphatic_groups))
+    if non_aliphatic_count > 2:
+        return False, "Molecule contains too many non-aliphatic functional groups"
 
     return True, f"Aliphatic alcohol with {c_count} carbon atoms and {o_count} oxygen atoms"
