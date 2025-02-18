@@ -22,20 +22,23 @@ def is_amine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Refined SMARTS patterns for primary, secondary, and tertiary amines:
-    # Exclude amines that are part of other functionalities like amide, nitro, and other complex bonds
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3H2][C]")
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3H][C][C]")
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([C])[C][C]")
+    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][#6]")
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1]([#6])[#6]")
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([#6])([#6])[#6]")
     
-    # Combine the patterns and check the molecule
-    if (mol.HasSubstructMatch(primary_amine_pattern) or
-        mol.HasSubstructMatch(secondary_amine_pattern) or
-        mol.HasSubstructMatch(tertiary_amine_pattern)):
+    # Check the molecule for amine patterns excluding amides, imines, nitriles, etc.
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
+    imine_pattern = Chem.MolFromSmarts("[NX2]=[CX3]")
+    nitrile_pattern = Chem.MolFromSmarts("[NX1]#[CX2]")
+    
+    # Checking for amine but not amides, imines, nitriles and not part of a ring
+    if (not mol.HasSubstructMatch(amide_pattern) and
+        not mol.HasSubstructMatch(imine_pattern) and
+        not mol.HasSubstructMatch(nitrile_pattern) and
+        not mol.GetRingInfo().IsAtomInRingOfSize(mol.GetSubstructMatches(primary_amine_pattern)[0][0], 5) and
+        (mol.HasSubstructMatch(primary_amine_pattern) or
+         mol.HasSubstructMatch(secondary_amine_pattern) or
+         mol.HasSubstructMatch(tertiary_amine_pattern))):
         return True, "Contains amine group"
-    
-    # Check if nitrogen is part of excluded functionality
-    excluded_functionalities = Chem.MolFromSmarts("[NX3;R]")  # Example for framework rings, can add more
-    if mol.HasSubstructMatch(excluded_functionalities):
-        return False, "Nitrogen part of non-amine functional group"
     
     return False, "No amine group found, or nitrogen not bonded as required for amines"
