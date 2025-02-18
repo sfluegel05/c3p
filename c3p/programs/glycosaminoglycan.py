@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
-    Glycosaminoglycans must contain repeating disaccharide units and amino sugar features.
-
+    A GAG is characterized by having repeating aminomonosaccharide units.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -20,17 +20,12 @@ def is_glycosaminoglycan(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS patterns for sugar rings and amino substitutions
-    sugar_ring_pattern = Chem.MolFromSmarts("C1([OH])[CH2][CH][OH][CH][OH][CH2]1")
-    amino_sugar_pattern = Chem.MolFromSmarts("C1[CH][NH2][CH2][CH][OH][CH2]1")
-    
-    # Search for recognizable sugar and amino sugar patterns
-    sugar_matches = mol.GetSubstructMatches(sugar_ring_pattern)
-    amino_sugar_matches = mol.GetSubstructMatches(amino_sugar_pattern)
 
-    # Require at least a certain number of amino sugars to classify as glycosaminoglycan
-    if len(amino_sugar_matches) >= 3:
-        return True, f"Contains {len(amino_sugar_matches)} amino sugar residues, suggesting glycosaminoglycan"
-
+    # Defining a pattern for an amino sugar, common in GAGs
+    aminomonosaccharide_pattern = Chem.MolFromSmarts("[OX2][CX4][NX3]")
+    
+    # Check if pattern exists in the molecule
+    if mol.HasSubstructMatch(aminomonosaccharide_pattern):
+        return True, "Contains aminomonosaccharide units characteristic of GAGs"
+    
     return False, "Does not contain recognizable glycosaminoglycan features"
