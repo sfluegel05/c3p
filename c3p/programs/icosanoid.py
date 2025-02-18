@@ -25,15 +25,15 @@ def is_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for core icosanoid structure (carbon count around 20)
+    # Check for core icosanoid structure (relaxed carbon count)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18 or c_count > 22:
-        return False, f"Expected around 20 carbons, found {c_count}"
+    if c_count < 16:
+        return False, f"Expected at least 16 carbons, found {c_count}"
 
-    # Check for multiple double bonds (at least 2)
+    # Check for multiple double bonds (relaxed requirement)
     double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-    if double_bonds < 2:
-        return False, f"Expected at least 2 double bonds, found {double_bonds}"
+    if double_bonds < 1:
+        return False, f"Expected at least 1 double bond, found {double_bonds}"
 
     # Check for oxygen-containing functional groups (at least 2)
     oxygen_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
