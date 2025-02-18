@@ -29,28 +29,33 @@ def is_polyprenol_phosphate(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Check for polyprenol chain (long chain of isoprene units)
-    # Look for at least 5 isoprene units (C=C-C-C-C=C)
-    # Use a more flexible pattern to account for different bond types and stereochemistry
+    # Check for polyprenol chain (at least 3 isoprene units)
+    # More flexible pattern to account for different bond types and stereochemistry
     isoprene_pattern = Chem.MolFromSmarts("[C]=[C]-[C]-[C]-[C]=[C]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 5:
-        return False, f"Found {len(isoprene_matches)} isoprene units, need at least 5"
+    if len(isoprene_matches) < 3:
+        return False, f"Found {len(isoprene_matches)} isoprene units, need at least 3"
 
-    # Check that the phosphate is attached to the terminal hydroxyl of the polyprenol chain
+    # Check that the phosphate is attached to the terminal carbon of the polyprenol chain
     # The phosphate should be connected to a carbon with a single hydroxyl group
-    terminal_phosphate_pattern = Chem.MolFromSmarts("[C][OX2]P(=O)([OX2])[OX2]")
+    # More specific pattern to ensure proper attachment
+    terminal_phosphate_pattern = Chem.MolFromSmarts("[C]([OX2]P(=O)([OX2])[OX2])~[C]=[C]")
     if not mol.HasSubstructMatch(terminal_phosphate_pattern):
-        return False, "Phosphate not attached to terminal hydroxyl of polyprenol chain"
+        return False, "Phosphate not properly attached to terminal carbon of polyprenol chain"
 
-    # Check molecular weight - polyprenol phosphates typically have MW > 500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for polyprenol phosphate"
-
-    # Additional check for long carbon chain
+    # Check for long carbon chain (at least 10 carbons)
     carbon_chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "No long carbon chain found"
 
-    return True, "Contains polyprenol chain with terminal phosphate group"
+    # Check molecular weight - polyprenol phosphates typically have MW > 300 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for polyprenol phosphate"
+
+    # Additional check for terminal double bond near phosphate
+    terminal_double_bond_pattern = Chem.MolFromSmarts("[C]=[C]~[C]([OX2]P(=O)([OX2])[OX2])")
+    if not mol.HasSubstructMatch(terminal_double_bond_pattern):
+        return False, "No terminal double bond near phosphate group"
+
+    return True, "Contains polyprenol chain with terminal phosphate group properly attached"
