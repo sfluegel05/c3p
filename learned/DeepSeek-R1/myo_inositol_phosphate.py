@@ -13,60 +13,64 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Define myo-inositol core SMARTS with correct stereochemistry (axial OH at position 2)
-    # SMARTS based on myo-inositol structure: O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O
+    # Define myo-inositol core SMARTS with correct stereochemistry
+    # SMARTS matches six-membered ring with specific chiral centers and oxygen substituents
     myo_core_smarts = Chem.MolFromSmarts("""
-        [C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)O
+        [C@H]1([OX2])
+        [C@H]([OX2])
+        [C@@H]([OX2])
+        [C@H]([OX2])
+        [C@@H]([OX2])
+        [C@@H]1[OX2]
     """)
+    if myo_core_smarts is None:
+        return False, "Failed to parse myo-inositol SMARTS"
+    
     if not mol.HasSubstructMatch(myo_core_smarts):
         return False, "No myo-inositol core found"
 
-    # Find all oxygen atoms attached to the core (potential hydroxyl/phosphate sites)
+    # Get core oxygen atoms (attached to the 6 carbons)
     core_match = mol.GetSubstructMatch(myo_core_smarts)
-    core_o = []
-    for atom_idx in core_match:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in core_match:
-                core_o.append(neighbor.GetIdx())
+    core_carbons = set(core_match)
+    core_oxygens = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8 and atom.GetDegree() > 0:
+            neighbor = atom.GetNeighbors()[0]
+            if neighbor.GetIdx() in core_carbons:
+                core_oxygens.append(atom.GetIdx())
 
     # Check for at least one phosphate group attached to core oxygen
-    phosphate_pattern = Chem.MolFromSmarts("[O][P](=O)([O])[O]")
+    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)[OX2]")
+    if phosphate_pattern is None:
+        return False, "Failed to parse phosphate SMARTS"
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if not phosphate_matches:
-        return False, "No phosphate groups detected"
-
-    # Verify at least one phosphate is attached to the inositol core
-    core_attached_phosphate = False
+    
+    has_phosphate = False
     for match in phosphate_matches:
-        p_idx = match[0]
-        # Check if this phosphate is connected to a core oxygen
-        for o_idx in core_o:
-            if mol.GetBondBetweenAtoms(o_idx, p_idx) is not None:
-                core_attached_phosphate = True
+        # Check if any oxygen in the phosphate is a core oxygen
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 8 and atom.GetIdx() in core_oxygens:
+                has_phosphate = True
                 break
-        if core_attached_phosphate:
+        if has_phosphate:
             break
+    
+    if not has_phosphate:
+        return False, "No phosphate attached to myo-inositol core"
 
-    if not core_attached_phosphate:
-        return False, "Phosphate not attached to myo-inositol core"
-
-    # Check all core substituents are either hydroxyl or phosphate groups
-    valid_substituents = True
-    for o_idx in core_o:
+    # Verify all core substituents are hydroxyl or phosphate
+    for o_idx in core_oxygens:
         atom = mol.GetAtomWithIdx(o_idx)
-        # Check what's attached to the oxygen (should be H or P)
-        if atom.GetDegree() == 1:  # Hydroxyl (-OH)
+        if atom.GetDegree() == 1:  # Hydroxyl group
             continue
-        # Check if connected to phosphorus (phosphate)
+        # Check if connected to phosphorus in a phosphate group
+        has_phosphorus = False
         for neighbor in atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 15:
+                has_phosphorus = True
                 break
-        else:
-            valid_substituents = False
-            break
-
-    if not valid_substituents:
-        return False, "Non-phosphate/hydroxyl substituents present"
+        if not has_phosphorus:
+            return False, "Non-phosphate substituent on core"
 
     return True, "myo-inositol core with phosphate group(s)"
