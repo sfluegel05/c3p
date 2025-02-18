@@ -23,9 +23,10 @@ def is_carbamate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define carbamate ester pattern: [O connected to C]-C(=O)-N
-    # The oxygen must be part of an ester group (connected to two carbons)
-    carbamate_pattern = Chem.MolFromSmarts("[OX2]C(=O)[NX3]")
+    # Define carbamate ester pattern: [C]-O-C(=O)-N where N has valence 3
+    # Ensures oxygen is part of ester group (connected to R and C=O)
+    # [N;v3] matches nitrogens with valence 3 (including aromatic)
+    carbamate_pattern = Chem.MolFromSmarts("[C][OX2]C(=O)[N;v3]")
 
     # Check for the presence of the carbamate group
     if mol.HasSubstructMatch(carbamate_pattern):
