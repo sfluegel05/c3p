@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_aliphatic_aldoxime(smiles: str):
     """
     Determines if a molecule is an aliphatic aldoxime based on its SMILES string.
-    An aliphatic aldoxime is derived from an aliphatic aldehyde, containing R-CH=N-OH where R is an aliphatic group.
+    An aliphatic aldoxime is derived from an aliphatic aldehyde, containing R-CH=N-OH where R is an aliphatic, acyclic group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -32,31 +32,38 @@ def is_aliphatic_aldoxime(smiles: str):
     if not aldoxime_matches:
         return False, "No aldoxime group (C=N-OH) found"
 
+    # Get ring information for later checks
+    ring_info = mol.GetRingInfo()
+    ring_info.Initialize()  # Ensure ring info is calculated
+
     # Check each aldoxime group for aliphatic characteristics
     for match in aldoxime_matches:
         cx3_idx = match[0]  # Aldoxime carbon (C in C=N-OH)
         cx3_atom = mol.GetAtomWithIdx(cx3_idx)
         
-        # Find adjacent carbon (R group in R-CH=N-OH)
-        carbon_neighbors = [n for n in cx3_atom.GetNeighbors() 
-                           if n.GetAtomicNum() == 6 and n.GetIdx() != match[1]]
+        # Find non-hydrogen, non-nitrogen neighbors (must be exactly 1 for aldehyde-derived)
+        r_candidates = [n for n in cx3_atom.GetNeighbors()
+                       if n.GetAtomicNum() == 6 and n.GetIdx() != match[1]]
         
-        # Must have exactly one carbon neighbor (aldehyde-derived structure)
-        if len(carbon_neighbors) != 1:
+        # Check for exactly one carbon neighbor (R group)
+        if len(r_candidates) != 1:
             continue
             
-        r_carbon = carbon_neighbors[0]
+        r_carbon = r_candidates[0]
         
-        # Check if R group is aliphatic (non-aromatic and no aromatic bonds)
+        # Check R group is acyclic and aliphatic
         visited = set()
         stack = [r_carbon]
-        is_aliphatic = True
+        is_valid = True
         
-        while stack and is_aliphatic:
+        while stack and is_valid:
             current = stack.pop()
-            if current.GetIsAromatic():
-                is_aliphatic = False
+            
+            # Check for aromatic atoms or rings in R group
+            if current.GetIsAromatic() or ring_info.IsAtomInRing(current.GetIdx()):
+                is_valid = False
                 break
+            
             # Traverse all connected atoms except aldoxime carbon
             for neighbor in current.GetNeighbors():
                 if neighbor.GetIdx() == cx3_idx:
@@ -65,7 +72,11 @@ def is_aliphatic_aldoxime(smiles: str):
                     visited.add(neighbor.GetIdx())
                     stack.append(neighbor)
         
-        if is_aliphatic:
-            return True, "Contains aldoxime group with aliphatic R chain"
+        if is_valid:
+            # Verify aldoxime carbon has only one non-H neighbor (the R group)
+            non_h_neighbors = [n for n in cx3_atom.GetNeighbors()
+                              if n.GetAtomicNum() != 1 and n.GetIdx() != match[1]]
+            if len(non_h_neighbors) == 1:
+                return True, "Contains aldoxime group with acyclic aliphatic R chain"
 
-    return False, "No aliphatic aldoxime groups found"
+    return False, "No valid aliphatic aldoxime groups found"
