@@ -24,12 +24,13 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for the flavone backbone with hydroxyl at position 3 of the C ring
-    # The pattern matches a six-membered ring (pyrone) with:
-    # - Oxygen at position 1
+    # Corrected SMARTS pattern for flavonol core structure:
+    # Six-membered heterocyclic ring (C ring) with:
+    # - Oxygen atom in the ring (position 1)
     # - Hydroxyl group at position 3
     # - Ketone at position 4
-    flavonol_pattern = Chem.MolFromSmarts("[O;r1]1[C;r1][C;r1](O)[C;r1](=O)[C;r1][C;r1]1")
+    # All atoms part of a 6-membered ring (r6)
+    flavonol_pattern = Chem.MolFromSmarts("[O;r6]1-[C;r6]-[C;r6](O)-[C;r6](=O)-[C;r6]-[C;r6]-1")
 
     # Check for the presence of the core structure
     if mol.HasSubstructMatch(flavonol_pattern):
