@@ -22,19 +22,19 @@ def is_glucosinolate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Dynamic SMARTS for glycone group (consider stereochemistry flexibly)
-    glycone_pattern = Chem.MolFromSmarts("S[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@@H]1O |flex|")
+    # Glycone thioglucoside group pattern (allow stereochemical flexibility)
+    glycone_pattern = Chem.MolFromSmarts("S[C@@H]1O[C@@H]([C@@H](O)[C@@H]1O)CO")
     if not mol.HasSubstructMatch(glycone_pattern):
         return False, "No thioglucoside group found"
 
-    # Pattern for N-sulfooxy group, where N is doubly bonded to central C
-    sulfonated_oxime_pattern = Chem.MolFromSmarts("[CX3](=N\\O[S](=O)(=O)[O-])~*")
-    if not mol.HasSubstructMatch(sulfonated_oxime_pattern):
+    # N-sulfooxy group pattern :
+    sulfonated_oxime_pattern = Chem.MolFromSmarts("[CX3](=N\\OS(=O)(=O)[O-])")
+    oxime_matches = mol.GetSubstructMatches(sulfonated_oxime_pattern)
+    if len(oxime_matches) == 0:
         return False, "No sulfonated oxime group connected"
 
-    # Ensure central carbon connectivity accounting for flexibility
-    # Central carbon should have both the S-bonded thioglucoside and N-bonded oxime
-    central_c_pattern = Chem.MolFromSmarts("[CX3](S)(=N\\O[S](=O)(=O)[O-])~[*]")
+    # Central carbon connectivity, ensuring linkage to both S and N features
+    central_c_pattern = Chem.MolFromSmarts("C(S)(=N\\O[S](=O)(=O)[O-])")
     if not mol.HasSubstructMatch(central_c_pattern):
         return False, "Central carbon with required connectivity not found"
 
