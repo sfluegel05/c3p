@@ -1,116 +1,45 @@
 """
 Classifies: CHEBI:134249 alkanesulfonate oxoanion
 """
- - 3-sulfolactate(2-): SMILES: [O-]C(=O)C(O)CS([O-])(=O)=O
- - N-hexadecanoyltaurine(1-): SMILES: C(C(NCCS([O-])(=O)=O)=O)CCCCCCCCCCCCCC
- - N-octadecanoyltaurine(1-): SMILES: C(C(NCCS([O-])(=O)=O)=O)CCCCCCCCCCCCCCCC
- - 3-sulfolactic acid(2-): SMILES: [O-]C(=O)C(O)CS([O-])(=O)=O
- - N-[(5Z,8Z,11Z,14Z,17Z)-icosa-5,8,11,14,17-pentaenoyl]taurine(1-): SMILES: C=CC=CC=CC=CC=CCCCCC(=O)NCCS([O-])(=O)=O
- - 3-sulfolactaldehyde(1-): SMILES: OC(CS([O-])(=O)=O)C=O
- - N-palmitoyltaurine(1-): SMILES: C(C(NCCS([O-])(=O)=O)=O)CCCCCCCCCCCCCCC
- - N-(13S-hydroxyoctadecadienoyl)taurine(1-): SMILES: C(CCCCCCCC=CC=CC=O)CCCC(=O)NCCS([O-])(=O)=O
- - 3-sulfopyruvate(2-): SMILES: [O-]C(=O)C(=O)CS([O-])(=O)=O
- - 3-sulfonatolactate(2-): SMILES: [O-]C(=O)[C@H](CS([O-])(=O)=O)O
- - N-[(5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoyl]taurine(1-): SMILES: C=CC=CC=CC=CCCCCCCC(=O)NCCS([O-])(=O)=O
- - N-oleoyltaurine(1-): SMILES: C(CCCCCCCC=CCCCCCCCC(=O)NCCS([O-])(=O)=O)CC
- - N-lauroyltaurine(1-): SMILES: C(C(NCCS([O-])(=O)=O)=O)CCCCCCCCCCCC
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - 3-sulfonatolactaldehyde(1-): SMILES: OC(CS([O-])(=O)=O)C=O
- - 3-sulfolactate(2-): SMILES: [O-]C(=O)C(O)CS([O-])(=O)=O
- - N-[(5Z,8Z,11Z,14Z,17Z)-eicosa-5,8,11,14,17-pentaenoyl]taurine(1-): SMILES: C=CC=CC=CC=CC=CCCCCC(=O)NCCS([O-])(=O)=O
- - 3-sulfolactaldehyde(1-): SMILES: OC(CS([O-])(=O)=O)C=O
- - 3-sulfolactate(2-): SMILES: [O-]C(=O)C(O)CS([O-])(=O)=O
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=O)=O)OO
- - N-(15S-hydroperoxy-(5Z,8Z,11Z,13E)-eicosatetraenoyl)taurine(1-): SMILES: C(CCC)C[C@@H](/C=C/C=C\C/C=C\C/C=C\CCCC(NCCS([O-])(=O)=
+"""
+Classifies: alkanesulfonate oxoanion
+An alkanesulfonate in which the carbon at position 1 is attached to R (hydrogens, carbon chain, or other groups).
+"""
+from rdkit import Chem
+
+def is_alkanesulfonate_oxoanion(smiles: str):
+    """
+    Determines if a molecule is an alkanesulfonate oxoanion based on its SMILES string.
+    Must contain a sulfonate group (-SO3^-) attached to a carbon atom.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an alkanesulfonate oxoanion, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Define sulfonate oxoanion pattern: carbon connected to sulfur with three oxygens (two double bonds, one negative charge)
+    # Pattern: [C]-[S](=[O])(=[O])[O-]
+    sulfonate_pattern = Chem.MolFromSmarts("[C]-[S](=[O])(=[O])[O-]")
+    
+    # Check for sulfonate group presence
+    if not mol.HasSubstructMatch(sulfonate_pattern):
+        return False, "No sulfonate (-SO3^-) group attached to carbon found"
+
+    # Verify sulfur atom has correct bonding
+    sulfur_matches = mol.GetSubstructMatches(sulfonate_pattern)
+    for match in sulfur_matches:
+        sulfur_idx = match[1]  # Sulfur is the second atom in the SMARTS pattern
+        sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
+        
+        # Check sulfur has exactly 4 bonds (single bond to C, two double to O, one single to O-)
+        if sulfur_atom.GetDegree() != 4:
+            return False, "Sulfur in sulfonate group has incorrect bonding"
+
+    return True, "Contains sulfonate group (-SO3^-) attached to carbon atom"
