@@ -11,7 +11,6 @@ from rdkit.Chem import rdMolDescriptors
 def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a straight-chain saturated fatty acid based on its SMILES string.
-    A straight-chain saturated fatty acid is defined as any saturated fatty acid lacking a side-chain.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -39,16 +38,6 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     # Check for rings
     if rdMolDescriptors.CalcNumRings(mol) > 0:
         return False, "Contains cyclic structures"
-
-    # Check for hydroxyl groups (except the one in carboxylic acid)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1][CX4]")
-    if mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Contains hydroxyl group(s)"
-
-    # Check for ketone groups
-    ketone_pattern = Chem.MolFromSmarts("[CX4]-[CX3](=O)-[CX4]")
-    if mol.HasSubstructMatch(ketone_pattern):
-        return False, "Contains ketone group(s)"
         
     # Get the carboxylic acid carbon
     carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_matches[0][0])
@@ -57,7 +46,6 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     visited = set()
     current = carboxyl_carbon
     chain_length = 0
-    branching_detected = False
     
     while current is not None:
         visited.add(current.GetIdx())
@@ -65,22 +53,16 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         
         # Find next carbon in chain
         next_carbon = None
-        carbon_neighbors = 0
-        
         for neighbor in current.GetNeighbors():
             if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                carbon_neighbors += 1
+                # Check for branching
+                carbon_neighbors = sum(1 for n in neighbor.GetNeighbors() 
+                                    if n.GetAtomicNum() == 6)
+                if carbon_neighbors > 2:
+                    return False, "Branched carbon chain detected"
                 next_carbon = neighbor
-                
-        # Check for branching
-        if carbon_neighbors > 1:
-            branching_detected = True
-            break
-            
+                break
         current = next_carbon
-
-    if branching_detected:
-        return False, "Branched carbon chain detected (side chain present)"
 
     # Check minimum chain length (typically 4+ carbons for fatty acids)
     if chain_length < 4:
@@ -94,15 +76,25 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if mol.HasSubstructMatch(triple_bond_pattern):
         return False, "Contains triple bonds (unsaturated)"
 
-    # Check that all carbons in the main chain are saturated (except carboxylic carbon)
+    # Check for non C,H,O atoms (excluding deuterium)
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            # Skip the carboxylic carbon
-            if atom.GetIdx() == carboxyl_matches[0][0]:
-                continue
-            # Check that all other carbons are sp3 hybridized
-            if atom.GetHybridization() != Chem.HybridizationType.SP3:
-                return False, "Contains unsaturated carbons"
+        atomic_num = atom.GetAtomicNum()
+        if atomic_num not in [1, 6, 8]:
+            if not (atomic_num == 1 and atom.GetIsotope() == 2):  # Allow deuterium
+                return False, "Contains elements other than C, H, O (or deuterium)"
+
+    # Check for ether linkages
+    ether_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[CX4]")
+    if mol.HasSubstructMatch(ether_pattern):
+        return False, "Contains ether linkages"
+
+    # Check for additional oxygen-containing groups
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:  # Oxygen atom
+            # Skip the carboxylic acid oxygens
+            if atom.GetIdx() not in [match[1] for match in carboxyl_matches] and \
+               atom.GetIdx() not in [match[2] for match in carboxyl_matches]:
+                return False, "Contains additional oxygen-containing groups"
 
     # All checks passed
     return True, "Straight-chain saturated fatty acid with single carboxylic acid group"
