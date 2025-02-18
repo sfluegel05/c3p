@@ -3,10 +3,10 @@ Classifies: CHEBI:47909 3-oxo-Delta(4) steroid
 """
 #!/usr/bin/env python3
 """
-Classifies: a 3-oxo-Delta(4) steroid
+Classifies: 3-oxo-Delta(4) steroid
 Definition: A 3-oxo steroid conjugated to a C=C double bond at the alpha,beta position.
-This code checks for a tetracyclic (steroid) nucleus and for an enone motif
-(i.e. a ketone conjugated with an adjacent C=C in a six-membered ring).
+This code checks for a fused tetracyclic (steroid) nucleus and for an enone motif 
+(i.e. a ketone conjugated with an adjacent C=C in a six‐membered ring).
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -14,40 +14,61 @@ from rdkit.Chem import rdMolDescriptors
 def is_3_oxo_Delta_4__steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-Delta(4) steroid based on its SMILES string.
-    A 3-oxo-Delta(4) steroid is defined as a steroid (typically with a tetracyclic nucleus)
-    having a 3-oxo group (ketone) conjugated with an adjacent C=C double bond in the A ring.
+    A 3-oxo-Delta(4) steroid is defined as a steroid (with a fused tetracyclic nucleus) 
+    having a 3-oxo group (ketone) conjugated to an adjacent C=C double bond in a six-membered ring.
     
     Args:
         smiles (str): SMILES string of the molecule
         
     Returns:
         bool: True if the molecule is a 3-oxo-Delta(4) steroid, False otherwise.
-        str: Reason for the classification.
+        str: Explanation of the classification.
     """
-    # Parse the input SMILES string
+    # Parse the input SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a steroid-like nucleus by verifying that the molecule contains four rings.
-    ring_info = mol.GetRingInfo()
-    n_rings = ring_info.NumRings()
-    if n_rings < 4:
-        return False, f"Not enough rings ({n_rings} found); expected a tetracyclic steroid nucleus"
+    # 1. Check for a steroid nucleus.
+    # A common steroid core is a fused tetracyclic system.
+    # This SMARTS pattern is a rough representation of the steroid nucleus 
+    # (three six-membered rings and one five-membered ring fused together).
+    steroid_core_smarts = "C1[C@@H]2CC[C@H]3C4CC[C@H](C4)[C@H]3[C@H]2C1"
+    steroid_core = Chem.MolFromSmarts(steroid_core_smarts)
+    if steroid_core is None:
+        return False, "Error in generating steroid nucleus SMARTS"
+    if not mol.HasSubstructMatch(steroid_core):
+        return False, "Steroid nucleus not found"
     
-    # Define the SMARTS pattern for the enone functionality in a six‐membered ring.
-    # This pattern demands:
-    #    - A carbon atom (in a ring of size 6) bonded to a ketonic carbon
-    #    - The ketonic carbon ([CX3]) in a ring (r6) with an oxygen double bond (=O)
-    #    - Followed by a carbon in the ring that is doubly-bonded to another ring carbon.
-    enone_smarts = "[#6;r6][CX3;r6](=O)[#6;r6]=[#6;r6]"
+    # 2. Check for the enone functionality (alpha,beta-unsaturated ketone) 
+    # in a six-membered ring.
+    # The SMARTS below requires:
+    #   - a ring carbon ([#6;R]) bonded to a ketonic carbon ([CX3;R](=O))
+    #   - that ketonic carbon bonded to another ring carbon engaged in a double bond.
+    enone_smarts = "[#6;R][CX3;R](=O)[#6;R]=[#6;R]"
     enone = Chem.MolFromSmarts(enone_smarts)
     if enone is None:
-        return False, "Error in generating the enone SMARTS pattern"
+        return False, "Error in generating enone SMARTS pattern"
     
-    # Check if the molecule contains the enone substructure
-    if not mol.HasSubstructMatch(enone):
-        return False, "Missing the alpha,beta-unsaturated ketone motif (3-oxo & Δ(4)) in a six-membered ring"
+    enone_matches = mol.GetSubstructMatches(enone)
+    if not enone_matches:
+        return False, "Missing the alpha,beta-unsaturated ketone motif (3-oxo & Δ(4))"
+    
+    # To further ensure that the enone motif is present in a six-membered ring (A-ring),
+    # iterate over the enone matches and check if all atoms in the match are contained
+    # in any one six-membered ring.
+    ring_info = mol.GetRingInfo()
+    enone_in_ring = False
+    for match in enone_matches:
+        # Iterate over every ring in the molecule.
+        for ring in ring_info.AtomRings():
+            if len(ring) == 6 and set(match).issubset(ring):
+                enone_in_ring = True
+                break
+        if enone_in_ring:
+            break
+    if not enone_in_ring:
+        return False, "Enone motif not found in a six-membered ring"
     
     return True, "Contains a 3-oxo steroid motif with a Δ(4) unsaturation"
 
