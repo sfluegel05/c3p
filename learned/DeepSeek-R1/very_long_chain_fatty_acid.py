@@ -5,10 +5,11 @@ Classifies: CHEBI:27283 very long-chain fatty acid
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_very_long_chain_fatty_acid(smiles: str):
     """
-    Determines if a molecule is a very long-chain fatty acid (chain length > C22) based on its SMILES string.
+    Determines if a molecule is a very long-chain fatty acid (chain length ≥ C22) based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,49 +23,31 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find carboxylic acid group (-COOH)
+    # Find carboxylic acid groups (-COOH)
     carb_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if not mol.HasSubstructMatch(carb_acid_pattern):
-        return False, "No carboxylic acid group found"
-
-    # Get matches for carboxylic acid
     matches = mol.GetSubstructMatches(carb_acid_pattern)
-    max_chain_length = 0
+    
+    # Must have exactly one carboxylic acid group
+    if len(matches) != 1:
+        return False, f"Found {len(matches)} carboxylic acid groups (need exactly 1)"
+    
+    # Get the carbonyl carbon and check if aliphatic
+    carbonyl_carbon = matches[0][0]
+    if mol.GetAtomWithIdx(carbonyl_carbon).GetIsAromatic():
+        return False, "Carboxylic acid attached to aromatic ring"
 
-    for match in matches:
-        carbonyl_carbon = match[0]
-        # Find adjacent carbon (alpha carbon) to start chain measurement
-        alpha_carbons = [n for n in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors() 
-                        if n.GetAtomicNum() == 6 and n.GetIdx() != match[1]]
-        
-        if not alpha_carbons:
-            continue
-            
-        # Perform BFS to find longest carbon chain from alpha carbon
-        visited = set()
-        queue = [(alpha_carbons[0], 1)]  # (atom object, chain length)
-        current_max = 0
-        
-        while queue:
-            atom, length = queue.pop(0)
-            if atom.GetIdx() in visited:
-                continue
-            visited.add(atom.GetIdx())
-            
-            if length > current_max:
-                current_max = length
-                
-            # Add neighboring carbons (allow single/double/triple bonds)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                    queue.append((neighbor, length + 1))
-
-        # Total chain length includes the carbonyl carbon (+1)
-        total_length = current_max + 1
-        if total_length > max_chain_length:
-            max_chain_length = total_length
-
-    if max_chain_length > 22:
-        return True, f"Main carbon chain length ({max_chain_length}) > 22"
+    # Find alpha carbon (adjacent to carbonyl)
+    alpha_carbons = [n for n in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors() 
+                    if n.GetAtomicNum() == 6 and n.GetIdx() != matches[0][1]]
+    
+    if not alpha_carbons:
+        return False, "No alpha carbon found"
+    
+    # Calculate longest chain from alpha carbon using RDKit's built-in function
+    chain_atoms = rdMolDescriptors._CalcCarbons(mol, alpha_carbons[0].GetIdx(), doubleBondTerminal=True)
+    chain_length = len(chain_atoms) + 1  # Include carbonyl carbon
+    
+    if chain_length >= 22:
+        return True, f"Main carbon chain length ({chain_length}) ≥ 22"
     else:
-        return False, f"Main carbon chain length ({max_chain_length}) ≤ 22"
+        return False, f"Main carbon chain length ({chain_length}) < 22"
