@@ -25,32 +25,39 @@ def is_gamma_lactone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all ester groups in rings
-    # SMARTS pattern for ester group in a 5-membered ring:
-    # O connected to C=O in a 5-atom ring where both oxygen atoms are in the ring
-    gamma_lactone_pattern = Chem.MolFromSmarts("[O;R][C;R](=O)[C;R][C;R][C;R]")
+    # SMARTS pattern for a five-membered ring containing an ester group (O connected to C in a ring with C=O)
+    # The pattern matches any oxygen in a 5-membered ring where there's a carbonyl group in the same ring
+    gamma_lactone_pattern = Chem.MolFromSmarts("[O;r5].[C;r5]=O")
     
-    # Check for matches with the 5-membered ring ester pattern
+    # Check for matches with the pattern
     matches = mol.GetSubstructMatches(gamma_lactone_pattern)
     
     if not matches:
         return False, "No five-membered lactone ring found"
     
-    # Verify ring size for each matched oxygen atom
+    # Check each possible pair of O and C=O in the same ring
+    ring_info = mol.GetRingInfo()
     for match in matches:
-        ring_info = mol.GetRingInfo()
-        for atom_idx in match:
-            # Get rings containing the matched atom
-            rings = [r for r in ring_info.AtomRings() if atom_idx in r]
-            for ring in rings:
-                # Check if it's a 5-membered ring containing both ester oxygens
-                if len(ring) == 5:
-                    # Get atoms in the ring
-                    ring_atoms = set(ring)
-                    # Check if both ester oxygen and carbonyl oxygen are in this ring
-                    ester_o = match[0]
-                    carbonyl_o = [a.GetIdx() for a in mol.GetAtomWithIdx(match[1]).GetNeighbors() if a.GetAtomicNum() == 8][0]
-                    if {ester_o, carbonyl_o}.issubset(ring_atoms):
+        o_atom = match[0]
+        c_atom = match[1]
+        # Find rings containing both atoms
+        common_rings = [r for r in ring_info.AtomRings() if o_atom in r and c_atom in r]
+        for ring in common_rings:
+            if len(ring) == 5:
+                # Check if the oxygen is bonded to a carbon in the ring
+                o_neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(o_atom).GetNeighbors()]
+                # Ensure the oxygen is bonded to a carbon in the ring
+                if any(n in ring for n in o_neighbors):
+                    # Check if the carbonyl carbon is part of an ester (bonded to an oxygen outside the ring)
+                    # The carbonyl oxygen should not be in the ring
+                    carbonyl_o = None
+                    for bond in mol.GetAtomWithIdx(c_atom).GetBonds():
+                        if bond.GetBondType() == Chem.BondType.DOUBLE:
+                            other = bond.GetOtherAtomIdx(c_atom)
+                            if mol.GetAtomWithIdx(other).GetAtomicNum() == 8 and other not in ring:
+                                carbonyl_o = other
+                                break
+                    if carbonyl_o is not None:
                         return True, "Contains a five-membered lactone ring"
     
     return False, "No valid five-membered lactone ring found"
