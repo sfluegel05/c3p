@@ -1,324 +1,63 @@
 """
 Classifies: CHEBI:78608 alpha-amino-acid zwitterion
 """
- - 3,4-dihydroxy-L-phenylalanine zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])CC1=CC(=C(O)C(O)=C1)
- - 5-fluoro-L-tryptophan zwitterion: SMILES: C1(=CNC2=C1C=C(C=C2)F)C[C@@H](C(=O)[O-])[NH3+]
- - L-tyrosine zwitterion: SMILES: [NH3+][C@@H](Cc1ccc(O)cc1)C([O-])=O
- - 5-hydroxy-L-tryptophan zwitterion: SMILES: OC1=CNC2=C1C=CC(=C2)C[C@H]([NH3+])C([O-])=O
- - L-ornithine zwitterion: SMILES: [NH3+]CCC[C@H](C([O-])=O)N
- - 4-hydroxy-L-proline zwitterion: SMILES: O[C@H]1C[NH2+][C@H](C1)C([O-])=O
- - L-phenylalanine zwitterion: SMILES: [NH3+][C@@H](Cc1ccccc1)C([O-])=O
- - L-arginine zwitterion: SMILES: [NH3+]C(CCCNC(=N)N)C([O-])=O
- - L-histidine zwitterion: SMILES: [NH3+][C@@H](Cc1cnc[nH]1)C([O-])=O
- - L-tryptophan zwitterion: SMILES: [NH3+][C@@H](Cc1c[nH]c2c1cccc2)C([O-])=O
- - L-asparagine zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])CC(=O)N
- - L-cysteine zwitterion: SMILES: [NH3+][C@@H](CS)C([O-])=O
- - L-glutamine zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])CCC(=O)N
- - L-threonine zwitterion: SMILES: C[C@H](O)[C@H]([NH3+])C([O-])=O
- - L-methionine zwitterion: SMILES: CSCC[C@H]([NH3+])C([O-])=O
- - L-aspartic acid zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])CC(=O)O
- - L-glutamic acid zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])CCC(=O)O
- - L-alanine zwitterion: SMILES: C[C@H]([NH3+])C([O-])=O
- - 4-aminobutyric acid zwitterion: SMILES: C(CC[NH3+])C([O-])=O
- - L-2-aminobutyric acid zwitterion: SMILES: CC[C@H]([NH3+])C([O-])=O
- - 4-hydroxy-L-threonine zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])C(O)CO
- - 5-hydroxy-L-lysine zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])CCCC(O)N
- - 3,5-dibromo-L-tyrosine zwitterion: SMILES: BrC1=CC(Br)=C(C=C1O)C[C@H]([NH3+])C([O-])=O
- - L-2-aminoadipic acid zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])CCCC(=O)O
- - 3,5-diiodo-L-tyrosine zwitterion: SMILES: IC1=CC(I)=C(C=C1O)C[C@H]([NH3+])C([O-])=O
- - 3-iodo-L-tyrosine zwitterion: SMILES: IC1=CC=C(C=C1O)C[C@H]([NH3+])C([O-])=O
- - 3-nitro-L-tyrosine zwitterion: SMILES: [O-][N+](=O)C1=CC(=C(C=C1)O)C[C@H]([NH3+])C([O-])=O
- - 3,4-dihydroxy-L-phenylalanine zwitterion: SMILES: O=C([O-])[C@@H]([NH3+])CC1=CC(=C(O)C(O)=C1)
- - 3-chloro-L-tyrosine zwitterion: SMILES: ClC1=CC=C(C=C1O)C[C@H]([NH3+])C([O-])=O
- - 3,5-dichloro-L-tyrosine zwitterion: SMILES: ClC1=CC(Cl)=C(C=C1O)C[C@H]([NH3+])C([O-])=O
- - L-4-nitrophenylalanine zwitterion: SMILES: [O-][N+](=O)C1=CC=C(C=C1)C[C@H]([NH3+])C([O-])=O
- - 4-fluoro-L-phenylalanine zwitterion: SMILES: Fc1ccc(cc1)C[C@H]([NH3+])C([O-])=O
- - 4-chloro-L-phenylalanine zwitterion: SMILES: Clc1ccc(cc1)C[C@H]([NH3+])C([O-])=O
- - 4-bromo-L-phenylalanine zwitterion: SMILES: Brc1ccc(cc1)C[C@H]([NH3+])C([O-])=O
- - 4-iodo-L-phenylalanine zwitterion: SMILES: Ic1ccc(cc1)C[C@H]([NH3+])C([O-])=O
- - 3,4-difluoro-L-phenylalanine zwitterion: SMILES: Fc1c(F)cccc1C[C@H]([NH3+])C([O-])=O
- - 3-fluoro-L-phenylalanine zwitterion: SMILES: Fc1cccc(c1)C[C@H]([NH3+])C([O-])=O
- - 3-chloro-L-phenylalanine zwitterion: SMILES: Clc1cccc(c1)C[C@H]([NH3+])C([O-])=O
- - 3-bromo-L-phenylalanine zwitterion: SMILES: Brc1cccc(c1)C[C@H]([NH3+])C([O-])=O
- - 3-iodo-L-phenylalanine zwitterion: SMILES: Ic1cccc(c1)C[C@H]([NH3+])C([O-])=O
- - 3,4-dichloro-L-phenylalanine zwitterion: SMILES: Clc1c(Cl)cccc1C[C@H]([NH3+])C([O-])=O
- - 3,4-dibromo-L-phenylalanine zwitterion: SMILES: Brc1c(Br)cccc1C[C@H]([NH3+])C([O-])=O
- - 3,5-difluoro-L-phenylalanine zwitterion: SMILES: Fc1cc(F)cccc1C[C@H]([NH3+])C([O-])=O
- - 3,5-dichloro-L-phenylalanine zwitterion: SMILES: Clc1cc(Cl)cccc1C[C@H]([NH3+])C([O-])=O
- - 3,5-dibromo-L-phenylalanine zwitterion: SMILES: Brc1cc(Br)cccc1C[C@H]([NH3+])C([O-])=O
- - 3,5-diiodo-L-phenylalanine zwitterion: SMILES: Ic1cc(I)cccc1C[C@H]([NH3+])C([O-])=O
- - 2-fluoro-L-phenylalanine zwitterion: SMILES: Fc1ccccc1C[C@H]([NH3+])C([O-])=O
- - 2-chloro-L-phenylalanine zwitterion: SMILES: Clc1ccccc1C[C@H]([NH3+])C([O-])=O
- - 2-bromo-L-phenylalanine zwitterion: SMILES: Brc1ccccc1C[C@H]([NH3+])C([O-])=O
- - 2-iodo-L-phenylalanine zwitterion: SMILES: Ic1ccccc1C[C@H]([NH3+])C([O-])=O
- - 2,3-difluoro-L-phenylalanine zwitterion: SMILES: Fc1c(F)ccccc1C[C@H]([NH3+])C([O-])=O
- - 2,4-difluoro-L-phenylalanine zwitterion: SMILES: Fc1c(F)cccc1C[C@H]([NH3+])C([O-])=O
- - 2,5-difluoro-L-phenylalanine zwitterion: SMILES: Fc1cc(F)ccc1C[C@H]([NH3+])C([O-])=O
- - 2-fluoro-L-tyrosine zwitterion: SMILES: Fc1ccc(O)c(c1)C[C@H]([NH3+])C([O-])=O
- - 3-fluoro-L-tyrosine zwitterion: SMILES: Fc1cc(O)ccc1C[C@H]([NH3+])C([O-])=O
- - 5-fluoro-L-tyrosine zwitterion: SMILES: Fc1ccc(O)cc1C[C@H]([NH3+])C([O-])=O
- - 6-fluoro-L-tryptophan zwitterion: SMILES: Fc1c[nH]c2c1cccc2C[C@H]([NH3+])C([O-])=O
- - 4-fluoro-L-tryptophan zwitterion: SMILES: Fc1c[nH]c2c1cc(F)cc2C[C@H]([NH3+])C([O-])=O
- - 5-fluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 6-fluoro-D-tryptophan zwitterion: SMILES: Fc1c[nH]c2c1cccc2C[C@H](C([O-])=O)[NH3+]
- - 7-fluoro-L-tryptophan zwitterion: SMILES: Fc1c[nH]c2c1cccc2C[C@H]([NH3+])C([O-])=O
- - 5-bromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5-iodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5-methyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5-nitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5-methoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5-hydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5-hydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 6-hydroxy-L-tryptophan zwitterion: SMILES: Oc1c[nH]c2c1cccc2C[C@H]([NH3+])C([O-])=O
- - 7-hydroxy-L-tryptophan zwitterion: SMILES: Oc1c[nH]c2c1cccc2C[C@H]([NH3+])C([O-])=O
- - 4-hydroxy-L-tryptophan zwitterion: SMILES: Oc1c[nH]c2c1cc(O)cc2C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethyl-D-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dinitro-D-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dimethoxy-D-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dihydroxy-L-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dichloro-L-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dibromo-L-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-diiodo-L-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-difluoro-L-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethyl-L-tryptophan zwitterion: SMILES: Cc1ccc2c(c1C)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dinitro-L-tryptophan zwitterion: SMILES: [O-][N+](=O)c1ccc2c(c1[N+]([O-])=O)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,7-dimethoxy-L-tryptophan zwitterion: SMILES: COc1ccc2c(c1OC)c([nH]c2)C[C@H]([NH3+])C([O-])=O
- - 5,6-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dihydroxy-D-tryptophan zwitterion: SMILES: Oc1ccc2c(c1O)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dichloro-D-tryptophan zwitterion: SMILES: Clc1ccc2c(c1Cl)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-dibromo-D-tryptophan zwitterion: SMILES: Brc1ccc2c(c1Br)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-diiodo-D-tryptophan zwitterion: SMILES: Ic1ccc2c(c1I)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,6-difluoro-D-tryptophan zwitterion: SMILES: Fc1ccc2c(c1F)c([nH]c2)C[C@H](C([O-])=O)[NH3+]
- - 5,7-difluoro-D-tryptophan zwitterion:
+"""
+Classifies: CHEBI:59999 alpha-amino-acid zwitterion
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_alpha_amino_acid_zwitterion(smiles: str):
+    """
+    Determines if a molecule is an alpha-amino-acid zwitterion based on its SMILES string.
+    An alpha-amino-acid zwitterion has a protonated amino group ([NH3+]) and a deprotonated carboxyl group ([O-]),
+    with both groups attached to adjacent carbons (alpha carbon).
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an alpha-amino-acid zwitterion, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Find ammonium group ([NH3+]) attached to a carbon
+    ammonium_pattern = Chem.MolFromSmarts("[NH3+]")
+    ammonium_matches = mol.GetSubstructMatches(ammonium_pattern)
+    if not ammonium_matches:
+        return False, "No ammonium group ([NH3+]) found"
+
+    # Find carboxylate group ([O-]C(=O))
+    carboxylate_pattern = Chem.MolFromSmarts("[O-]C(=O)")
+    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    if not carboxylate_matches:
+        return False, "No carboxylate group ([O-]C(=O)) found"
+
+    # Check if ammonium and carboxylate are on adjacent carbons (alpha-amino structure)
+    # Get the atoms involved in each group
+    for ammonium_atom in ammonium_matches:
+        for carboxylate_atom in carboxylate_matches:
+            # Carboxylate atom is the carbon adjacent to the O-
+            carboxyl_carbon = carboxylate_atom[1]
+            # Ammonium atom is the nitrogen
+            nitrogen = ammonium_atom[0]
+            # Get the alpha carbon (attached to nitrogen)
+            alpha_carbon = None
+            for neighbor in mol.GetAtomWithIdx(nitrogen).GetNeighbors():
+                if neighbor.GetSymbol() == 'C':
+                    alpha_carbon = neighbor.GetIdx()
+                    break
+            if alpha_carbon is None:
+                continue  # No adjacent carbon to nitrogen
+
+            # Check if this alpha carbon is adjacent to the carboxyl carbon
+            alpha_carbon_atom = mol.GetAtomWithIdx(alpha_carbon)
+            for neighbor in alpha_carbon_atom.GetNeighbors():
+                if neighbor.GetIdx() == carboxyl_carbon:
+                    return True, "Ammonium and carboxylate groups on adjacent carbons (alpha-amino zwitterion)"
+
+    return False, "Ammonium and carboxylate groups not properly positioned for alpha-amino zwitterion"
