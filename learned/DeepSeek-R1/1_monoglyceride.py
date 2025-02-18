@@ -25,27 +25,41 @@ def is_1_monoglyceride(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for 1-monoglyceride core structure:
-    # - Glycerol backbone (HO-CH2-OH groups)
-    # - Exactly one ester group at position 1 (O-C=O)
-    # - Two hydroxyl groups at positions 2 and 3
-    # [CH2] with ester group -> [CH2]([OX2][C](=O))...
-    # Middle CH with hydroxyl -> [CH]([OH])
-    # Terminal CH2 with hydroxyl -> [CH2]([OH])
-    glyceride_pattern = Chem.MolFromSmarts("[CH2]([OX2][C](=O)*)[CH]([OH])[CH2]([OH])")
-    
-    # Find matches for the core structure
+    # Glycerol backbone with ester at position 1 and hydroxyls at 2 and 3
+    # Explicit connectivity to avoid partial matches:
+    # [CH2]-[CH]-[CH2] where first CH2 has ester, middle CH has OH, last CH2 has OH
+    glyceride_pattern = Chem.MolFromSmarts(
+        "[CH2]([OX2][C](=O)*)-[CH]([OH])-[CH2]([OH])"
+    )
+    alt_pattern = Chem.MolFromSmarts(
+        "[CH2]([OH])-[CH]([OH])-[CH2]([OX2][C](=O)*)"
+    )
+
+    # Check both possible orientations (SMILES direction matters)
     matches = mol.GetSubstructMatches(glyceride_pattern)
+    alt_matches = mol.GetSubstructMatches(alt_pattern)
     
-    if not matches:
-        # Check alternative orientation where positions might be reversed
-        # Some SMILES representations might have different atom order
-        alt_pattern = Chem.MolFromSmarts("[CH2]([OH])[CH]([OH])[CH2]([OX2][C](=O)*)")
-        alt_matches = mol.GetSubstructMatches(alt_pattern)
-        if len(alt_matches) == 0:
-            return False, "Glycerol backbone with ester at position 1 not found"
-        else:
-            return True, "1-monoglyceride with acyl group at position 1 (alternative orientation)"
-    
-    # Verify exactly one ester is attached to the glycerol backbone
-    # (handled by SMARTS pattern matching)
+    if not (matches or alt_matches):
+        return False, "Glycerol backbone with ester at position 1 not found"
+
+    # Verify there's exactly one ester group in the entire molecule
+    ester_pattern = Chem.MolFromSmarts("[OX2][C](=O)")
+    ester_count = len(mol.GetSubstructMatches(ester_pattern))
+    if ester_count != 1:
+        return False, f"Found {ester_count} ester groups (must be exactly 1)"
+
+    # Ensure no other substituents on glycerol backbone
+    # Check that all oxygen atoms are either in hydroxyls or the single ester
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:
+            if not (atom.GetDegree() == 2 and atom.GetTotalNumHs() == 0):  # Ester oxygen
+                if not (atom.GetDegree() == 1 and atom.GetTotalNumHs() == 1):  # Hydroxyl
+                    return False, "Unexpected oxygen substituents"
+
+    # Check molecular formula constraints (C3H8O3 + acyl group)
+    # Total oxygens should be 3 (2 OH + 1 ester oxygen)
+    o_count = sum(1 for a in mol.GetAtoms() if a.GetAtomicNum() == 8)
+    if o_count != 3 + 1:  # Glycerol (3O) + ester adds 1O from the acyl
+        return False, f"Unexpected oxygen count: {o_count}"
+
     return True, "1-monoglyceride with acyl group at position 1"
