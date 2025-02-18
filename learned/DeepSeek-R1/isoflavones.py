@@ -1,357 +1,53 @@
 """
 Classifies: CHEBI:38757 isoflavones
 """
- - 7-hydroxy-3-(3-hydroxy-4-methoxyphenyl)-1-benzopyran-4-one: SMILES: COC1=C(C=CC(=C1)C2=COC3=C(C2=O)C=CC(=C3)O)O
- - 7,3',4'-trihydroxy-8-methylisoflavone: SMILES: CC1=C2OC=C(C3=CC=C(O)C(O)=C3)C(C2=C(O)C=C1O)=O
- - 5,7-dihydroxy-3-(4-hydroxyphenyl)-8-(3-methylbut-2-enyl)chromen-4-one: SMILES: O=C1C2=C(OC=C1C3=CC=C(O)C=C3)C(=C(O)C=C2O)CC=C(C)C
- - 7-hydroxy-3-(4-methoxyphenyl)-1-benzopyran-4-one: SMILES: COC1=CC=C(C=C1)C2=COC3=C(C2=O)C=CC(=C3)O
- - 3-(3,4-dihydroxyphenyl)-5,7-dihydroxy-4H-chromen-4-one: SMILES: O=C1C2=C(OC=C1C3=CC(O)=C(O)C=C3)C(O)=CC(O)=C2
- - 7,3',4',5'-tetrahydroxyisoflavone: SMILES: O=C1C2=C(OC=C1C3=CC(O)=C(O)C(O)=C3)C=C(O)C=C2O
- - 3-(4-hydroxyphenyl)-7-methoxy-4H-chromen-4-one: SMILES: COc1ccc2c(c1)occ(-c1ccc(O)cc1)c2=O
- - 5,7-dihydroxy-3-(4-hydroxyphenyl)-6-(3-methylbut-2-enyl)chromen-4-one: SMILES: O=C1C2=C(OC=C1C3=CC=C(O)C=C3)C(O)=C(C=C2O)CC=C(C)C
- - 7-hydroxy-3-(4-hydroxyphenyl)-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 3-(4-hydroxyphenyl)-5,7-dihydroxy-4H-chromen-4-one: SMILES: O=C1C2=C(OC=C1C3=CC=C(O)C=C3)C(O)=CC(O)=C2
- - 7-hydroxy-3-(4-hydroxy-3-methoxyphenyl)-1-benzopyran-4-one: SMILES: COC1=C(C=CC(=C1)C2=COC3=C(C2=O)C=CC(=C3)O)O
- - 7,4'-dihydroxy-3'-methoxyisoflavone: SMILES: COc1cc(ccc1O)-c1coc2cc(O)ccc2c1=O
- - 3-(4-hydroxyphenyl)-7-methoxy-4H-chromen-4-one: SMILES: COc1ccc2c(c1)occ(-c1ccc(O)cc1)c2=O
- - 3-(4-hydroxyphenyl)-5,7-dimethoxy-4H-chromen-4-one: SMILES: COc1cc(O)c2c(c1)occ(-c1ccc(O)cc1)c2=O
- - 3-(4-hydroxyphenyl)-5,7-dihydroxy-4H-chromen-4-one: SMILES: O=C1C2=C(OC=C1C3=CC=C(O)C=C3)C(O)=CC(O)=C2
- - 7-hydroxy-3-(4-hydroxyphenyl)-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-1-benzopyran-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl)-4H-chromen-4-one: SMILES: Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O
- - 7-hydroxy-3-(4-hydroxyphenyl
+"""
+Classifies: CHEBI:18214 isoflavones
+"""
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+
+def is_isoflavones(smiles: str):
+    """
+    Determines if a molecule is an isoflavone based on its SMILES string.
+    An isoflavone has a 3-aryl-1-benzopyran-4-one (3-aryl-4H-chromen-4-one) skeleton.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an isoflavone, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Define core structure pattern: 3-aryl-4H-chromen-4-one
+    # Chromen-4-one is a benzene fused to pyrone (O=C1C=CC2=C1C=CC=C2)
+    # The aryl group is attached to the 3-position (carbon adjacent to oxygen in pyrone)
+    core_pattern = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)cc2-[c]")
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "Missing 3-aryl-4H-chromen-4-one core"
+
+    # Verify the aryl group is aromatic (at least a benzene ring)
+    # Get the matched atoms to check the aryl substituent
+    matches = mol.GetSubstructMatches(core_pattern)
+    for match in matches:
+        # The last atom in the match is the connecting carbon of the aryl group
+        aryl_start = match[-1]
+        # Check if the aryl group is part of an aromatic ring
+        aryl_atoms = [aryl_start]
+        # Traverse the connected atoms to find the aromatic ring
+        for neighbor in mol.GetAtomWithIdx(aryl_start).GetNeighbors():
+            if neighbor.GetIsAromatic():
+                # Check if the substituent forms an aromatic ring (at least 6-membered)
+                ring_info = mol.GetRingInfo()
+                for ring in ring_info.AtomRings():
+                    if neighbor.GetIdx() in ring and len(ring) >= 6:
+                        return True, "Contains 3-aryl-4H-chromen-4-one skeleton"
+        return False, "Aryl substituent is not aromatic"
+
+    # If no matches (unlikely due to earlier check), return False
+    return False, "Unexpected error in structure matching"
