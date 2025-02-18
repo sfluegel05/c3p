@@ -2,6 +2,8 @@
 Classifies: CHEBI:26125 phytosterols
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_phytosterols(smiles: str):
     """
@@ -21,26 +23,29 @@ def is_phytosterols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Generalized tetracyclic steroid core pattern for phytosterols
-    steroid_core_pattern = Chem.MolFromSmarts("C1CC[C@H]2[C@@H]1CC[C@@H]3[C@H]2CC[C@H]4=C3[CH2]CC=C4")
-    if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "No tetracyclic steroid backbone detected"
-
-    # Hydroxyl groups typically present on sterol structures
-    hydroxy_group_pattern = Chem.MolFromSmarts("O[C@H]([C@H]1CC[C@H]2[C@@H]1CCC3[C@H]2CCC4=C3[CH2]CC=C4)C")
-    if not mol.HasSubstructMatch(hydroxy_group_pattern):
-        return False, "Typical hydroxyl group on sterol backbone not detected"
-
-    # Side chain variability: broader pattern allowing for different side chain lengths and unsaturations
-    side_chain_variation_patterns = [
-        Chem.MolFromSmarts("CC(C)C"),  # side chains with extra branches like methyl groups
-        Chem.MolFromSmarts("C=C"),     # side chains with double bonds
-    ]
     
-    # Check for presence of side chain modifications
-    has_side_chain_variation = any(mol.HasSubstructMatch(pattern) for pattern in side_chain_variation_patterns)
-    if not has_side_chain_variation:
-        return False, "No variation in side chain typical of phytosterols"
+    # Steroid backbone pattern: Tetracyclic
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C1(CCC3C2CCC4C3(CCCC4)C)C")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No tetracyclic steroid backbone found"
+    
+    # Check for various common side chains and modifications
+    # We'll use basic checks here - in practice phytosterols can vary widely
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    if mol.HasSubstructMatch(double_bond_pattern):
+        shared_double_bonds = True
+    else:
+        shared_double_bonds = False
+        
+    # Represent common side chain variations for phytosterols as SMARTS patterns
+    farnesyl_chain_pattern = Chem.MolFromSmarts("C(C)CC=C(C)C")
+    if mol.HasSubstructMatch(farnesyl_chain_pattern):
+        side_chain_match = True
+    else:
+        side_chain_match = False
 
-    return True, "Contains tetracyclic steroid backbone with phytosterol-specific side chain variations"
+    # Conclusion based on substructure matches
+    if shared_double_bonds and side_chain_match:
+        return True, "Contains common phytosterol modifications (double bonds and possible farnesyl chain)"
+    
+    return False, "Lacks distinct side chain modifications typical of phytosterols"
