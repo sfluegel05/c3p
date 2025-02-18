@@ -6,10 +6,12 @@ from rdkit import Chem
 def is_primary_alcohol(smiles: str):
     """
     Determines if a molecule is a primary alcohol based on its SMILES string.
-
+    A primary alcohol is defined as a hydroxyl group (-OH) attached to a terminal carbon,
+    which is bonded to at least two hydrogen atoms or one carbon and two hydrogen atoms.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a primary alcohol, False otherwise
         str: Reason for classification
@@ -19,20 +21,18 @@ def is_primary_alcohol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for a primary alcohol pattern: Hydroxyl group connected to a primary carbon
-    # SMARTS pattern for primary alcohol: [CH2][OH]
-    # This expression can be more complex to cover branching and other variations: [CH3][OH]
-    primary_alcohol_pattern = Chem.MolFromSmarts("[CH2][OH]")
-
-    # Check for matches of the primary alcohol pattern in the molecule
+    
+    # Enhance the pattern to capture primary alcohol connectivity including branching
+    primary_alcohol_pattern = Chem.MolFromSmarts("[CX4;H2][OX2H]")
+    
+    # Check if the molecule has a substructure match for the enhanced primary alcohol pattern
     if mol.HasSubstructMatch(primary_alcohol_pattern):
         return True, "Contains a primary alcohol group"
-
-    # Also check for the case where the carbon is attached to three hydrogens and one hydroxyl: CH3OH
-    methyl_alcohol_pattern = Chem.MolFromSmarts("[CH3][OH]")
+    
+    # Additional check for simple methyl alcohols as special cases
+    methyl_alcohol_pattern = Chem.MolFromSmarts("[CX4;H3][OX2H]")
     if mol.HasSubstructMatch(methyl_alcohol_pattern):
         return True, "Contains a methanol-like primary alcohol group"
-
-    # If no primary alcohol pattern is found
+    
+    # If no pattern matches, return false
     return False, "Does not contain a primary alcohol group"
