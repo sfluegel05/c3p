@@ -23,25 +23,32 @@ def is_ether_lipid(smiles: str):
 
     # Generalized pattern for ether linkage in glycerolipids
     ether_linkage_patterns = [
-        Chem.MolFromSmarts("C-O-[CH2]-[CH2]"),  # Simple ether linkage
-        Chem.MolFromSmarts("[C;H2]-[O]-[C;H2]")  # More general ether pattern accounting for various configurations
+        Chem.MolFromSmarts("[C@@H](CO)CO"),          # Glycerol backbone with an ether bond
+        Chem.MolFromSmarts("COC[C@@H](O)CO"),       # Ether linkage more generalized
+        Chem.MolFromSmarts("O[C@H]1CCO1")           # Cyclic ethers (lactones as in ladderanes can be a complex form of ether)
     ]
 
     # Check for ether linkage pattern
-    if not any(mol.HasSubstructMatch(pattern) for pattern in ether_linkage_patterns):
+    ether_found = any(mol.HasSubstructMatch(pattern) for pattern in ether_linkage_patterns)
+    if not ether_found:
         return False, "No appropriate ether linkage found"
 
     # Check for common lipid headgroups patterns more broadly
     headgroup_patterns = [
-        Chem.MolFromSmarts("P(=O)(O)[O-]"),  # Phosphate
-        Chem.MolFromSmarts("[N+](C)(C)C"),   # Choline
-        Chem.MolFromSmarts("NCCO"),          # Ethanolamine
-        Chem.MolFromSmarts("NC(=O)C")        # Possible amide linkage
-        # Add more headgroup patterns as necessary for the lipid class
+        Chem.MolFromSmarts("P(=O)(O)[O-]"),                  # Phosphate
+        Chem.MolFromSmarts("[N+](C)(C)C"),                   # Choline
+        Chem.MolFromSmarts("NCCO"),                          # Ethanolamine
+        Chem.MolFromSmarts("NC(=O)C"),                       # Possible amide linkage
+        Chem.MolFromSmarts("P(OC)(=O)O"),                    # Phosphonate ester
+        Chem.MolFromSmarts("NCC(=O)O")                       # Serine (PS headgroups)
     ]
     
     # Ensure the presence of at least one typical lipid headgroup
-    if any(mol.HasSubstructMatch(pattern) for pattern in headgroup_patterns):
-        return True, "Contains ether linkages with common lipid headgroups such as phosphate, choline, or ethanolamine"
-    else:
+    headgroup_found = any(mol.HasSubstructMatch(pattern) for pattern in headgroup_patterns)
+    if not headgroup_found:
         return False, "Missing common lipid headgroups"
+
+    # Check that there's an appropriate connection between ether linkage and headgroup
+    # Here you might consider more specific patterns that involve the correct spatial relationships,
+    # but for a basic check, ensuring both elements are present can be a useful heuristic.
+    return True, "Contains ether linkages with common lipid headgroups such as phosphate, choline, or ethanolamine"
