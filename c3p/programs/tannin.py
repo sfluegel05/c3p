@@ -1,13 +1,22 @@
 """
 Classifies: CHEBI:26848 tannin
 """
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+"""
+Classifies: CHEBI:36354 tannin
 
-def is_tannin(smiles):
+A tannin is defined as any of a group of astringent polyphenolic vegetable principles or compounds,
+chiefly complex glucosides of catechol and pyrogallol. Key features:
+- Polyphenolic compounds
+- Often contain glucose or gallic acid derivatives
+- Multiple phenol/catechol/pyrogallol rings connected by ester or ether linkages
+"""
+
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_tannin(smiles: str):
     """
     Determines if a molecule is a tannin based on its SMILES string.
-    Tannins are polyphenolic compounds with a diverse range of structures, often containing galloyl, phenolic, catechol, pyrogallol, glucose, and ester subunits.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,44 +25,42 @@ def is_tannin(smiles):
         bool: True if molecule is a tannin, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Calculate molecular properties
-    mw = rdMolDescriptors.CalcExactMolWt(mol)
-    n_rings = rdMolDescriptors.CalcNumRings(mol)
-    n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
-    n_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    
-    # Count hydrogen bond donors and acceptors
-    n_hydrogen_donors = sum(1 for atom in mol.GetAtoms() if atom.GetTotalNumHs() > 0)
-    n_hydrogen_acceptors = sum(1 for atom in mol.GetAtoms() if atom.GetTotalNumHs() == 0 and atom.GetAtomicNum() in [7, 8, 16])
-    
-    # Look for common tannin substructures
-    galloyl_pattern = Chem.MolFromSmarts("*c1c(O)c(O)c(O)c(C(=O)O)c1*")
-    phenol_pattern = Chem.MolFromSmarts("*c1ccc(O)cc1*")
-    catechol_pattern = Chem.MolFromSmarts("*c1c(O)c(O)ccc1*")
-    pyrogallol_pattern = Chem.MolFromSmarts("*c1c(O)c(O)c(O)cc1*")
-    glucose_pattern = Chem.MolFromSmarts("*OC1OC(CO)C(O)C(O)C1O*")
-    ester_pattern = Chem.MolFromSmarts("*C(=O)O*")
-    
-    has_galloyl = mol.HasSubstructMatch(galloyl_pattern)
-    has_phenol = mol.HasSubstructMatch(phenol_pattern)
-    has_catechol = mol.HasSubstructMatch(catechol_pattern)
-    has_pyrogallol = mol.HasSubstructMatch(pyrogallol_pattern)
-    has_glucose = mol.HasSubstructMatch(glucose_pattern)
-    has_ester = mol.HasSubstructMatch(ester_pattern)
-    
-    # Set up tannin classification criteria
-    is_polyphenolic = n_hydrogen_donors >= 4 and n_hydrogen_acceptors >= 8
-    has_tannin_substructures = has_galloyl or has_phenol or has_catechol or has_pyrogallol or has_glucose or has_ester
-    complex_structure = n_rings >= 4 and n_aromatic_rings >= 2 and n_rotatable_bonds >= 6
-    molecular_weight_range = 300 < mw < 3000
-    
-    if is_polyphenolic and has_tannin_substructures and complex_structure and molecular_weight_range:
-        return True, "Molecule contains polyphenolic substructures and meets tannin criteria"
-    else:
-        return False, "Molecule does not meet tannin criteria"
+
+    # Look for polyphenolic structure (multiple phenol/catechol/pyrogallol rings)
+    phenol_pattern = Chem.MolFromSmarts("[c;H1]")  # Aromatic ring with 1 attached H
+    catechol_pattern = Chem.MolFromSmarts("[c;H0;r5]1:c:c:c:c:c:1")  # Aromatic ring with 2 attached O
+    pyrogallol_pattern = Chem.MolFromSmarts("[c;H0;r5]1:c:c(:O):c:c:c:1")  # Aromatic ring with 3 attached O
+
+    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
+    catechol_matches = mol.GetSubstructMatches(catechol_pattern)
+    pyrogallol_matches = mol.GetSubstructMatches(pyrogallol_pattern)
+
+    if len(phenol_matches) + len(catechol_matches) + len(pyrogallol_matches) < 3:
+        return False, "Fewer than 3 phenol/catechol/pyrogallol rings found"
+
+    # Look for glucose or gallic acid derivatives
+    glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H]([C@H]([C@@H]([C@@H]1O)O)O)CO")
+    gallic_pattern = Chem.MolFromSmarts("C(=O)c1cc(O)c(O)c(O)c1")
+
+    glucose_matches = mol.GetSubstructMatches(glucose_pattern)
+    gallic_matches = mol.GetSubstructMatches(gallic_pattern)
+
+    if not glucose_matches and not gallic_matches:
+        return False, "No glucose or gallic acid derivatives found"
+
+    # Look for ester/ether linkages between rings
+    ester_pattern = Chem.MolFromSmarts("[O;X2]-[CX3](=[OX1])")
+    ether_pattern = Chem.MolFromSmarts("[O;X2]-[#6]")
+
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+
+    if not ester_matches and not ether_matches:
+        return False, "No ester or ether linkages found between rings"
+
+    return True, "Polyphenolic compound containing glucose/gallic acid derivatives and phenol/catechol/pyrogallol rings connected by ester/ether linkages"
