@@ -3,6 +3,10 @@ Classifies: CHEBI:80291 aliphatic nitrile
 """
 """
 Classifies: aliphatic nitrile (any nitrile derived from an aliphatic compound)
+
+An aliphatic nitrile is defined as any molecule that contains at least one nitrile group (–C≡N)
+where the nitrile carbon is not aromatic and where the nitrile carbon’s aliphatic substituent (i.e.
+the neighbor other than the nitrile nitrogen) does not lead into any aromatic fragment.
 """
 
 from rdkit import Chem
@@ -10,71 +14,86 @@ from rdkit import Chem
 def is_aliphatic_nitrile(smiles: str):
     """
     Determines if a molecule is an aliphatic nitrile based on its SMILES string.
-    An aliphatic nitrile is defined as any nitrile where the -C≡N group is attached to an aliphatic (non‐aromatic) moiety.
-
+    A nitrile is considered aliphatic if the nitrile carbon is not aromatic,
+    and its attached substituent (the non-nitrogen neighbor) does not lead to any aromatic atom.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an aliphatic nitrile, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is classified as an aliphatic nitrile, else False.
+        str: Explanation for the classification
     """
-    
-    # Parse the SMILES string
+    # Parse the SMILES string into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for a nitrile group: a sp-hybridized carbon triple-bonded to a nitrogen.
-    # [C;X2] ensures the carbon has two connections (one being the nitrile nitrogen and one additional bond).
+    # Define the SMARTS pattern for a nitrile group.
+    # [C;X2] ensures the carbon has exactly two bonds (one to the nitrile nitrogen and one more).
     nitrile_pattern = Chem.MolFromSmarts("[C;X2]#[N;X1]")
     if nitrile_pattern is None:
         return False, "Error creating nitrile pattern"
     
-    # Find all substructure matches for the nitrile group
+    # Find all nitrile substructure matches.
     matches = mol.GetSubstructMatches(nitrile_pattern)
     if not matches:
         return False, "No nitrile group found in the molecule"
     
-    # Check each nitrile group for aliphatic characteristics.
-    # A nitrile is considered aliphatic if the nitrile carbon itself is not aromatic,
-    # and the substituent (the neighbor other than the nitrile nitrogen) is also not aromatic.
+    # Helper function to search the substituent branch for any aromatic atoms.
+    def branch_contains_aromatic(atom, banned_atom_idx, visited):
+        """
+        Recursively check whether a branch from 'atom' contains any aromatic atoms.
+        We will not traverse back to the nitrile carbon (banned_atom_idx) to avoid false hit.
+        """
+        if atom.GetIdx() in visited:
+            return False  # already visited this atom, no aromatic found in this path yet.
+        visited.add(atom.GetIdx())
+        # If the current atom is aromatic, return True.
+        if atom.GetIsAromatic():
+            return True
+        # Traverse neighbors (skipping the nitrile carbon which is banned).
+        for nbr in atom.GetNeighbors():
+            if nbr.GetIdx() == banned_atom_idx:
+                continue
+            if branch_contains_aromatic(nbr, banned_atom_idx, visited):
+                return True
+        return False
+
+    # For each nitrile group identified, perform tests.
     for match in matches:
-        # match[0] is the nitrile carbon, match[1] is the nitrile nitrogen.
+        # match[0] is the nitrile carbon; match[1] is the nitrile nitrogen.
         nitrile_c = mol.GetAtomWithIdx(match[0])
         nitrile_n = mol.GetAtomWithIdx(match[1])
         
-        # Check if the nitrile carbon is aromatic.
+        # Reject if the nitrile carbon is aromatic.
         if nitrile_c.GetIsAromatic():
-            # Skip this nitrile group if the carbon is aromatic.
             continue
         
-        # Identify the substituent attached to the nitrile carbon (ignore the nitrile nitrogen).
-        # There can be only one neighbor aside from the nitrile nitrogen.
-        substituent_found = False
-        aliphatic_neighbor = True
-        for neighbor in nitrile_c.GetNeighbors():
-            if neighbor.GetIdx() == nitrile_n.GetIdx():
-                continue  # Skip the nitrile nitrogen
-            substituent_found = True
-            # If this substituent is aromatic, then the nitrile is not derived from a purely aliphatic chain.
-            if neighbor.GetIsAromatic():
-                aliphatic_neighbor = False
+        # Identify the substituent on the nitrile carbon that is not the nitrile nitrogen.
+        substituent_atoms = [nbr for nbr in nitrile_c.GetNeighbors() if nbr.GetIdx() != nitrile_n.GetIdx()]
+        if not substituent_atoms:
+            # Unusual nitrile if no substituent is found.
+            continue
+        # We typically expect only one substituent; if more than one, we check each.
+        passed = False
+        for sub in substituent_atoms:
+            # First, if the immediate substituent is aromatic, skip it.
+            if sub.GetIsAromatic():
+                continue
+            
+            # Search the branch attached to the substituent (avoid going back to nitrile_c).
+            if not branch_contains_aromatic(sub, nitrile_c.GetIdx(), set()):
+                # We found a nitrile where the nitrile carbon and its non‐N neighbor (branch) are aliphatic.
+                passed = True
                 break
         
-        # If there is no substituent (which is unusual for a nitrile) or if the substituent is aromatic,
-        # then this nitrile group is not considered aliphatic.
-        if not substituent_found:
-            continue
-        if not aliphatic_neighbor:
-            continue
-        
-        # If we have at least one nitrile group that passes our tests, we consider the molecule an aliphatic nitrile.
-        return True, "Contains a nitrile group attached to an aliphatic fragment"
+        if passed:
+            return True, "Contains a nitrile group attached to an exclusively aliphatic fragment"
     
-    # If no nitrile groups met the aliphatic criteria:
     return False, "Nitrile group(s) found, but none are attached exclusively to aliphatic fragments"
 
-# Example usages (you can uncomment these lines to test):
-# print(is_aliphatic_nitrile("N#CCC#N"))  # malononitrile - should be True!
-# print(is_aliphatic_nitrile("c1ccccc1C#N"))  # Benzyl cyanide (aromatic), should be False.
+# Example usages:
+# Uncomment to test the functionality:
+# print(is_aliphatic_nitrile("N#CCC#N"))  # malononitrile - should be True.
+# print(is_aliphatic_nitrile("c1ccccc1C#N"))  # Benzyl cyanide - should be False as the chain leads to aromatic ring.
