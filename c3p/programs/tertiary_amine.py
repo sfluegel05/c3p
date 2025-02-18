@@ -37,7 +37,7 @@ def is_tertiary_amine(smiles: str):
             if neighbor.GetAtomicNum() == 6:
                 carbon_neighbors += 1
         
-        if carbon_neighbors != 3:
-          return False, "Not all nitrogen atoms are part of a tertiary amine"
+        if carbon_neighbors == 3:
+          return True, "Tertiary amine"
     
-    return True, "Tertiary amine"
+    return False, "Not a tertiary amine"
