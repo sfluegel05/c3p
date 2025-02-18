@@ -27,12 +27,12 @@ def is_sphingomyelin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphocholine group (more flexible pattern)
-    phosphocholine_pattern = Chem.MolFromSmarts("N(C)(C)CCOP(=O)(O)")
+    # Check for phosphocholine group (more specific pattern)
+    phosphocholine_pattern = Chem.MolFromSmarts("[N+](C)(C)CCOP(=O)([O-])")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group found"
 
-    # Check for amide linkage to fatty acid (more flexible pattern)
+    # Check for amide linkage to fatty acid
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     if len(amide_matches) != 1:
@@ -48,15 +48,12 @@ def is_sphingomyelin(smiles: str):
     if mol_wt < 600:
         return False, "Molecular weight too low for sphingomyelin"
 
-    # Count carbons, nitrogens and oxygens
+    # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     if c_count < 30:
         return False, "Too few carbons for sphingomyelin"
-    if n_count != 1:
-        return False, "Must have exactly 1 nitrogen (amide group)"
     if o_count < 5:
         return False, "Too few oxygens for sphingomyelin"
 
