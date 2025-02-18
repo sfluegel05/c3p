@@ -1,196 +1,56 @@
 """
 Classifies: CHEBI:15693 aldose
 """
- - alpha-L-fucopyranose: SMILES: C[C@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-L-talopyranose: SMILES: OC[C@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-fructopyranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-galactopyranose: SMILES: O[C@H]1[C@@H](O)[C@H](O[C@H](CO)[C@H]1O)O
- - alpha-D-psicopyranose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - D-gulose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-mannofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-talopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-gulopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H](CO)O1
- - alpha-L-rhamnopyranose: SMILES: C[C@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-galactofuranose: SMILES: O1[C@@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-L-xylopyranose: SMILES: O[C@H]1CO[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-ribofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-lyxopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)C1CO
- - alpha-D-xylofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-L-galactopyranose: SMILES: OC[C@@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O
- - beta-D-ribofuranose: SMILES: O1[C@H]([C@@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-idofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - alpha-L-lyxopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)C1CO
- - alpha-L-xylopyranose: SMILES: O[C@H]1CO[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-fructofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-xylofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-L-fucofuranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)C
- - alpha-D-galactofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-allopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-altrofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-galactopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H](CO)O1
- - alpha-D-altrose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-L-talopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-mannopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-idose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-mannose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-ribopyranose: SMILES: O[C@H]1COC(O)[C@@H](O)[C@H]1O
- - beta-D-psicopyranose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-tagatofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-galactose: SMILES: OC[C@@H]1O[C@@H](O)[C@@H](O)[C@H](O)[C@@H]1O
- - alpha-D-talofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-allopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-altrofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-sorbofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-tagatopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-tagatopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-galactose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-fructofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-fucopyranose: SMILES: C[C@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-talopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-arabinofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-ribopyranose: SMILES: O[C@H]1COC(O)[C@H](O)[C@H]1O
- - alpha-D-mannopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-arabinopyranose: SMILES: O[C@H]1CO[C@H](O)[C@H](O)[C@H]1O
- - beta-D-allofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-sorbopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-fucose: SMILES: C[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-psicofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-fucofuranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)C
- - alpha-D-fructopyranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-ribose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H]1O
- - beta-D-altrose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-talose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-idose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-lyxofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-mannose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-galactose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-sorbofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-sorbopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-ribose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H]1O
- - alpha-D-lyxofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-talose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-allofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-altropyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-fucose: SMILES: C[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O
- - beta-D-xylopyranose: SMILES: O[C@H]1CO[C@H](O)[C@H](O)[C@H]1O
- - beta-D-galactofuranose: SMILES: O1[C@@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-fucofuranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)C
- - beta-D-mannofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-psicose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-galactose: SMILES: OC[C@@H]1O[C@@H](O)[C@@H](O)[C@H](O)[C@@H]1O
- - alpha-D-altrofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-altropyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-idopyranose: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1O)CO
- - beta-D-fucopyranose: SMILES: C[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O
- - beta-D-idofuranose: SMILES: O1[C@H]([C@@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO
- - alpha-D-fructofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-arabinofuranose: SMILES: O1[C@@H]([C@H]([C@@H]([C@@H]1O)O)O)CO
- - alpha-D-tagatofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-altrofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-allopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-galactopyranose: SMILES: O[C@H]1[C@@H](O)[C@H](O[C@H](CO)[C@H]1O)O
- - alpha-D-psicofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-fructopyranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-altrose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-talofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO
- - alpha-D-gulofuranose: SMILES: O1[C@H]([C@@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-galactopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H](CO)O1
- - beta-D-mannopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-gulopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-psicopyranose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-tagatofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-talopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-ribofuranose: SMILES: O1[C@H]([C@@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-fucopyranose: SMILES: C[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O
- - alpha-D-altrofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-fructofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-sorbofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-tagatopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-tagatopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-galactose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-fructofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-fucopyranose: SMILES: C[C@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-talopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-arabinofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-ribopyranose: SMILES: O[C@H]1COC(O)[C@H](O)[C@H]1O
- - alpha-D-mannopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-arabinopyranose: SMILES: O[C@H]1CO[C@H](O)[C@H](O)[C@H]1O
- - beta-D-allofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-sorbopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-fucose: SMILES: C[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-psicofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-fucofuranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)C
- - alpha-D-fructopyranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-ribose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H]1O
- - beta-D-altrose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-talose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-idose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-lyxofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-mannose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-galactose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-sorbofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-sorbopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-ribose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H]1O
- - alpha-D-lyxofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-talose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-allofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-altropyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-fucose: SMILES: C[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O
- - beta-D-xylopyranose: SMILES: O[C@H]1CO[C@H](O)[C@H](O)[C@H]1O
- - beta-D-galactofuranose: SMILES: O1[C@@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-fucofuranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)C
- - beta-D-mannofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-psicose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-galactose: SMILES: OC[C@@H]1O[C@@H](O)[C@@H](O)[C@H](O)[C@@H]1O
- - alpha-D-altrofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-altropyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-idopyranose: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1O)CO
- - beta-D-fucopyranose: SMILES: C[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O
- - beta-D-idofuranose: SMILES: O1[C@H]([C@@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO
- - alpha-D-fructofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-arabinofuranose: SMILES: O1[C@@H]([C@H]([C@@H]([C@@H]1O)O)O)CO
- - alpha-D-tagatofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-altrofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-allopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-galactopyranose: SMILES: O[C@H]1[C@@H](O)[C@H](O[C@H](CO)[C@H]1O)O
- - alpha-D-psicofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-fructopyranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-altrose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-talofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@@H]1O)[C@H](O)CO
- - alpha-D-gulofuranose: SMILES: O1[C@H]([C@@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-galactopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H](CO)O1
- - beta-D-mannopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-gulopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-psicopyranose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-tagatofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-talopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-ribofuranose: SMILES: O1[C@H]([C@@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-fucopyranose: SMILES: C[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O
- - alpha-D-altrofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-fructofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-sorbofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-tagatopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-tagatopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-galactose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-fructofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-fucopyranose: SMILES: C[C@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O
- - alpha-D-talopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-arabinofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-ribopyranose: SMILES: O[C@H]1COC(O)[C@H](O)[C@H]1O
- - alpha-D-mannopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - beta-D-arabinopyranose: SMILES: O[C@H]1CO[C@H](O)[C@H](O)[C@H]1O
- - beta-D-allofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-sorbopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](CO)O1
- - alpha-D-fucose: SMILES: C[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-psicofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-fucofuranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)C
- - alpha-D-fructopyranose: SMILES: O1[C@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - alpha-D-ribose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H]1O
- - beta-D-altrose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-talose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-idose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-lyxofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - alpha-D-mannose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-galactose: SMILES: OC[C@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@H]1O
- - beta-D-sorbofuranose: SMILES: O1[C@H]([C@H](O)[C@H](O)C1O)[C@H](O)CO
- - beta-D-sorbopyranose: SMILES: O[C@H]1[C@H](O)[C@H](O)[C@H
+"""
+Classifies: CHEBI:17476 aldose
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_aldose(smiles: str):
+    """
+    Determines if a molecule is an aldose based on its SMILES string.
+    An aldose is a polyhydroxy aldehyde (H[CH(OH)]nC(=O)H, n ≥ 2) or its cyclic hemiacetal form.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an aldose, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Check for aldehydic form (open chain aldehyde with polyhydroxy chain)
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1]=O")  # Aldehyde group
+    if mol.HasSubstructMatch(aldehyde_pattern):
+        # Verify at least two hydroxyl groups in the molecule
+        hydroxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OH]")))
+        if hydroxyl_count >= 2:
+            # Check for at least two CH(OH) groups adjacent to aldehyde
+            adjacent_oh_count = 0
+            for match in mol.GetSubstructMatches(aldehyde_pattern):
+                ald_carbon = match[0]
+                for neighbor in mol.GetAtomWithIdx(ald_carbon).GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6:
+                        for ch_group in neighbor.GetNeighbors():
+                            if ch_group.GetAtomicNum() == 8 and ch_group.GetTotalNumHs() >= 1:
+                                adjacent_oh_count += 1
+                                break
+            if adjacent_oh_count >= 2:
+                return True, "Aldehyde group with adjacent polyhydroxy chain found"
+    
+    # Check for cyclic hemiacetal form (oxygen in ring with adjacent hydroxyl)
+    ring_hemiacetal_pattern = Chem.MolFromSmarts("[C;r][OH]-[O;r]")
+    if mol.HasSubstructMatch(ring_hemiacetal_pattern):
+        # Verify the hemiacetal carbon has only one non-ring neighbor (aldose characteristic)
+        for match in mol.GetSubstructMatches(ring_hemiacetal_pattern):
+            hemi_carbon = match[0]
+            atom = mol.GetAtomWithIdx(hemi_carbon)
+            non_ring_neighbors = [n for n in atom.GetNeighbors() if not n.IsInRing()]
+            if len(non_ring_neighbors) == 1:  # Characteristic of aldose-derived hemiacetal
+                return True, "Cyclic hemiacetal structure characteristic of aldose found"
+
+    return False, "No aldehyde group or valid cyclic hemiacetal structure detected"
