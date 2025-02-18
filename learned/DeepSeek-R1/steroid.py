@@ -1,43 +1,146 @@
 """
 Classifies: CHEBI:35341 steroid
 """
-"""
-Classifies: CHEBI:35341 steroid
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-
-def is_steroid(smiles: str):
-    """
-    Determines if a molecule is a steroid based on its SMILES string.
-    Steroids have a cyclopenta[a]phenanthrene skeleton (three fused six-membered rings and one five-membered ring),
-    with methyl groups at C-10 and C-13, and an optional alkyl group at C-17.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a steroid, False otherwise
-        str: Reason for classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Check for steroid core structure using SMARTS pattern
-    # This pattern approximates the fused four-ring system (cyclopenta[a]phenanthrene)
-    steroid_core = Chem.MolFromSmarts("[C@]12[C@@H]([C@@H]3[C@H](CC1)C[C@H]([C@]4([C@H]([C@@H]23)CCCC4)C)C)C")
-    if not mol.HasSubstructMatch(steroid_core):
-        return False, "Missing cyclopenta[a]phenanthrene core"
-
-    # Check for at least two methyl groups (C-10 and C-13)
-    methyl_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[CH3]"))
-    if len(methyl_matches) < 2:
-        return False, f"Found only {len(methyl_matches)} methyl groups, need at least 2"
-
-    # Check for possible alkyl group at C-17 (any non-methyl carbon chain)
-    c17_alkyl = mol.GetSubstructMatches(Chem.MolFromSmarts("[C][C]"))  # Simple check for at least a two-carbon chain
-    if not c17_alkyl:
-        return False, "No alkyl group detected at C-17"
-
-    return True, "Contains steroid core with methyl groups and C-17 alkyl substituent"
+ - 3beta,7alpha-dihydroxy-5beta-cholan-24-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCC(O)=O)C)[H])[H])C
+ - 5alpha-Pregnane-3beta,20beta-diol: SMILES: C[C@H](O)[C@]1(CC[C@@H]2[C@@H]3CC[C@H]4[C@H]([C@@H]3CC[C@]12C)CC[C@H]4O)C
+ - 5alpha-pregnane-3beta,20beta-diol: SMILES: C[C@H](O)[C@]1(CC[C@@H]2[C@@H]3CC[C@H]4[C@H]([C@@H]3CC[C@]12C)CC[C@H]4O)C
+ - 4-androsten-17beta-ol-3-one glucosiduronate: SMILES: O([C@@H]1[C@@]2(C(C3C([C@@]4(C(CC3)=CC(=O)CC4)C)CC2)CC1)C)[C@@H]5O[C@@H]([C@H]([C@@H]([C@H]5O)O)O)C(O)=O
+ - 24,25-Dihydroxyvitamin D3: SMILES: O[C@H]1[C@H](O)CC[C@]2([C@]3([C@@](CC2)(/C(/C=C/C(C)(C)O)=C/C=C/4\C[C@H](O)CCC4=C)[H])C)[C@H]1CC(C)C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O=C[C@H](C)CCCC[C@H]1C[C@H]2[C@H]3[C@@H](C[C@]4(C)[C@H](CC[C@H](O)C4)[C@H](O)CC3)C[C@@H](O)C2(C)C1
+ - 3beta,7alpha-dihydroxy-5beta-cholan-24-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCC(O)=O)C)[H])[H])C
+ - 5alpha-Pregnane-3beta,20alpha-diol: SMILES: C[C@H](O)[C@]1(CC[C@@H]2[C@@H]3CC[C@H]4[C@H]([C@@H]3CC[C@]12C)CC[C@H]4O)C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 5alpha-Pregnane-3beta,20alpha-diol: SMILES: C[C@H](O)[C@]1(CC[C@@H]2[C@@H]3CC[C@H]4[C@H]([C@@H]3CC[C@]12C)CC[C@H]4O)C
+ - 5alpha-Pregnane-3beta,20beta-diol: SMILES: C[C@H](O)[C@]1(CC[C@@H]2[C@@H]3CC[C@H]4[C@H]([C@@H]3CC[C@]12C)CC[C@H]4O)C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3beta,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-al: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C=O)C)C)[H])[H])C
+ - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC[C@@]1([C@@H](CCCC(C(=O)O)C)C)[H])[H])C
+ -
