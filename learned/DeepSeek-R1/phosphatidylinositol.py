@@ -55,11 +55,27 @@ def is_phosphatidylinositol(smiles: str):
     if not phosphate_matches:
         return False, "No phosphate group present"
 
-    # Check if phosphate is connected to inositol and glycerol backbone
-    # Glycerol backbone pattern: two ester groups and a phosphate-connected glycerol
-    glycerol_pattern = Chem.MolFromSmarts('[CH2]OC(=O)-[CH](-OC(=O)*)-[CH2]OP(=O)(O)')
+    # Check for glycerol backbone with two ester groups and phosphate connected via oxygen
+    # Updated SMARTS pattern to include oxygen between glycerol and phosphate
+    glycerol_pattern = Chem.MolFromSmarts('[CH2]OC(=O)-[CH](-OC(=O)-)-[CH2]O-P(=O)(O)')
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone with two esters and phosphate not found"
 
-    # Check for at least two ester groups (already ensured by glycerol_pattern)
-    return True, "Phosphatidyl group esterified to inositol via phosphate linkage"
+    # Verify that the phosphate connects to both inositol and glycerol
+    # Find all atoms in the glycerol pattern
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    for match in glycerol_matches:
+        # The phosphate atom is the last atom in the match (index 5)
+        p_idx = match[5]
+        p_atom = mol.GetAtomWithIdx(p_idx)
+        # Check if this phosphate is connected to inositol
+        for neighbor in p_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen
+                for bond in neighbor.GetBonds():
+                    other_atom = bond.GetOtherAtom(neighbor)
+                    if other_atom.GetAtomicNum() == 6 and other_atom.IsInRing():
+                        # Check if this is part of the inositol ring
+                        if any(other_atom.GetIdx() in ring for ring in rings if len(ring) ==6):
+                            return True, "Phosphatidyl group esterified to inositol via phosphate linkage"
+
+    return False, "Phosphate not connecting inositol to glycerol"
