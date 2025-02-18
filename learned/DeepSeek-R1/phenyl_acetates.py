@@ -1,143 +1,36 @@
 """
 Classifies: CHEBI:140310 phenyl acetates
 """
- - 4-acetoxybenzoic acid: SMILES: CC(=O)Oc1ccc(cc1)C(=O)O
- - 4-acetoxy-3-methoxybenzaldehyde: SMILES: COc1cc(C=O)ccc1OC(C)=O
- - 4-acetoxy-3-methoxycinnamic acid: SMILES: COc1cc(\C=C\C(=O)O)ccc1OC(C)=O
- - 4-acetoxy-3,5-dimethoxybenzaldehyde: SMILES: COc1cc(C=O)cc(OC)c1OC(C)=O
- - 4-acetoxy-3,5-dimethoxycinnamic acid: SMILES: COc1cc(\C=C\C(=O)O)cc(OC)c1OC(C)=O
- - 4-acetoxy-3,5-dimethoxybenzoic acid: SMILES: COc1cc(cc(OC)c1OC(C)=O)C(=O)O
- - 4-acetoxy-3,5-dimethylbenzaldehyde: SMILES: CC1=CC(=O)C(C)=C(C(OC(C)=O)=C1)
- - 4-acetoxy-3,5-dinitrobenzaldehyde: SMILES: O=[N+]([O-])c1cc(OC(C)=O)c([N+]([O-])=O)cc1C=O
- - 4-acetoxy-3,5-dinitrobenzoic acid: SMILES: O=[N+]([O-])c1cc(OC(C)=O)c([N+]([O-])=O)cc1C(=O)O
- - 4-acetoxy-3,5-dinitrophenyl acetate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc(cc1OC(C)=O)[N+]([O-])=O)[N+]([O-])=O
- - 4-acetoxy-3,5-dinitrophenyl acetylsalicylate: SMILES: CC(=O)Oc1c(cc
+"""
+Classifies: phenyl acetates (CHEBI:xxxxx)
+An acetate ester obtained by formal condensation of the carboxy group of acetic acid with the hydroxy group of any phenol.
+"""
+from rdkit import Chem
+
+def is_phenyl_acetates(smiles: str):
+    """
+    Determines if a molecule is a phenyl acetate based on its SMILES string.
+    A phenyl acetate has an acetate ester group (O-C(=O)-CH3) attached to a benzene ring.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a phenyl acetate, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define SMARTS pattern for acetate ester attached to a benzene ring
+    # [c&r6] is an aromatic carbon in a 6-membered ring (benzene)
+    # connected to O-C(=O)-CH3
+    pattern = Chem.MolFromSmarts("[c&r6]-OC(=O)C")
+    
+    # Check for matches
+    if not mol.HasSubstructMatch(pattern):
+        return False, "No acetate ester group attached to a benzene ring"
+    
+    return True, "Contains acetate ester group attached to a benzene ring"
