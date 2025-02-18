@@ -2,46 +2,47 @@
 Classifies: CHEBI:48927 N-acyl-L-alpha-amino acid
 """
 """
-Classifies: N-acyl-L-alpha-amino acid 
+Classifies: N-acyl-L-alpha-amino acid
 Definition: Any L-alpha-amino acid carrying an N-acyl substituent.
 An L-alpha-amino acid has a chiral alpha‐carbon bonded to an amino group and a carboxyl group.
-The N-acyl substituent is defined by an acyl group (R–C(=O)–) attached directly to a nitrogen 
-(which should not be part of a peptide backbone).
+The N-acyl substituent is defined by an acyl group (R–C(=O)–) attached directly to the amino nitrogen,
+and this substituent must not be part of a peptide backbone.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_N_acyl_L_alpha_amino_acid(smiles: str):
     """
     Determines if a molecule is an N-acyl L-alpha-amino acid based on its SMILES string.
-    
+
     Args:
         smiles (str): SMILES string of the molecule.
-        
+
     Returns:
         bool: True if molecule is an N-acyl L-alpha-amino acid, False otherwise.
         str: Reason for classification.
     """
-    # Parse molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     # --- Step 1: Look for an L-alpha-amino acid backbone ---
-    # We require a chiral center (C@ or C@@) with an amino (N) substituent and a carboxyl group.
-    # This pattern is a first approximation of [C@H](N)(C(=O)[O,-]) where the acid may be neutral or deprotonated.
-    aa_smarts1 = Chem.MolFromSmarts("[C@H](N)(C(=O)[O;H,-])")
-    aa_smarts2 = Chem.MolFromSmarts("[C@@H](N)(C(=O)[O;H,-])")
-    matches1 = mol.GetSubstructMatches(aa_smarts1)
-    matches2 = mol.GetSubstructMatches(aa_smarts2)
-    aa_matches = matches1 + matches2
+    # We search for a chiral (C@ or C@@) carbon with an amino (N) group and a carboxyl (C(=O)[O,OH,-]) group.
+    # Allowing for either neutral acid or deprotonated acid.
+    aa_smarts = [
+        "[C@H](N)(C(=O)[O;H,-])",
+        "[C@@H](N)(C(=O)[O;H,-])"
+    ]
+    aa_matches = []
+    for sm in aa_smarts:
+        patt = Chem.MolFromSmarts(sm)
+        aa_matches.extend(mol.GetSubstructMatches(patt))
     if not aa_matches:
         return False, "No L-alpha-amino acid backbone found"
     
-    # --- Helper: Check if a carbon atom exhibits a carbonyl group (i.e. double bond to oxygen) ---
-    def has_carbonyl(carbon):
-        # Return True if the carbon has at least one double bond to an oxygen atom.
+    # Helper: Check if an atom (candidate acyl carbon) has an immediate carbonyl oxygen.
+    def has_direct_carbonyl(carbon):
+        # Look for a double bond (order==DOUBLE) to an oxygen
         for bond in carbon.GetBonds():
             if bond.GetBondType() == Chem.BondType.DOUBLE:
                 nbr = bond.GetOtherAtom(carbon)
@@ -49,51 +50,51 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
                     return True
         return False
 
-    # --- Helper: Determine whether the carbonyl carbon is part of a peptide bond.
-    def appears_in_peptide_bond(acyl_carbon, acylated_nitrogen):
-        """
-        In a peptide bond the acyl carbon is attached not only to acylated_nitrogen but also to
-        another chiral carbon (the alpha carbon of the preceding residue). If any neighboring atom
-        (other than the acylated nitrogen and the double-bonded oxygen(s)) is chiral, we assume this
-        carbonyl carbon is part of a peptide bond.
-        """
+    # Helper: Determine if the acyl group is part of a peptide bond.
+    # In a typical peptide bond, the carbonyl carbon is linked not only to the amino nitrogen but 
+    # also to another chiral carbon (alpha carbon from the previous residue).
+    def is_peptide_bond(acyl_carbon, attached_nitrogen):
         for nbr in acyl_carbon.GetNeighbors():
-            # Exclude the amine already participating and the oxygen(s) in the carbonyl
-            if nbr.GetIdx() == acylated_nitrogen.GetIdx():
+            # Skip the attached nitrogen and any oxygen (from the carbonyl)
+            if nbr.GetIdx() == attached_nitrogen.GetIdx():
                 continue
             if nbr.GetAtomicNum() == 8:
                 continue
-            # Check chiral tag – if it is set (and not unspecified) we assume peptide connectivity.
-            if nbr.GetChiralTag() != Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
+            # If any other neighbor is a chiral carbon, suspect a peptide-bond connection.
+            if nbr.GetAtomicNum() == 6 and nbr.GetChiralTag() != Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
                 return True
         return False
 
-    # --- Step 2: For each found L-alpha-amino acid backbone, check for N-acyl substitution ---
-    # We inspect nitrogen atoms directly attached to the alpha carbon.
+    # --- Step 2: For each candidate L-alpha-amino acid unit, check for an N-acyl substitution ---
     for match in aa_matches:
-        # In the matched pattern, the first atom is the chiral alpha carbon.
+        # In our SMARTS, the chiral alpha carbon is the first atom of the match.
         alpha_idx = match[0]
         alpha_atom = mol.GetAtomWithIdx(alpha_idx)
-        # Find all neighbor atoms that are nitrogen (atomic number 7)
+        # Find nitrogen atoms directly attached to the alpha carbon (the amino group).
         amino_nitrogens = [nbr for nbr in alpha_atom.GetNeighbors() if nbr.GetAtomicNum() == 7]
         if not amino_nitrogens:
-            # Should not occur because our SMARTS required an N, but we check for safety.
-            continue
-        # For each amino nitrogen, inspect substituents (neighbors excluding the alpha carbon)
+            continue  # Shouldn't happen because our SMARTS required an N, but be safe.
         for amine in amino_nitrogens:
-            for sub in amine.GetNeighbors():
-                if sub.GetIdx() == alpha_idx:
+            # For each nitrogen, check its other substituents (neighbors except the alpha carbon).
+            for substituent in amine.GetNeighbors():
+                if substituent.GetIdx() == alpha_idx:
                     continue
-                # Look for a carbon attached to the nitrogen
-                if sub.GetAtomicNum() == 6:
-                    # Check that this carbon has a double bond to oxygen (i.e. is a carbonyl carbon)
-                    if has_carbonyl(sub):
-                        # If the acyl carbon appears to be part of a peptide bond, skip it.
-                        if appears_in_peptide_bond(sub, amine):
-                            continue
-                        # Otherwise we found an acyl group on the amino nitrogen.
-                        return True, "Contains L-alpha-amino acid backbone with acylated amino group"
-    # No suitable N-acyl substitution was found.
+                # We expect the acyl group to be a carbon (atomic number 6)
+                if substituent.GetAtomicNum() != 6:
+                    continue
+                # Check that the bond between the amine and the substituent is a single bond.
+                bond = mol.GetBondBetweenAtoms(amine.GetIdx(), substituent.GetIdx())
+                if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
+                    continue
+                # Now check that this carbon bears a carbonyl (has a double-bonded oxygen).
+                if not has_direct_carbonyl(substituent):
+                    continue
+                # To avoid flagging peptide bonds, check if this acyl group appears connected to another chiral carbon.
+                if is_peptide_bond(substituent, amine):
+                    continue
+                # Found a proper N-acyl group.
+                return True, "Contains L-alpha-amino acid backbone with acylated amino group"
+    
     return False, "Found L-alpha-amino acid backbone, but amino group is not acylated"
 
 # When run as a script you can test with an example.
