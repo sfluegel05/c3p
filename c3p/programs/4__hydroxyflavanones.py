@@ -20,19 +20,16 @@ def is_4__hydroxyflavanones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
+
+    # Define a refined SMARTS pattern for 4'-hydroxyflavanone
+    # This pattern represents a flavanone core [C1(COC2=O)] with a 4'-hydroxy group on an aromatic ring linked at C1
+    flavanone_pattern = Chem.MolFromSmarts("[OH]c1ccc([C@H]2CC(=O)c3c(cccc3O)O2)cc1")
     
-    # Improved SMARTS pattern for the flavanone core: benzopyranone (Benzopyran-4-one)
-    flavanone_core = Chem.MolFromSmarts("O=C1CC2C(C=CC=C2)Oc3ccccc13")
+    if not mol.HasSubstructMatch(flavanone_pattern):
+        return False, "No 4'-hydroxyflavanone pattern found"
     
-    # SMARTS pattern for 4'-hydroxy group attached to the phenyl ring
-    hydroxy_position = Chem.MolFromSmarts("Oc1ccc(cc1)-C2Oc3ccccc3C2=O")
-
-    # Check for flavanone core
-    if not mol.HasSubstructMatch(flavanone_core):
-        return False, "No flavanone core structure found"
-
-    # Check for hydroxy group at the 4' position
-    if not mol.HasSubstructMatch(hydroxy_position):
-        return False, "Hydroxy group not found at the 4' position"
-
     return True, "Matches the 4'-hydroxyflavanone structure"
+
+# Example usage
+smiles_example = "Oc1ccc(cc1)[C@@H]1CC(=O)c2c(O)cc(O)cc2O1"
+print(is_4__hydroxyflavanones(smiles_example))
