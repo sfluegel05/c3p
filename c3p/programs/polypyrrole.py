@@ -42,8 +42,13 @@ def is_polypyrrole(smiles: str):
         return False, "Less than two nitrogen atoms found"
     
     # Check for conjugated ring system
+    conjugated_rings = []
     ring_info = mol.GetRingInfo()
-    conjugated_rings = [ring for ring in ring_info.AtomRings() if ring_info.IsCycleConjugated(ring)]
+    for ring in ring_info.AtomRings():
+        bond_orders = [mol.GetBondBetweenAtoms(ring[i], ring[i-1]).GetBondTypeAsDouble() for i in range(len(ring))]
+        if sum(bond_orders) % 2 == 0 and any(order == 2 for order in bond_orders):
+            conjugated_rings.append(ring)
+    
     if not conjugated_rings:
         return False, "No conjugated ring system found"
     
