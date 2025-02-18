@@ -11,19 +11,25 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a straight-chain saturated fatty acid.
     Criteria:
-    - Contains a carboxylic acid group
+    - Contains exactly one carboxylic acid group
     - All carbon-carbon bonds are single (saturated)
     - No branching in the carbon chain
-    - No additional carbon substituents (only straight chain)
+    - Only contains carbon, hydrogen, and oxygen atoms
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Check for carboxylic acid group (-COOH)
+    # Check for exactly one carboxylic acid group
     carboxylic_acid = Chem.MolFromSmarts('[CX3](=O)[OX2H1]')
-    if not mol.HasSubstructMatch(carboxylic_acid):
-        return False, "No carboxylic acid group"
+    matches = mol.GetSubstructMatches(carboxylic_acid)
+    if len(matches) != 1:
+        return False, f"Found {len(matches)} carboxylic acid groups, need exactly 1"
+    
+    # Check all atoms are C, O, or H
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() not in ['C', 'O', 'H']:
+            return False, f"Contains {atom.GetSymbol()} atoms"
     
     # Check all carbon-carbon bonds are single (saturated)
     for bond in mol.GetBonds():
@@ -33,11 +39,10 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
             return False, "Unsaturated carbon-carbon bond found"
     
     # Get the carbonyl carbon and start chain traversal
-    matches = mol.GetSubstructMatches(carboxylic_acid)
     carbonyl_idx = matches[0][0]
     carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
     
-    # Find adjacent carbon in the main chain
+    # Find adjacent carbon in the main chain (excluding O atoms)
     chain_next = None
     for neighbor in carbonyl_atom.GetNeighbors():
         if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() not in (matches[0][1], matches[0][2]):
@@ -52,7 +57,7 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     prev_idx = carbonyl_idx
     
     while True:
-        if current.GetIdx() in chain_carbons:  # Prevent infinite loops
+        if current.GetIdx() in chain_carbons:  # Prevent loops
             break
         chain_carbons.add(current.GetIdx())
         
