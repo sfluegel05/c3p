@@ -1,36 +1,149 @@
 """
 Classifies: CHEBI:71548 dihydroagarofuran sesquiterpenoid
 """
-from rdkit import Chem
-from rdkit.Chem import AllChem
-
-def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
-    """
-    Determines if a molecule is a dihydroagarofuran sesquiterpenoid based on its SMILES.
-    These compounds feature a bridged bicyclic skeleton characteristic of dihydroagarofuran derivatives.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if matches criteria, False otherwise
-        str: Reason for classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES"
-    
-    # Revised core pattern: bridged bicyclic system without stereochemistry or specific substituents
-    # This SMARTS aims to capture the bicyclo[5.3.0]decane-like skeleton
-    core_pattern = Chem.MolFromSmarts("C12CC3CC(C1)C2C3")
-    
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Missing dihydroagarofuran core structure"
-    
-    # Additional check for sesquiterpenoid: 15 carbons in the parent skeleton
-    # Note: This is a simplified check and may not be accurate for all derivatives
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15:
-        return False, "Insufficient carbons for sesquiterpenoid (minimum 15)"
-    
-    return True, "Contains dihydroagarofuran skeleton with sesquiterpenoid characteristics"
+ - hypoglaunine A: SMILES: [H][C@]12OC(=O)C(C)(O)C(C)c3ccncc3C(=O)OC[C@]3(C)O[C@@]4([C@H](OC(C)=O)[C@@]3([H])[C@@H](OC(C)=O)[C@@H](OC(C)=O)[C@]4(COC(C)=O)[C@@H](OC(C)=O)[C@H]1OC(=O)c1ccco1)[C@@]2(C)O
+ - wilfornine A: SMILES: [C@@]12([C@@H]([C@@H]([C@@]3([C@H]([C@]14[C@]([C@H]([C@@H]([C@@H]2OC(=O)C)OC(=O)C=5C=CC=CC5)OC([C@H](CCC6=NC=CC=C6C(OC[C@@]3(O4)C)=O)C)=O)(O)C)OC(C)=O)[H])OC(C)=O)OC(=O)C)COC(C)=O
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 15-acetoxyorbiculin G: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1
+ - 1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O
+ - 1alpha,2alpha-diacetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@H](OC(C)=O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1
+ - 1alpha-hydroxy-2alpha-acetoxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran: SMILES: [H][C@]12C
