@@ -1,0 +1,236 @@
+"""
+Classifies: CHEBI:75769 B vitamin
+"""
+ - 5,10-methenyltetrahydrofolate(1+): SMILES: [H]C(=N1CNC2=C(NC1)nc(N)[nH]c2=O)Nc1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - 5,10-methenyltetrahydrofolic acid: SMILES: [H]C(=N1CNC2=C(NC1)nc(N)[nH]c2=O)Nc1ccc(cc1)C(=O)N[C@@H](CCC(O)=O)C(O)=O
+ - thiamine(1+) triphosphate: SMILES: Cc1ncc(C[n+]2csc(CCOP(O)(=O)OP(O)(=O)OP(O)(O)=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(1-): SMILES: Cc1ncc(C[n+]2csc(CCOP(O)(=O)OP(O)([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolic acid: SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC(O)=O)C(O)=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5,10-methylenetetrahydrofolate(2-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) diphosphate: SMILES: Cc1ncc(C[n+]2csc(CCOP(O)(=O)OP(O)(O)=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(2-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-methyltetrahydrofolic acid: SMILES: CN1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC(O)=O)C(O)=O)CNc2nc(N)[nH]c(=O)c12
+ - thiamine(1+) monophosphate: SMILES: Cc1ncc(C[n+]2csc(CCOP(O)(O)=O)c2C)c(N)n1
+ - 5,10-methenyltetrahydrofolate(3-): SMILES: [H]C(=N1CNC2=C(NC1)nc(N)[nH]c2=O)Nc1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(3-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) pyrophosphate: SMILES: Cc1ncc(C[n+]2csc(CCOP(O)(=O)OP(O)(O)=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(3-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5,10-methylenetetrahydrofolate(3-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6R)-5,10-methylenetetrahydrofolate(1-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolic acid: SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC(O)=O)C(O)=O
+ - (6S)-5-formyltetrahydrofolate(2-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - thiamine(1+) monophosphate(3-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])([O-])=O)c2C)c(N)n1
+ - (6S)-5,10-methylenetetrahydrofolate(3-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(1-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(4-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) diphosphate(2-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(3-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(3-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5-formyltetrahydrofolate(1-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(1-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - thiamine(1+) triphosphate(2-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(4-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5,10-methylenetetrahydrofolate(4-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6R)-5,10-methylenetetrahydrofolate(2-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(2-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5-formyltetrahydrofolate(4-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5-formyltetrahydrofolate(4-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - thiamine(1+) triphosphate(5-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(5-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(5-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(5-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(5-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(5-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6R)-5-formyltetrahydrofolate(6-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(6-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(6-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(6-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(6-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(6-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(7-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(7-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(7-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(7-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(7-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(7-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(8-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(8-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(8-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(8-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(8-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(8-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(9-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(9-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(9-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(9-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(9-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(9-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(10-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(10-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(10-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(10-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(10-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(10-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(11-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(11-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(11-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(11-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(11-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(11-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(12-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(12-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(12-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(12-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(12-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(12-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(13-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(13-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(13-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(13-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(13-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(13-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(14-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(14-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(14-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(14-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(14-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(14-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(15-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(15-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(15-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(15-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(15-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(15-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(16-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(16-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(16-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(16-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(16-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(16-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(17-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(17-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(17-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(17-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(17-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(17-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(18-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(18-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(18-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(18-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(18-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(18-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(19-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(19-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(19-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(19-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(19-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(19-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(20-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(20-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(20-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(20-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(20-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(20-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(21-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(21-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(21-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(21-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(21-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(21-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(22-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(22-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(22-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(22-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(22-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(22-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(23-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(23-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(23-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(23-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(23-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(23-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(24-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(24-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(24-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(24-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(24-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(24-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(25-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(25-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(25-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(25-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(25-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(25-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(26-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(26-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(26-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(26-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(26-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(26-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(27-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(27-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(27-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(27-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(27-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(27-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(28-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(28-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(28-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(28-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(28-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(28-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(29-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(29-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(29-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(29-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(29-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(29-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(30-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(30-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(30-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(30-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(30-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(30-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(31-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(31-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(31-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(31-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(31-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(31-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(32-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(32-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(32-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(32-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(32-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(32-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(33-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(33-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(33-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(33-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(33-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(33-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(34-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(34-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(34-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(34-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(34-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(34-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(35-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(35-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(35-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(35-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(35-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(35-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(36-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(36-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(36-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(36-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(36-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(36-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(37-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6S)-5-formyltetrahydrofolate(37-): SMILES: [H]C(=O)N1[C@@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O)CNc2nc(N)[nH]c(=O)c12
+ - (6R)-5,10-methylenetetrahydrofolate(37-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - (6S)-5,10-methylenetetrahydrofolate(37-): SMILES: [H][C@]12CNc3nc(N)[nH]c(=O)c3N1CN(C2)c1ccc(cc1)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O
+ - thiamine(1+) triphosphate(37-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - thiamine(1+) diphosphate(37-): SMILES: Cc1ncc(C[n+]2csc(CCOP([O-])(=O)OP([O-])([O-])=O)c2C)c(N)n1
+ - (6R)-5-formyltetrahydrofolate(38-): SMILES: [H]C(=O)N1[C@H](CNc2ccc(cc2)C(=O)N[C@@H](CCC
