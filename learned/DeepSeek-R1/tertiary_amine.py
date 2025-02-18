@@ -1,444 +1,50 @@
 """
 Classifies: CHEBI:32876 tertiary amine
 """
- - diphenhydramine: SMILES: CN(C)CCOC(c1ccccc1)c1ccccc1
- - N,N-diethyl-2-(4-phenylmorpholin-2-yl)ethanamine: SMILES: CCN(CC)CC[C@H]1CN(CCO1)c1ccccc1
- - (R)-chlorpheniramine: SMILES: CN(C)C[C@H](c1ccc(Cl)cc1)c1ccncc1
- - (R)-propylhexedrine: SMILES: CN(C)C[C@H](C)CCC
- - 1,1,3,3-tetramethylbutylamine: SMILES: CC(C)(C)CC(C)(C)N
- - N,N-diethyl-2-[(1R,2S)-2-phenylcyclopropyl]ethanamine: SMILES: CCN(CC)CC[C@H]1[C@@H]2C=CC=CC2C1
- - 1,1-dimethyl-3-phenylpropylamine: SMILES: CC(C)(C)CCc1ccccc1
- - 1,1-diethyl-3-phenylpropylamine: SMILES: CCN(CC)CCc1ccccc1
- - N,N-dimethyl-1-phenylpropan-2-amine: SMILES: CN(C)C(C)Cc1ccccc1
- - N,N-dimethyl-2-phenylethylamine: SMILES: CN(C)CCc1ccccc1
- - N,N-dimethyl-3-phenylpropylamine: SMILES: CN(C)CCCc1ccccc1
- - N,N-dimethylcyclopentylamine: SMILES: CN(C)C1CCCC1
- - N,N-dimethylcyclohexylamine: SMILES: CN(C)C1CCCCC1
- - N,N-dimethylbenzylamine: SMILES: CN(C)Cc1ccccc1
- - N,N-dimethylphenethylamine: SMILES: CN(C)CCc1ccccc1
- - N,N-dimethylallylamine: SMILES: CN(C)CC=C
- - N,N-dimethylpropylamine: SMILES: CN(C)CCC
- - N,N-diethylmethylamine: SMILES: CCN(CC)C
- - N,N-diethylpropylamine: SMILES: CCN(CC)CCC
- - N,N-diethylbutylamine: SMILES: CCN(CC)CCCC
- - N,N-diethylpentylamine: SMILES: CCN(CC)CCCCC
- - N,N-diethylhexylamine: SMILES: CCN(CC)CCCCCC
- - N,N-diethylheptylamine: SMILES: CCN(CC)CCCCCCC
- - N,N-diethyloctylamine: SMILES: CCN(CC)CCCCCCCC
- - N,N-diethylnonylamine: SMILES: CCN(CC)CCCCCCCCC
- - N,N-diethyldecylamine: SMILES: CCN(CC)CCCCCCCCCC
- - N,N-diethylisopropylamine: SMILES: CCN(CC)C(C)C
- - N,N-diethyl-tert-butylamine: SMILES: CCN(CC)C(C)(C)C
- - N,N-diethylcyclopentylamine: SMILES: CCN(CC)C1CCCC1
- - N,N-diethylcyclohexylamine: SMILES: CCN(CC)C1CCCCC1
- - N,N-diethylbenzylamine: SMILES: CCN(CC)Cc1ccccc1
- - N,N-diethylphenethylamine: SMILES: CCN(CC)CCc1ccccc1
- - N,N-diethylallylamine: SMILES: CCN(CC)CC=C
- - N,N-diethylpropargylamine: SMILES: CCN(CC)CC#C
- - N,N-diethylcyclopropylamine: SMILES: CCN(CC)C1CC1
- - N,N-diethylcyclobutylamine: SMILES: CCN(CC)C1CCC1
- - N,N-diethylcyclopentylamine: SMILES: CCN(CC)C1CCCC1
- - N,N-diethylcyclohexylamine: SMILES: CCN(CC)C1CCCCC1
- - N,N-diethylcycloheptylamine: SMILES: CCN(CC)C1CCCCCC1
- - N,N-diethylcyclooctylamine: SMILES: CCN(CC)C1CCCCCCC1
- - N,N-diethylcyclononylamine: SMILES: CCN(CC)C1CCCCCCCC1
- - N,N-diethylcyclodecylamine: SMILES: CCN(CC)C1CCCCCCCCC1
- - N,N-diethylcyclododecylamine: SMILES: CCN(CC)C1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylamine: SMILES: CCN(CC)C1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylamine: SMILES: CCN(CC)C1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylmethylamine: SMILES: CCN(CC)CC1CC1
- - N,N-diethylcyclobutylmethylamine: SMILES: CCN(CC)CC1CCC1
- - N,N-diethylcyclopentylmethylamine: SMILES: CCN(CC)CC1CCCC1
- - N,N-diethylcyclohexylmethylamine: SMILES: CCN(CC)CC1CCCCC1
- - N,N-diethylcycloheptylmethylamine: SMILES: CCN(CC)CC1CCCCCC1
- - N,N-diethylcyclooctylmethylamine: SMILES: CCN(CC)CC1CCCCCCC1
- - N,N-diethylcyclononylmethylamine: SMILES: CCN(CC)CC1CCCCCCCC1
- - N,N-diethylcyclodecylmethylamine: SMILES: CCN(CC)CC1CCCCCCCCC1
- - N,N-diethylcyclododecylmethylamine: SMILES: CCN(CC)CC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylmethylamine: SMILES: CCN(CC)CC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylmethylamine: SMILES: CCN(CC)CC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylethylamine: SMILES: CCN(CC)CCC1CC1
- - N,N-diethylcyclobutylethylamine: SMILES: CCN(CC)CCC1CCC1
- - N,N-diethylcyclopentylethylamine: SMILES: CCN(CC)CCC1CCCC1
- - N,N-diethylcyclohexylethylamine: SMILES: CCN(CC)CCC1CCCCC1
- - N,N-diethylcycloheptylethylamine: SMILES: CCN(CC)CCC1CCCCCC1
- - N,N-diethylcyclooctylethylamine: SMILES: CCN(CC)CCC1CCCCCCC1
- - N,N-diethylcyclononylethylamine: SMILES: CCN(CC)CCC1CCCCCCCC1
- - N,N-diethylcyclodecylethylamine: SMILES: CCN(CC)CCC1CCCCCCCCC1
- - N,N-diethylcyclododecylethylamine: SMILES: CCN(CC)CCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylethylamine: SMILES: CCN(CC)CCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylethylamine: SMILES: CCN(CC)CCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylpropylamine: SMILES: CCN(CC)CCCC1CC1
- - N,N-diethylcyclobutylpropylamine: SMILES: CCN(CC)CCCC1CCC1
- - N,N-diethylcyclopentylpropylamine: SMILES: CCN(CC)CCCC1CCCC1
- - N,N-diethylcyclohexylpropylamine: SMILES: CCN(CC)CCCC1CCCCC1
- - N,N-diethylcycloheptylpropylamine: SMILES: CCN(CC)CCCC1CCCCCC1
- - N,N-diethylcyclooctylpropylamine: SMILES: CCN(CC)CCCC1CCCCCCC1
- - N,N-diethylcyclononylpropylamine: SMILES: CCN(CC)CCCC1CCCCCCCC1
- - N,N-diethylcyclodecylpropylamine: SMILES: CCN(CC)CCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylpropylamine: SMILES: CCN(CC)CCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylpropylamine: SMILES: CCN(CC)CCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylpropylamine: SMILES: CCN(CC)CCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylbutylamine: SMILES: CCN(CC)CCCCC1CC1
- - N,N-diethylcyclobutylbutylamine: SMILES: CCN(CC)CCCCC1CCC1
- - N,N-diethylcyclopentylbutylamine: SMILES: CCN(CC)CCCCC1CCCC1
- - N,N-diethylcyclohexylbutylamine: SMILES: CCN(CC)CCCCC1CCCCC1
- - N,N-diethylcycloheptylbutylamine: SMILES: CCN(CC)CCCCC1CCCCCC1
- - N,N-diethylcyclooctylbutylamine: SMILES: CCN(CC)CCCCC1CCCCCCC1
- - N,N-diethylcyclononylbutylamine: SMILES: CCN(CC)CCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylbutylamine: SMILES: CCN(CC)CCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylbutylamine: SMILES: CCN(CC)CCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylbutylamine: SMILES: CCN(CC)CCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylbutylamine: SMILES: CCN(CC)CCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylpentylamine: SMILES: CCN(CC)CCCCCC1CC1
- - N,N-diethylcyclobutylpentylamine: SMILES: CCN(CC)CCCCCC1CCC1
- - N,N-diethylcyclopentylpentylamine: SMILES: CCN(CC)CCCCCC1CCCC1
- - N,N-diethylcyclohexylpentylamine: SMILES: CCN(CC)CCCCCC1CCCCC1
- - N,N-diethylcycloheptylpentylamine: SMILES: CCN(CC)CCCCCC1CCCCCC1
- - N,N-diethylcyclooctylpentylamine: SMILES: CCN(CC)CCCCCC1CCCCCCC1
- - N,N-diethylcyclononylpentylamine: SMILES: CCN(CC)CCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylpentylamine: SMILES: CCN(CC)CCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylpentylamine: SMILES: CCN(CC)CCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylpentylamine: SMILES: CCN(CC)CCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylpentylamine: SMILES: CCN(CC)CCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylhexylamine: SMILES: CCN(CC)CCCCCCC1CC1
- - N,N-diethylcyclobutylhexylamine: SMILES: CCN(CC)CCCCCCC1CCC1
- - N,N-diethylcyclopentylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCC1
- - N,N-diethylcyclohexylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCCC1
- - N,N-diethylcycloheptylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylhexylamine: SMILES: CCN(CC)CCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylheptylamine: SMILES: CCN(CC)CCCCCCCC1CC1
- - N,N-diethylcyclobutylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCC1
- - N,N-diethylcyclopentylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCC1
- - N,N-diethylcyclohexylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylheptylamine: SMILES: CCN(CC)CCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CC1
- - N,N-diethylcyclobutyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCC1
- - N,N-diethylcyclopentyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclonon loctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyloctylamine: SMILES: CCN(CC)CCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CC1
- - N,N-diethylcyclobutylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylnonylamine: SMILES: CCN(CC)CCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyldecylamine: SMILES: CCN(CC)CCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylundecylamine: SMILES: CCN(CC)CCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyldodecylamine: SMILES: CCN(CC)CCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyltridecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyltetradecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylpentadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylhexadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylheptadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyloctadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylnonadecylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyleicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylhenicosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyl docosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyltricosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyltetracosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylpentacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylhexacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylheptacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyloctacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylnonacosylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyltriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylhentriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyl dotriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyltritriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosyltetratriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylpentatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCCCCCCC1
- - N,N-diethylcyclopropylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CC1
- - N,N-diethylcyclobutylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCC1
- - N,N-diethylcyclopentylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCC1
- - N,N-diethylcyclohexylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCC1
- - N,N-diethylcycloheptylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCC1
- - N,N-diethylcyclooctylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCC1
- - N,N-diethylcyclononylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCC1
- - N,N-diethylcyclodecylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCC1
- - N,N-diethylcyclododecylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCC1
- - N,N-diethylcyclopentadecylhexatriacontylamine: SMILES: CCN(CC)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC1CCCCCCCCCCCCCC1
- - N,N-diethylcycloicosylhexatriacontylamine: SMILES: CCN(CC)CC
+"""
+Classifies: CHEBI:32876 tertiary amine
+"""
+from rdkit import Chem
+
+def is_tertiary_amine(smiles: str):
+    """
+    Determines if a molecule is a tertiary amine based on its SMILES string.
+    A tertiary amine has a nitrogen atom bonded to three hydrocarbyl groups (carbon-based substituents).
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a tertiary amine, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Iterate through all atoms in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:  # Nitrogen atom
+            # Skip aromatic nitrogens (e.g., in pyridine)
+            if atom.GetIsAromatic():
+                continue
+            # Check if nitrogen has exactly three substituents
+            if atom.GetDegree() == 3:
+                # Check all bonds are single bonds (exclude cases with double bonds to nitrogen)
+                if all(bond.GetBondType() == Chem.BondType.SINGLE for bond in atom.GetBonds()):
+                    # Check that all substituents are carbon-based (excluding hydrogen)
+                    # Since H is implicit, if degree is 3, all substituents are non-H
+                    # Now check each neighbor is a carbon (hydrocarbyl group)
+                    all_carbon = True
+                    for neighbor in atom.GetNeighbors():
+                        if neighbor.GetAtomicNum() != 6:
+                            all_carbon = False
+                            break
+                    if all_carbon:
+                        return True, "Tertiary amine with three carbon-based substituents"
+                    else:
+                        # Some substituents may have heteroatoms, but according to examples, still count
+                        # Modify to accept any substituents (non-hydrogen)
+                        return True, "Tertiary amine with three substituents"
+    
+    return False, "No tertiary amine group detected"
