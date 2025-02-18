@@ -3,93 +3,104 @@ Classifies: CHEBI:73155 trienoic fatty acid
 """
 """
 Classifies: Trienoic fatty acid
-Definition: Any polyunsaturated fatty acid that contains three carbon‐carbon double bonds.
-A genuine trienoic fatty acid must have one (and only one) carboxylic acid group,
-exactly three C=C bonds between carbon atoms (excluding C=O bonds in the acid),
-a sufficient number of carbon atoms (indicating a long, aliphatic chain),
-and a low fraction of carbons in rings.
+Definition: A polyunsaturated fatty acid that contains exactly three carbon–carbon double bonds,
+with a terminal carboxylic acid group and an acyclic, long aliphatic chain.
+This program uses several heuristics:
+  1. The molecule must be parsed successfully (a valid structure).
+  2. It must contain exactly one carboxylic acid group (SMARTS "[CX3](=O)[OX2H1]").
+  3. The carboxylic acid group must be terminal (its carbon is attached to only one carbon).
+  4. There must be exactly three C=C (carbon–carbon) double bonds (ignoring C=O).
+  5. There must be a sufficient number of carbon atoms (e.g. at least 10) and low cyclic content.
+  6. The molecular weight should be above a minimal threshold.
 """
-
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 def is_trienoic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a trienoic fatty acid based on its SMILES string.
-    The method applies several heuristics:
-      1. The molecule must be a valid structure.
-      2. It has exactly one carboxylic acid group (matched by SMARTS "[CX3](=O)[OX2H1]").
-      3. It has exactly three carbon–carbon double bonds (excluding C=O bonds).
-      4. It has a minimum number of carbon atoms (heuristically at least 8).
-      5. It has a low fraction of carbon atoms involved in rings (indicating an acyclic, aliphatic chain).
-         (Here we use a threshold of 20% of all carbons.)
-      6. Additionally, we check that the molecular weight is above a minimal threshold.
+    It verifies that the molecule:
+      - Is valid.
+      - Contains exactly one terminal carboxylic acid group.
+      - Has exactly three carbon–carbon double bonds (excluding C=O bonds).
+      - Contains enough carbons in an acyclic chain (low ring-fraction).
+      - Has a molecular weight above a defined cutoff.
       
     Args:
         smiles (str): SMILES string of the molecule.
-    
+        
     Returns:
         bool: True if the molecule is classified as a trienoic fatty acid, False otherwise.
-        str: A reason describing the classification.
+        str: A reason describing the classification result.
     """
-    # Parse the SMILES string.
+    # Parse SMILES into an RDKit Mol object.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     # 1. Check for exactly one carboxylic acid group.
-    # SMARTS: a carbon with 3 connections, double bonded to oxygen and connected to -OH.
+    # SMARTS for carboxylic acid group: a carbonyl carbon double-bonded to an O and single bonded to an -OH.
     ca_smarts = "[CX3](=O)[OX2H1]"
     ca_group = Chem.MolFromSmarts(ca_smarts)
     ca_matches = mol.GetSubstructMatches(ca_group)
     if len(ca_matches) == 0:
         return False, "Missing carboxylic acid functional group (COOH)"
     elif len(ca_matches) > 1:
-        return False, f"Found {len(ca_matches)} carboxylic acid groups; requires exactly 1 for a fatty acid"
+        return False, f"Found {len(ca_matches)} carboxylic acid groups; requires exactly 1"
     
-    # 2. Count the number of carbon-carbon double bonds.
-    # Only count bonds that are truly C=C (i.e. both atoms are carbon).
+    # 2. Ensure the carboxylic acid group is terminal.
+    # In a free fatty acid, the acid carbon should be bonded to only one carbon.
+    ca_indices = ca_matches[0]
+    ca_carbon_idx = ca_indices[0]  # Index of the carboxyl carbon in the match.
+    ca_carbon = mol.GetAtomWithIdx(ca_carbon_idx)
+    carbon_neighbors = [nbr for nbr in ca_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
+    if len(carbon_neighbors) != 1:
+        return False, "Carboxylic acid group is not terminal (expected to have exactly one carbon neighbor)"
+    
+    # 3. Count the number of carbon–carbon double bonds.
+    # We count only those double bonds where both atoms are carbons,
+    # and we exclude any double bond that may be directly part of the COOH group.
     double_bond_count = 0
     for bond in mol.GetBonds():
         if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            atom1 = bond.GetBeginAtom()
-            atom2 = bond.GetEndAtom()
-            # Skip double bonds where one atom is not carbon (e.g. C=O in the acid)
-            if atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 6:
+            a1 = bond.GetBeginAtom()
+            a2 = bond.GetEndAtom()
+            if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
+                # Exclude a bond involving the carboxyl carbon (since C=O here belongs to COOH)
+                if ca_carbon_idx in (a1.GetIdx(), a2.GetIdx()):
+                    continue
                 double_bond_count += 1
-
     if double_bond_count != 3:
-        return False, f"Found {double_bond_count} carbon-carbon double bonds; requires exactly 3 for trienoic fatty acid"
+        return False, f"Found {double_bond_count} carbon–carbon double bonds; requires exactly 3 for a trienoic fatty acid"
     
-    # 3. Ensure a minimal number of carbon atoms are present.
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    total_carbons = len(carbon_atoms)
-    if total_carbons < 8:
+    # 4. Check that the fatty acid chain is sufficiently long, based on number of carbons.
+    carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    total_carbons = len(carbons)
+    if total_carbons < 10:
         return False, f"Too few carbon atoms ({total_carbons}); must be a long-chain fatty acid"
     
-    # 4. Check the fraction of carbon atoms that are in rings.
+    # 5. Ensure that the molecule is largely acyclic.
+    # We compute the fraction of carbon atoms that are part of any ring.
     ring_info = mol.GetRingInfo()
-    # Gather the set of carbon atoms that are in any ring.
-    ring_carbon_ids = set()
+    ring_carbons = set()
     for ring in ring_info.AtomRings():
-        for atom_id in ring:
-            atom = mol.GetAtomWithIdx(atom_id)
-            if atom.GetAtomicNum() == 6:
-                ring_carbon_ids.add(atom_id)
-    fraction_in_rings = len(ring_carbon_ids) / total_carbons if total_carbons > 0 else 0
-    # Fatty acids are expected to be mostly acyclic.
-    if fraction_in_rings > 0.2:
-        return False, f"High degree of cyclic (ring) carbons ({fraction_in_rings*100:.1f}%); not a typical fatty acid chain"
+        for idx in ring:
+            if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6:
+                ring_carbons.add(idx)
+    fraction_ring = len(ring_carbons) / total_carbons if total_carbons else 0
+    if fraction_ring > 0.2:
+        return False, f"High cyclic content ({fraction_ring*100:.1f}% of carbons in rings); not a typical fatty acid chain"
     
-    # 5. Check molecular weight (heuristic: fatty acids are not extremely light).
+    # 6. Check the molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
+    if mol_wt < 180:
         return False, f"Molecular weight {mol_wt:.1f} Da too low for a fatty acid"
     
-    return True, "Contains one carboxylic acid group, exactly 3 carbon-carbon double bonds, and an acyclic long-chain structure typical of trienoic fatty acids"
+    return True, "Contains one terminal carboxylic acid group, exactly 3 carbon–carbon double bonds, and an acyclic long-chain structure typical of trienoic fatty acids"
 
 # Example usage:
 if __name__ == '__main__':
-    test_smiles = "OC(=O)CCCCCCCC/C=C/C=C/C=C/CCC"  # 10,12,14-octadecatrienoic acid
+    # Test with one known trienoic fatty acid: 10,12,14-octadecatrienoic acid.
+    test_smiles = "OC(=O)CCCCCCCC/C=C/C=C/C=C/CCC"
     result, reason = is_trienoic_fatty_acid(test_smiles)
     print(result, reason)
