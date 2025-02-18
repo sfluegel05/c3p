@@ -24,15 +24,15 @@ def is_phosphatidic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Define core structure pattern using SMARTS
-    # Pattern matches glycerol backbone with:
-    # - Two ester groups (O-C=O)
+    # Define flexible core structure pattern using SMARTS
+    # Matches glycerol backbone with:
+    # - Two oxygen-connected paths to ester groups (O...C=O)
     # - One phosphate group (O-P=O(O)(O))
-    core_pattern = Chem.MolFromSmarts('C(OC(=O)[*])(OC(=O)[*])COP(=O)(O)O')
+    core_pattern = Chem.MolFromSmarts('C(O!@*C(=O))(O!@*C(=O))OP(=O)(O)O')
     if not mol.HasSubstructMatch(core_pattern):
         return False, "Missing core glycerol-phosphate structure with two ester groups"
     
-    # Verify exactly two ester groups in total
+    # Verify exactly two ester groups in total (carboxylic esters)
     ester_pattern = Chem.MolFromSmarts('[OX2]C(=O)')  # Ester carbonyl oxygen
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 2:
