@@ -16,9 +16,9 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if not mol:
         return False, "Invalid SMILES"
     
-    # Check for 3-oxo group adjacent to thioester (S-C(=O)-C-C(=O)-R)
-    # Pattern: Sulfur connected to carbonyl, followed by CH2 and another carbonyl
-    oxo_pattern = Chem.MolFromSmarts("[SX2]-[CX3](=[OX1])-[CX2H2]-[CX3](=[OX1])")
+    # Corrected 3-oxo pattern: R-C(=O)-CH2-C(=O)-S-CoA (beta-keto thioester)
+    # Pattern: Two carbonyls separated by CH2, followed by sulfur
+    oxo_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[CX2H2]-[CX3](=[OX1])-[SX2]")
     if not mol.HasSubstructMatch(oxo_pattern):
         return False, "Missing 3-oxo group adjacent to thioester"
     
