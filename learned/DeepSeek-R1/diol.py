@@ -23,11 +23,22 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find all hydroxyl groups (-OH) regardless of environment
+    # Find all hydroxyl groups (-OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     total_hydroxyl = len(mol.GetSubstructMatches(hydroxyl_pattern))
     
-    if total_hydroxyl == 2:
-        return True, "Contains exactly two hydroxyl groups"
+    # Subtract hydroxyls that are part of carboxylic acids
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[OH]-C(=O)")
+    carb_oh = len(mol.GetSubstructMatches(carboxylic_acid_pattern))
+    
+    # Subtract hydroxyls that are part of enols (C=C-OH)
+    enol_pattern = Chem.MolFromSmarts("C=C-O")
+    enol_oh = len(mol.GetSubstructMatches(enol_pattern))
+    
+    # Adjusted hydroxyl count
+    adjusted_oh = total_hydroxyl - carb_oh - enol_oh
+    
+    if adjusted_oh == 2:
+        return True, f"Contains exactly two hydroxyl groups (adjusted count: {adjusted_oh})"
     else:
-        return False, f"Found {total_hydroxyl} hydroxyl groups, need exactly 2"
+        return False, f"Adjusted hydroxyl count: {adjusted_oh}, need exactly 2"
