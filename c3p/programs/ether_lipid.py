@@ -21,11 +21,9 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS pattern for glycerol backbone with flexible connectivity
-    glycerol_pattern = Chem.MolFromSmarts("[CH2][O][CH][O][CH2]")
-
-    # Adjust ether linkage patterns to cater for stereo and other forms of bonding
-    ether_pattern = Chem.MolFromSmarts("[CX4,O]O[CX4]")
+    # Pattern for ether linkage that can appear in lipids
+    # Broadened to capture variable bonding arrangements while excluding common non-lipid motifs
+    ether_pattern = Chem.MolFromSmarts("CO[CX4]")
 
     # Look for ether linkage pattern
     ether_matches = mol.GetSubstructMatches(ether_pattern)
@@ -33,12 +31,14 @@ def is_ether_lipid(smiles: str):
         return False, "No ether linkage found"
 
     # Improved headgroup checks
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    # Searching for a range of phosphate-containing headgroups typically found in lipids
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)[O-]")
     choline_pattern = Chem.MolFromSmarts("C[N+](C)(C)C")
     
     has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
     has_choline = mol.HasSubstructMatch(choline_pattern)
 
+    # Ensure at least one typical headgroup is attached
     if has_phosphate or has_choline:
         return True, "Contains ether linkages along with common lipid headgroups (e.g., phosphate, choline)"
     else:
