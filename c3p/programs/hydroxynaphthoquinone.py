@@ -28,11 +28,17 @@ def is_hydroxynaphthoquinone(smiles: str):
 
     # Define a more general naphthoquinone pattern (matches both 1,2 and 1,4-naphthoquinones)
     naphthoquinone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)C(=O)C=C2|c1ccc2c(c1)C(=O)C=C(C2=O)")
+    if naphthoquinone_pattern is None:
+        return False, "Invalid naphthoquinone pattern"
+    
     if not mol.HasSubstructMatch(naphthoquinone_pattern):
         return False, "No naphthoquinone moiety found"
 
     # Look for at least one hydroxy group attached to the naphthoquinone moiety
     hydroxy_pattern = Chem.MolFromSmarts("[OH]")
+    if hydroxy_pattern is None:
+        return False, "Invalid hydroxy pattern"
+    
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     if len(hydroxy_matches) == 0:
         return False, "No hydroxy group found"
