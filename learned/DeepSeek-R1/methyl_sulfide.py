@@ -23,16 +23,36 @@ def is_methyl_sulfide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for aliphatic sulfide (thioether) with at least one methyl group attached to sulfur
-    # Sulfur must have exactly two single bonds (SX2) and not be aromatic
-    # At least one substituent is a methyl group (CH3)
-    sulfide_pattern = MolFromSmarts('[SX2;!a]([CH3])[#6]')
+    # Pattern for methyl sulfide where sulfur is connected to methyl and another aliphatic carbon
+    # [SX2;!a] ensures non-aromatic thioether, [CH3;!a] ensures methyl isn't part of aromatic system
+    sulfide_pattern = MolFromSmarts('[SX2;!a]([CH3;!a])[#6;!a]')
     if mol.HasSubstructMatch(sulfide_pattern):
         return True, "Aliphatic sulfide with methyl group attached to sulfur"
 
-    # Check for dimethyl sulfide case (both substituents are methyl)
-    dimethyl_pattern = MolFromSmarts('[SX2;!a]([CH3])([CH3])')
+    # Check for dimethyl sulfide case with both groups non-aromatic
+    dimethyl_pattern = MolFromSmarts('[SX2;!a]([CH3;!a])([CH3;!a])')
     if mol.HasSubstructMatch(dimethyl_pattern):
         return True, "Dimethyl sulfide (both groups are methyl)"
+
+    # Additional check for branched methyl groups or complex aliphatic chains
+    # Iterate through all sulfur atoms to catch edge cases
+    for atom in mol.GetAtoms():
+        if (atom.GetAtomicNum() == 16 and 
+            not atom.GetIsAromatic() and 
+            atom.GetDegree() == 2):
+            
+            neighbors = atom.GetNeighbors()
+            methyl_found = any(
+                n.GetAtomicNum() == 6 and 
+                not n.GetIsAromatic() and 
+                n.GetTotalNumHs() >= 3  # Indicates CH3 group
+                for n in neighbors
+            )
+            
+            if methyl_found:
+                # Ensure other substituent is aliphatic carbon
+                other_substituent = next(n for n in neighbors if not (n.GetAtomicNum() == 6 and not n.GetIsAromatic() and n.GetTotalNumHs() >= 3))
+                if other_substituent.GetAtomicNum() == 6 and not other_substituent.GetIsAromatic():
+                    return True, "Aliphatic sulfide with methyl group attached to sulfur"
 
     return False, "No aliphatic sulfide with methyl group found"
