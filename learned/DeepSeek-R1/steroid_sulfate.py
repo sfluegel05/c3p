@@ -1,4 +1,4 @@
 """
 Classifies: CHEBI:16158 steroid sulfate
 """
-[C]1[C@@]2[C@H]([C@H]3[C@@H](CC4=CC(=O)CC[C@]34)[C@H]2CC[C@@H]1C)C
+"[C]1CC[C@]2[C@@]1([C@H]1CC[C@H]3[C@H]([C@@]4(CCCC4)C)[C@H](C1)CC23)C"
