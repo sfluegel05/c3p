@@ -5,8 +5,8 @@ from rdkit import Chem
 
 def is_metal_atom(smiles: str):
     """
-    Determines if a SMILES string represents a single metal atom.
-    Validates that the structure is a single atom of a metallic element.
+    Determines if a SMILES string represents a single metal atom in its elemental state.
+    Validates that the structure is a single atom of a metallic element with 0 charge.
 
     Args:
         smiles (str): Input SMILES string
@@ -27,12 +27,16 @@ def is_metal_atom(smiles: str):
     
     atom = mol.GetAtomWithIdx(0)
     
-    # Check if the element is a metal
-    if not atom.GetIsAromatic() and atom.GetAtomicNum() in Chem.GetPeriodicTable().GetMetals():
-        # Check for charge - metals in elemental form should have 0 charge
-        if atom.GetFormalCharge() == 0:
-            return True, "Single metallic atom in elemental state"
-        else:
-            return False, "Charged metal species"
+    # Check if the element is a metal using RDKit's built-in metal detection
+    if not atom.GetIsMetal():
+        return False, "Atom is not a metallic element"
     
-    return False, "Not a metallic element"
+    # Check for neutral charge (elemental form)
+    if atom.GetFormalCharge() != 0:
+        return False, "Charged metal species"
+    
+    # Verify no radical electrons (though rare in standard representations)
+    if atom.GetNumRadicalElectrons() != 0:
+        return False, "Radical present in metal atom"
+    
+    return True, "Single metallic atom in elemental state"
