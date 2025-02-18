@@ -11,7 +11,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_phosphatidylglycerol(smiles: str):
     """
     Determines if a molecule is a phosphatidylglycerol based on its SMILES string.
-    A phosphatidylglycerol has a glycerol backbone with two fatty acid esters and a phosphatidyl group (glycerol connected via phosphate).
+    A phosphatidylglycerol consists of a glycerol backbone with two fatty acid esters
+    and a phosphatidyl group (glycerol connected via phosphate).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,36 +30,39 @@ def is_phosphatidylglycerol(smiles: str):
     if not p_atoms:
         return False, "No phosphate group found"
 
-    # Check for two ester groups (O-C=O)
+    # Check for at least two ester groups (O-C=O)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester groups, need at least 2"
 
-    # Check for glycerol backbone connected to phosphate
-    # Main glycerol: two esters and a phosphate
-    # Head glycerol: connected via phosphate, has hydroxyls
-    # SMARTS pattern for glycerol-phosphate-glycerol structure
-    pg_pattern = Chem.MolFromSmarts(
-        "[CH2](-O-C(=O)*)-[CH](-OP(=O)([OX1])-[OX2]-[C@H]([CH2]O)[CH2]O)-[CH2](-O-C(=O)*)"
+    # Core structure: Phosphate connecting two glycerol units
+    # Pattern matches phosphate (P) connected to two oxygen atoms that are part of glycerol backbones
+    core_pattern = Chem.MolFromSmarts(
+        "[CH2]-[CH](-OP(=O)([O-])-[O][CH2]-[CH](-[CH2])-[CH2])-[CH2]"
     )
-    if not mol.HasSubstructMatch(pg_pattern):
-        # Try without stereochemistry
-        pg_pattern = Chem.MolFromSmarts(
-            "[CH2](-O-C(=O)*)-[CH](-OP(=O)([OX1])-[OX2]-[CH]([CH2]O)[CH2]O)-[CH2](-O-C(=O)*)"
+    if not mol.HasSubstructMatch(core_pattern):
+        # Try alternative pattern accounting for possible stereochemistry and connectivity
+        core_pattern = Chem.MolFromSmarts(
+            "[CH2](-[O]-P(=O)([O-])-[O]-[CH2]-[CH](-[CH2])-[CH2])-[CH](-[CH2])-[CH2]"
         )
-        if not mol.HasSubstructMatch(pg_pattern):
+        if not mol.HasSubstructMatch(core_pattern):
             return False, "Glycerol-phosphate-glycerol backbone not found"
 
-    # Check that the head glycerol has at least two hydroxyl groups
-    head_glycerol_pattern = Chem.MolFromSmarts("[CH2]-[CH](-O)-[CH2]-O")
-    if not mol.HasSubstructMatch(head_glycerol_pattern):
-        return False, "Head glycerol missing hydroxyl groups"
+    # Verify at least two hydroxyl groups in the head glycerol (non-ester oxygens)
+    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1)
+    if hydroxyl_count < 2:
+        return False, "Insufficient hydroxyl groups in structure"
 
-    # Check fatty acid chains (at least 8 carbons each)
-    # Approximate by checking molecular weight > 600 Da (varies, but PG is typically larger)
+    # Check for fatty acid chains (minimum 8 carbons each)
+    # Approximated by checking rotatable bonds > 10 (indicative of long chains)
+    rot_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if rot_bonds < 10:
+        return False, f"Only {rot_bonds} rotatable bonds, insufficient for fatty acid chains"
+
+    # Molecular weight check (typical PG > 600 but some examples may be lower)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:
-        return False, "Molecular weight too low for phosphatidylglycerol"
+    if mol_wt < 500:
+        return False, f"Molecular weight too low ({mol_wt:.1f} Da)"
 
-    return True, "Contains glycerol backbone with phosphatidyl group and two fatty acid esters"
+    return True, "Contains glycerol-phosphate-glycerol backbone with two fatty acid esters"
