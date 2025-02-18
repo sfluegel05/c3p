@@ -5,7 +5,7 @@ Classifies: CHEBI:35785 sphingoid
 Classifies: CHEBI: ??? sphingoid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_sphingoid(smiles: str):
     """
@@ -23,71 +23,54 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of an amino group (NH2, NH3+, or amide)
-    amino_groups = []
+    # Check for amino group (NH2, NH3+, or amide)
+    amino_found = False
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 7:
-            # Check for NH2, NH3+, or amide (N connected to carbonyl)
-            if (atom.GetFormalCharge() in (0, 1) and atom.GetTotalNumHs() >= 1) or \
-               any(bond.GetBondType() == Chem.BondType.SINGLE and bond.GetOtherAtom(atom).GetAtomicNum() == 6 and
-                   any(nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() == 0 for nbr in bond.GetOtherAtom(atom).GetNeighbors() if nbr.GetAtomicNum() == 8)
+            # Check for primary/secondary amine or ammonium
+            if atom.GetTotalDegree() <= 3 and (atom.GetFormalCharge() in (0, 1) or atom.GetTotalNumHs() >= 1):
+                amino_found = True
+                break
+            # Check for amide (N connected to carbonyl)
+            if any(bond.GetBondType() == Chem.BondType.SINGLE 
+                   and bond.GetOtherAtom(atom).GetAtomicNum() == 6 
+                   and any(nbr.GetAtomicNum() == 8 for nbr in bond.GetOtherAtom(atom).GetNeighbors())
                    for bond in atom.GetBonds()):
-                amino_groups.append(atom)
-    if not amino_groups:
-        return False, "No amino group found"
+                amino_found = True
+                break
 
-    # Check for at least two hydroxyl groups
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1)
-    if hydroxyl_count < 2:
-        return False, "Insufficient hydroxyl groups (need at least two)"
+    if not amino_found:
+        return False, "No amino group detected"
 
-    # Check for hydroxyl adjacent to any amino group
-    has_adjacent_oh = False
-    for amino_atom in amino_groups:
-        for neighbor in amino_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:
-                # Check if this carbon has a hydroxyl group
-                for bond in neighbor.GetBonds():
-                    other_atom = bond.GetOtherAtom(neighbor)
-                    if other_atom.GetAtomicNum() == 8 and other_atom.GetTotalNumHs() >= 1:
-                        has_adjacent_oh = True
+    # Check for at least one hydroxyl group adjacent to amino-bearing carbon
+    hydroxyl_adjacent = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:
+                    for bond in neighbor.GetBonds():
+                        other = bond.GetOtherAtom(neighbor)
+                        if other.GetAtomicNum() == 8 and other.GetTotalNumHs() >= 1:
+                            hydroxyl_adjacent = True
+                            break
+                    if hydroxyl_adjacent:
                         break
-                if has_adjacent_oh:
-                    break
-        if has_adjacent_oh:
-            break
-    if not has_adjacent_oh:
+            if hydroxyl_adjacent:
+                break
+
+    if not hydroxyl_adjacent:
         return False, "No hydroxyl group adjacent to amino group"
 
-    # Check for long carbon chain (at least 12 carbons in the backbone)
-    # Find the longest carbon chain
-    chain_length = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:
-            # Follow the chain in both directions
-            current = atom
-            visited = set()
-            length = 1
-            # Move in one direction
-            while True:
-                next_atoms = [nbr for nbr in current.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr not in visited]
-                if len(next_atoms) != 1:
-                    break
-                visited.add(current)
-                current = next_atoms[0]
-                length += 1
-            # Move in the other direction
-            current = atom
-            visited = set()
-            while True:
-                next_atoms = [nbr for nbr in current.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr not in visited]
-                if len(next_atoms) != 1:
-                    break
-                visited.add(current)
-                current = next_atoms[0]
-                length += 1
-            chain_length = max(chain_length, length)
+    # Check for long aliphatic chain (>=12 carbons)
+    chain_length = rdMolDescriptors.CalcNumAcyclicStereocenters(mol) + 1  # Approximation
     if chain_length < 12:
-        return False, f"Longest carbon chain ({chain_length}) too short for sphingoid"
+        # Fallback to exact chain length calculation
+        chain_length = max(
+            len(Chem.GetLongestChain(mol, includeDoubleBonds=True)),
+            len(Chem.GetLongestChain(mol, includeDoubleBonds=False))
+        )
+    
+    if chain_length < 12:
+        return False, f"Chain length {chain_length} < 12"
 
-    return True, "Long-chain amino alcohol with adjacent hydroxyl groups"
+    return True, "Long-chain amino alcohol with adjacent hydroxyl group"
