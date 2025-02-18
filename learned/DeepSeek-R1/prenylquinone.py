@@ -10,63 +10,63 @@ from rdkit.Chem import AllChem
 def is_prenylquinone(smiles: str):
     """
     Determines if a molecule is a prenylquinone based on its SMILES string.
-    A prenylquinone has a quinone core (1,4-benzoquinone or 1,4-naphthoquinone)
-    substituted by at least one polyprenyl-derived side chain.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a prenylquinone, False otherwise
-        str: Reason for classification
+    Requires a 1,4-benzoquinone or 1,4-naphthoquinone core with at least one
+    polyprenyl-derived side chain containing multiple isoprene units.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Define corrected quinone core patterns
-    # 1,4-benzoquinone: O=C1C=CC(=O)C=C1
-    benzoquinone = Chem.MolFromSmarts("[O]=C1C=CC(=O)C=C1")
-    # 1,4-naphthoquinone: O=C1C(=O)C2=CC=CC=C2C=C1
+    # Improved quinone core patterns with tolerance for substitutions
+    # 1,4-benzoquinone: O=C1C(=O)C=CC=C1 with possible substitutions
+    benzoquinone = Chem.MolFromSmarts("[O]=C1C(=O)C=CC=C1")
+    # 1,4-naphthoquinone: O=C1C(=O)C2=CC=CC=C2C=C1 (naphthalene-1,4-dione)
     naphthoquinone = Chem.MolFromSmarts("[O]=C1C(=O)C2=CC=CC=C2C=C1")
 
-    # Check for quinone core
+    # Check for quinone core existence
     has_quinone = mol.HasSubstructMatch(benzoquinone) or mol.HasSubstructMatch(naphthoquinone)
     if not has_quinone:
         return False, "No quinone core detected"
 
-    # Define improved prenyl chain pattern (at least two isoprene units)
-    # Matches CH2-CH(C)=CH-CH2 patterns with any configuration
-    prenyl_pattern = Chem.MolFromSmarts("[CH2][CH](C)~[CH][CH2]")
+    # Enhanced prenyl chain pattern: look for characteristic branching pattern
+    # Matches at least 3 consecutive isoprene units (C-C(=C)-C-C(=C)-C-C(=C))
+    prenyl_pattern = Chem.MolFromSmarts(
+        "[CH3]-[CH2]-[CH]([CH3])-"
+        "[CH2]-[CH]([CH3])-"
+        "[CH2]-[CH]([CH3])"
+    )
 
     # Find all possible attachment points on quinone core
-    core_matches = []
-    if mol.HasSubstructMatch(benzoquinone):
-        core_matches = mol.GetSubstructMatches(benzoquinone)
-    else:
-        core_matches = mol.GetSubstructMatches(naphthoquinone)
+    core_matches = mol.GetSubstructMatches(benzoquinone) or mol.GetSubstructMatches(naphthoquinone)
 
-    # Collect all atoms in quinone core
-    core_atoms = set()
-    for match in core_matches:
-        core_atoms.update(match)
+    # Check all possible prenyl chain attachments (direct or via oxygen)
+    for core_match in core_matches:
+        core_atoms = set(core_match)
+        # Look for chains connected to core via single bond (including through oxygen)
+        for atom_idx in core_atoms:
+            core_atom = mol.GetAtomWithIdx(atom_idx)
+            # Check neighbors for potential chain attachments
+            for neighbor in core_atom.GetNeighbors():
+                # Allow connection through oxygen (e.g., methoxy-linked chains)
+                if neighbor.GetAtomicNum() in [6,8]:
+                    # Traverse the chain looking for prenyl pattern
+                    chain_root = neighbor if neighbor.GetAtomicNum() == 6 else None
+                    if chain_root:
+                        # Check if any part of this branch matches prenyl pattern
+                        if mol.HasSubstructMatch(prenyl_pattern):
+                            # Verify chain length (at least 15 carbons for 3 isoprene units)
+                            chain_carbons = sum(1 for a in mol.GetAtoms() if a.GetAtomicNum() == 6)
+                            if chain_carbons >= 15:
+                                return True, "Quinone core with polyprenyl side chain"
 
-    # Find all prenyl chain matches
-    prenyl_matches = mol.GetSubstructMatches(prenyl_pattern)
-    if not prenyl_matches:
-        return False, "No polyprenyl chain detected"
-
-    # Verify at least one prenyl chain is attached to quinone core
-    for pm in prenyl_matches:
-        for atom_idx in pm:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            # Check if adjacent to core atom
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() in core_atoms:
-                    # Additional check for chain length (at least 4 carbons)
-                    chain_atoms = set(pm)
-                    chain_length = len([a for a in chain_atoms if mol.GetAtomWithIdx(a).GetAtomicNum() == 6])
-                    if chain_length >= 4:
-                        return True, "Quinone core with polyprenyl side chain"
+    # Alternative check using substructure matching with flexible attachment
+    if mol.HasSubstructMatch(prenyl_pattern):
+        # Verify chain is actually attached to quinone core
+        combined_pattern = Chem.MolFromSmarts(
+            "([O]=C1C(=O)C=CC=C1.[CH3]-[CH2]-[CH]([CH3])-[CH2]-[CH]([CH3])-[CH2]-[CH]([CH3])]) |" +
+            "([O]=C1C(=O)C2=CC=CC=C2C=C1.[CH3]-[CH2]-[CH]([CH3])-[CH2]-[CH]([CH3])-[CH2]-[CH]([CH3])])"
+        )
+        if mol.HasSubstructMatch(combined_pattern):
+            return True, "Quinone core with polyprenyl side chain"
 
     return False, "No polyprenyl chain attached to quinone core"
