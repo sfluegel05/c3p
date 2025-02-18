@@ -23,57 +23,55 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Define flexible D-ribose pattern allowing substituents on hydroxyl positions
+    # Improved D-ribose pattern with correct stereochemistry and substituent tolerance
+    # Matches beta-D-ribofuranose core with C5 CH2O group
     ribose_pattern = Chem.MolFromSmarts(
-        "[C@H]1(O[C@H](C[OX2])[C@H]([!C])[C@@H]([!C])1[!C])"
+        "[C@@H]1([C@H](O)[C@@H](O)[C@H](O[C@H](CO)O1)O)"
     )
     ribose_matches = mol.GetSubstructMatches(ribose_pattern)
     if not ribose_matches:
         return False, "No D-ribose sugar detected"
 
-    # Check for phosphate groups on the ribose's C5 (CH2OX group)
-    for match in ribose_matches:
-        c5_atom = match[2]  # Index of C in C[OX2] (CH2OX group)
-        for neighbor in mol.GetAtomWithIdx(c5_atom).GetNeighbors():
-            if neighbor.GetAtomicNum() == 15:  # Phosphorus atom
-                return False, "Phosphate group present (nucleotide, not nucleoside)"
+    # Check for phosphate groups (indicating nucleotide rather than nucleoside)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 15:  # Phosphorus
+            return False, "Phosphate group present (nucleotide, not nucleoside)"
 
-    # Check glycosidic bond (anomeric carbon connected to nucleobase heteroatom)
+    # Check glycosidic bond - anomeric carbon connected to heteroatom (N/O)
     glycosidic_bond = False
     nucleobase_atoms = set()
     for match in ribose_matches:
-        anomeric_c = match[0]  # C1 in the ribose pattern
+        # Get anomeric carbon (C1 in the ribose pattern)
+        anomeric_c = match[0]
         for neighbor in mol.GetAtomWithIdx(anomeric_c).GetNeighbors():
             if neighbor.GetAtomicNum() in [7, 8]:  # N or O
-                # Check if the heteroatom is part of a ring (crude nucleobase check)
-                if neighbor.IsInRing():
-                    glycosidic_bond = True
-                    nucleobase_atoms.add(neighbor.GetIdx())
-                    break
+                # Track connected heteroatom and its neighbors
+                glycosidic_bond = True
+                nucleobase_atoms.add(neighbor.GetIdx())
+                break
         if glycosidic_bond:
             break
     if not glycosidic_bond:
         return False, "No glycosidic bond to nucleobase heteroatom"
 
-    # Check for common nucleobase patterns in the connected atoms
-    nucleobase_patterns = [
-        Chem.MolFromSmarts(sma) for sma in [
-            "N1C=NC2=C1N=CN2",  # Adenine
-            "N1C=NC2=C1NC(=O)N2",  # Guanine
-            "C1=CNC(=O)NC1=O",  # Uracil
-            "C1=C(NC(=O)N)C(=O)NC1",  # Thymine
-            "N1C(=O)NC(=NC1)N"  # Cytosine
-        ]
-    ]
-    has_base = False
-    for pattern in nucleobase_patterns:
-        if mol.HasSubstructMatch(pattern):
-            has_base = True
+    # Check for nucleobase characteristics in connected atoms
+    # Look for aromatic rings with heteroatoms (common in nucleobases)
+    has_aromatic = False
+    for idx in nucleobase_atoms:
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetIsAromatic():
+            has_aromatic = True
             break
-    if not has_base:
-        # Check if any nucleobase atoms are aromatic (fallback)
-        has_aromatic = any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in nucleobase_atoms)
-        if not has_aromatic:
-            return False, "No recognized nucleobase detected"
+        # Check if part of a ring with heteroatoms
+        for bond in atom.GetBonds():
+            neighbor = bond.GetOtherAtom(atom)
+            if neighbor.GetAtomicNum() in [7, 8] and neighbor.IsInRing():
+                has_aromatic = True
+                break
+        if has_aromatic:
+            break
+
+    if not has_aromatic:
+        return False, "Connected group lacks nucleobase characteristics"
 
     return True, "D-ribose sugar connected to nucleobase via glycosidic bond"
