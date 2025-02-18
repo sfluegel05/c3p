@@ -1,28 +1,56 @@
 """
 Classifies: CHEBI:31998 N-acylphytosphingosine
 """
-The previous program seems to have some issues that led to a low F1 score. Here are my observations and suggestions for improvement:
+"""
+Classifies: CHEBI:35801 N-acylphytosphingosine
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. Incorrect phytosphingosine backbone pattern: The current pattern does not accurately capture the phytosphingosine backbone structure. Phytosphingosine has a specific chain length (C18) and hydroxyl group positions (C1, C3, C4). The current pattern allows for variable chain lengths and hydroxyl positions, which could lead to false positives or false negatives.
+def is_N_acylphytosphingosine(smiles: str):
+    """
+    Determines if a molecule is an N-acylphytosphingosine based on its SMILES string.
+    An N-acylphytosphingosine is a ceramide that is phytosphingosine having a fatty acyl group attached to the nitrogen.
 
-2. Overly strict acyl group pattern: The current pattern for the acyl group attached to the nitrogen ([N;H1][C;X3](=[O;X1])) only matches specific acyl groups with a single carbon atom. This may miss some N-acylphytosphingosines with longer acyl chains.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. Insufficient fatty acid chain check: The current check for the fatty acid chain only looks for a minimum chain length of 4 carbon atoms, which may be too short for some N-acylphytosphingosines.
+    Returns:
+        bool: True if molecule is an N-acylphytosphingosine, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for phytosphingosine backbone pattern
+    phytosphingosine_pattern = Chem.MolFromSmarts("[C@H](CO)[C@@H](O)[C@@H](O)CCCCCCCCCCCCCC")
+    if not mol.HasSubstructMatch(phytosphingosine_pattern):
+        return False, "No phytosphingosine backbone found"
+    
+    # Look for acyl group attached to nitrogen
+    acyl_pattern = Chem.MolFromSmarts("[N;H1][C;X3](=[O;X1])[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]")
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "No acyl group attached to nitrogen found"
+    
+    # Look for galactose or glucose moiety
+    sugar_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]([C@H]([C@@H]([C@H](O1)O)O)O)O")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No galactose or glucose moiety found"
+    
+    return True, "Contains phytosphingosine backbone with acyl group attached to nitrogen and galactose/glucose moiety"
 
-4. Molecular weight check: The molecular weight check (>600 Da) may be too strict or too lenient, depending on the specific structures being considered.
-
-To improve the program, I would suggest the following changes:
-
-1. Use a more specific phytosphingosine backbone pattern that matches the exact structure: [C@H](CO)[C@@H](O)[C@@H](O)CCCCCCCCCCCCCC (18 carbon chain, hydroxyl groups at C1, C3, C4).
-
-2. Modify the acyl group pattern to allow for longer acyl chains: [N;H1][C;X3](=[O;X1])[C;X4]~[C;X4]~[C;X4]~[C;X4]
-
-3. Increase the minimum fatty acid chain length to at least 8-10 carbon atoms: [C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]
-
-4. Adjust the molecular weight check based on the specific structures being considered, or remove it entirely if it's not providing valuable information.
-
-5. Consider additional checks, such as the presence of a galactose or glucose moiety, which is common in N-acylphytosphingosines.
-
-It's important to note that while the provided benchmark data is useful, it may contain errors or inconsistencies. If the program's classifications align with your understanding of the chemical class, and the false positives/negatives seem reasonable, you may choose to trust your program's results over the benchmark data.
-
-Additionally, you can consider adding more examples of known N-acylphytosphingosines and non-N-acylphytosphingosines to further test and refine your program.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:35801',
+        'name': 'N-acylphytosphingosine',
+        'definition': 'A ceramide that is phytosphingosine having a fatty acyl group attached to the nitrogen.',
+        'parents': ['CHEBI:35798']
+    },
+    'config': {
+        # ... (existing config data)
+    },
+    # ... (existing metadata)
+}
