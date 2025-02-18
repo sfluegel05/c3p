@@ -25,81 +25,59 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all 5-membered sugar rings (ribose/deoxyribose)
-    sugar_rings = []
-    rings = mol.GetRingInfo().AtomRings()
-    for ring in rings:
-        if len(ring) != 5:
-            continue
-        # Check for 4 carbons and 1 oxygen (ribose) or 4 carbons and 0 oxygen (deoxyribose)
-        atoms = [mol.GetAtomWithIdx(i) for i in ring]
-        c_count = sum(1 for a in atoms if a.GetAtomicNum() == 6)
-        o_count = sum(1 for a in atoms if a.GetAtomicNum() == 8)
-        if (c_count == 4 and o_count == 1) or (c_count == 5 and o_count == 0 and any(a.GetHybridization() == Chem.HybridizationType.SP3 for a in atoms)):
-            sugar_rings.append(ring)
+    # Check for phosphate group attached to 5' position (CH2OP)
+    phosphate_pattern = Chem.MolFromSmarts("[CH2]OP(=O)")
+    if phosphate_pattern is None:
+        return False, "Invalid phosphate SMARTS pattern"
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
+        return False, "No phosphate group attached to 5' position"
 
-    if not sugar_rings:
-        return False, "No ribose/deoxyribose ring found"
-
-    # Check for phosphate group attached to 5' position (CH2OP connected to C4' of sugar)
-    phosphate_found = False
-    for s_ring in sugar_rings:
-        # Find C4' (connected to CH2OP)
-        for atom_idx in s_ring:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() != 'C':
-                continue
-            # Check if this atom (C4') is connected to a CH2OP group
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() >= 2:
-                    # Check for O-P attached to this CH2
-                    for phosphate in neighbor.GetNeighbors():
-                        if phosphate.GetSymbol() == 'O':
-                            for p_atom in phosphate.GetNeighbors():
-                                if p_atom.GetSymbol() == 'P':
-                                    phosphate_found = True
-                                    break
-                            if phosphate_found:
-                                break
-                    if phosphate_found:
-                        break
-            if phosphate_found:
-                break
-        if phosphate_found:
-            break
-    if not phosphate_found:
-        return False, "No phosphate group attached to 5' position of sugar"
-
-    # Check for glycosidic bond between C1' (anomeric carbon) and nitrogenous base
-    glycosidic_found = False
-    for s_ring in sugar_rings:
-        for atom_idx in s_ring:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() != 'C':
-                continue
-            # Check if this is the anomeric C (connected to O in ring and to N)
-            is_anomeric = False
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'O' and neighbor.IsInRing():
-                    is_anomeric = True
+    # Verify the CH2 is part of a 5-membered sugar ring with oxygen
+    valid_phosphate = False
+    for match in phosphate_matches:
+        ch2_idx = match[0]
+        ch2_atom = mol.GetAtomWithIdx(ch2_idx)
+        # Check neighbors of CH2 for connection to sugar ring
+        for neighbor in ch2_atom.GetNeighbors():
+            if neighbor.GetSymbol() == 'C' and neighbor.IsInRing():
+                # Check if this neighbor is in a 5-membered ring with oxygen
+                rings = mol.GetRingInfo().AtomRings()
+                for ring in rings:
+                    if neighbor.GetIdx() in ring and len(ring) == 5:
+                        if any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring):
+                            valid_phosphate = True
+                            break
+                if valid_phosphate:
                     break
-            if not is_anomeric:
-                continue
-            # Check if connected to a nitrogen in a heterocycle (base)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'N' and not neighbor.IsInRingSize(5) and not neighbor.IsInRingSize(6):
-                    # Check if the N is part of a purine/pyrimidine
-                    base_rings = mol.GetRingInfo().AtomRings()
-                    for b_ring in base_rings:
-                        if neighbor.GetIdx() in b_ring:
-                            n_count = sum(1 for idx in b_ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
-                            if n_count >= 2:
-                                glycosidic_found = True
-                                break
-                    if glycosidic_found:
-                        break
-            if glycosidic_found:
-                break
+        if valid_phosphate:
+            break
+    if not valid_phosphate:
+        return False, "Phosphate not attached to a 5-membered sugar ring"
+
+    # Check for nitrogenous base (purine/pyrimidine) attached to 1' carbon of sugar
+    # Look for glycosidic bond: N connected to sugar ring carbon
+    glycosidic_found = False
+    rings = mol.GetRingInfo().AtomRings()
+    sugar_rings = [ring for ring in rings if len(ring) == 5 and any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring)]
+    for s_ring in sugar_rings:
+        for atom_idx in s_ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetSymbol() == 'C':
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetSymbol() == 'N' and neighbor.IsInRing():
+                        # Check if the nitrogen is part of a base ring with >=2 nitrogens
+                        base_rings = mol.GetRingInfo().AtomRings()
+                        for b_ring in base_rings:
+                            if neighbor.GetIdx() in b_ring:
+                                n_count = sum(1 for idx in b_ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
+                                if n_count >= 2:
+                                    glycosidic_found = True
+                                    break
+                        if glycosidic_found:
+                            break
+                if glycosidic_found:
+                    break
         if glycosidic_found:
             break
     if not glycosidic_found:
