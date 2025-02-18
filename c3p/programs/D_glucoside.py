@@ -1,127 +1,36 @@
 """
 Classifies: CHEBI:35436 D-glucoside
 """
- - 1-O-beta-D-glucopyranosyl-2-[2-methoxy-4-(prop-1-enyl)phenoxy]propane-1,3-diol: SMILES: O[C@H](CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@H](O)COc1cc(/C=C\C)ccc1OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4-O-methyl-8E-octadecene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 3-O-beta-D-glucopyranosyl-1,2-O-diacyl-sn-glycerol: SMILES: O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OC[C@@H](COC(=O)CCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCC)[C@@H]1O
- - 1-O-beta-D-glucopyranosyl-(2S,3S,4R,8E)-2-[(2R)-2-hydroxyhexadecanoylamino]-8-octadecene-1,3,4-triol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)[C@H](O)CCCCCCCC\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8Z)-2-[(2R)-2-hydroxytetracosanoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C/C\C=C/C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8Z)-2-[(2R)-2-hydroxytetracosanoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C/C\C=C/C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@H](O)CCCCCCCC\C=C\C\C=C\C)OC
- - 1-O-beta-D-glucopyranosyl-(2S,3R,4E,8E)-2-[(2R)-2-hydroxypalmitoylamino]-4,8-octadecadiene-1,3-diol: SMILES: CCCCCCCCCCCCCCC(C(=O)N[C@H]([C@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_D_glucoside(smiles: str):
+    """
+    Determines if a molecule is a D-glucoside based on its SMILES string.
+    A D-glucoside has a beta-D-glucopyranose group linked via a glycosidic bond.
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        bool: True if molecule is a D-glucoside, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # SMARTS pattern for beta-D-glucopyranose with glycosidic bond
+    # Matches the glucopyranose ring with O-linked group at C1
+    glucoside_pattern = Chem.MolFromSmarts("[C@H]1([C@@H](O)[C@H](O)[C@@H](O)[C@@H](O1)CO)O[!H]")
+    if mol.HasSubstructMatch(glucoside_pattern):
+        return True, "Contains beta-D-glucopyranose with glycosidic bond"
+    
+    # Alternative pattern considering different stereochemistry possibilities
+    # Check for any glucopyranose with O-linkage at C1 and correct D-configuration
+    # This pattern may need adjustment based on specific examples
+    glucoside_pattern2 = Chem.MolFromSmarts("[OX2][C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O[!H]")
+    if mol.HasSubstructMatch(glucoside_pattern2):
+        return True, "Contains beta-D-glucopyranose with glycosidic bond"
+    
+    return False, "No beta-D-glucopyranose with glycosidic bond found"
