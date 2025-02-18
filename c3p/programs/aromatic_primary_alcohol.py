@@ -9,8 +9,8 @@ from rdkit import Chem
 def is_aromatic_primary_alcohol(smiles: str):
     """
     Determines if a molecule is an aromatic primary alcohol based on its SMILES string.
-    An aromatic primary alcohol has a hydroxyl group (-OH) attached to a primary carbon
-    that is directly bonded to an aromatic ring.
+    An aromatic primary alcohol has a hydroxyl group (-OH) attached to a primary carbon (CH2)
+    that is directly bonded to an aromatic carbon.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,26 +24,23 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for primary alcohol attached to any aromatic atom
-    # [a] is any aromatic atom, [CH2;D2] is methylene group with exactly two bonds (to OH and aromatic atom)
-    pattern = Chem.MolFromSmarts('[a]-[CH2;D2]-[OH]')
+    # Iterate through all oxygen atoms in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:  # Oxygen atom
+            # Check if it's a hydroxyl group (-OH)
+            if atom.GetDegree() == 1 and atom.GetTotalNumHs() == 1:
+                # Get the connected carbon (primary alcohol carbon)
+                carbon = atom.GetNeighbors()[0]
+                # Check if it's a primary alcohol (CH2OH)
+                if carbon.GetDegree() == 2 and carbon.GetAtomicNum() == 6:
+                    # Get the adjacent carbon (attached to the CH2 group)
+                    adjacent_carbons = [n for n in carbon.GetNeighbors() if n != atom]
+                    if len(adjacent_carbons) != 1:
+                        continue  # Shouldn't happen due to degree check
+                    adjacent_carbon = adjacent_carbons[0]
+                    
+                    # Check if the adjacent carbon is aromatic
+                    if adjacent_carbon.GetIsAromatic():
+                        return True, "Primary alcohol group attached to aromatic carbon"
     
-    # Check for matches
-    matches = mol.GetSubstructMatches(pattern)
-    
-    if not matches:
-        return False, "No primary alcohol group adjacent to aromatic ring found"
-    
-    # Verify that the aromatic atom is part of a ring
-    valid = False
-    for match in matches:
-        aromatic_atom_idx = match[0]
-        atom = mol.GetAtomWithIdx(aromatic_atom_idx)
-        if atom.IsInRing():
-            valid = True
-            break
-    
-    if valid:
-        return True, "Primary alcohol group attached to aromatic carbon in a ring"
-    else:
-        return False, "Aromatic atom not part of a ring"
+    return False, "No primary alcohol group attached to aromatic carbon found"
