@@ -20,20 +20,20 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for thioester linkage: S-C(=O)
-    thioester_pattern = Chem.MolFromSmarts("SC(=O)C")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found" 
-
-    # Look for Coenzyme A specific fragments with improved pattern
-    # CoA includes a phosphopantetheine chain and adenine linked through a ribose phosphodiester.
-    coA_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OCC1OC(n2cnc3c(ncnc23)N)C(O)C1OP(=O)([O-])O")
+    # Look for Coenzyme A specific fragments
+    # CoA includes a phosphopantetheine chain and adenine linked through a ribose phosphodiester
+    coA_pattern = Chem.MolFromSmarts("OP(=O)(O)OC[C@H]1O[C@H]([C@@H](O)[C@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coA_pattern):
         return False, "Coenzyme A structure not found"
 
-    # Check for acyl chain length from 2 to 6
-    # Finds short-chain length after the thioester linkage
-    for match in mol.GetSubstructMatches(thioester_pattern):
+    # Look for thioester linkage: S-C(=O) for fatty acyl attachment
+    thioester_pattern = Chem.MolFromSmarts("SC(=O)C")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if not thioester_matches:
+        return False, "No thioester linkage found"
+
+    # Check for acyl chain length from 2 to 6 carbons
+    for match in thioester_matches:
         acyl_begin = match[2]  # Carbon in SC(=O)C chain likely to be part of acyl
         chain_length = 0
         queue = [acyl_begin]
@@ -55,6 +55,6 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
 
         # Validate short chain length
         if 2 <= chain_length <= 6:
-            return True, "Contains Coenzyme A linked with short-chain fatty acid"
+            return True, "Contains Coenzyme A linked with a short-chain fatty acid"
 
     return False, "No short-chain fatty acid attached to CoA"
