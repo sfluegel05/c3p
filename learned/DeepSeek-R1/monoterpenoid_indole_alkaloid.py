@@ -1,269 +1,46 @@
 """
 Classifies: CHEBI:65323 monoterpenoid indole alkaloid
 """
- - 19,20-dihydroperaksine: SMILES: C[C@]12CCCN3C(C=C(C4=CC=CC=C4NC(CC1)=O)[C@@]23O)=O
- - 19,20-dihydroperaksine-17-ol: SMILES: C[C@]12CCCN3C(C=C(C4=CC=CC=C4NC(CC1)=O)[C@@]23O)=O
- - 3,4,5,6-tetradehydro-18,19-dihydroxy-yohimbine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4,5,6-tetradehydrogeissoschizine: SMILES: C/C=C\1/C[N+]=2C=CC=3C=4C=CC=CC4NC3C2CC1CCO
- - 3,4,5,6-tetradehydrostemmadenine: SMILES: C12=C(C=CC=C1)NC=3[C@@H]([C@@]4(/C(/CN(CC4)CCC32)=C\C)[H])C(=O)OC
- - 3-R,S-hydroxytabernaelegantine B: SMILES: CC[C@]1(C[C@@]2(C[C@]3(C4=C(CCN([C@@]13[H])C2=O)C5=CC([C@]6(CC7[C@](CC)(CN(C)C(CC=8C9=CC=CC=C9NC68)[C@]7(C(=O)OC)[H])[H])=C(C=C5N4)OC)C(=O)OC)[H])[H])[H]
- - 3-R,S-hydroxytabernaelegantine C: SMILES: CC[C@]1(C[C@@]2(C[C@]3(C4=C(CCN([C@@]13[H])C2=O)C5=CC([C@]6(CC7[C@](CC)(CN(C)C(CC=8C9=CC=CC=C9NC68)[C@]7(C(=O)OC)[H])[H])=C(C=C5N4)OC)C(=O)OC)[H])[H])[H]
- - 3-R,S-hydroxytabernaelegantine D: SMILES: CC[C@]1(C[C@@]2(C[C@]3(C4=C(CCN([C@@]13[H])C2=O)C5=CC([C@]6(CC7[C@](CC)(CN(C)C(CC=8C9=CC=CC=C9NC68)[C@]7(C(=O)OC)[H])[H])=C(C=C5N4)OC)C(=O)OC)[H])[H])[H]
- - 3,4-dehydro-18,19-dihydroxy-ajmalicine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydroajmalicine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydrocorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydrocorynantheine-pseudoindoxyl: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydrogeissoschizol: SMILES: C/C=C\1/C[N+]=2C=CC=3C=4C=CC=CC4NC3C2CC1CCO
- - 3,4-dehydro-18-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-pseudoakuammigine: SMILES: C=12[C@@]3([C@H]4N(CC3)C\C(\[C@@](C1C(=O)OC)(C4)[H])=C\C)C5=CC=CC=C5N2
- - 3,4-dehydropseudoakuammigine: SMILES: C=12[C@@]3([C@H]4N(CC3)C\C(\[C@@](C1C(=O)OC)(C4)[H])=C\C)C5=CC=CC=C5N2
- - 3,4-dehydrostemmadenine: SMILES: C12=C(C=CC=C1)NC=3[C@@H]([C@@]4(/C(/CN(CC4)CCC32)=C\C)[H])C(=O)OC
- - 3,4-dehydrostemmadenine acetate: SMILES: C12=C(C=CC=C1)NC=3[C@@H]([C@@]4(/C(/CN(CC4)CCC32)=C\C)[H])C(=O)OC
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(S)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
- - 3,4-dehydro-19(R)-hydroxycorynantheine: SMILES: C[C@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2
+"""
+Classifies: CHEBI:65312 monoterpenoid indole alkaloid
+"""
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+
+def is_monoterpenoid_indole_alkaloid(smiles: str):
+    """
+    Determines if a molecule is a monoterpenoid indole alkaloid based on its SMILES string.
+    The molecule should contain an indole moiety and structural features from a monoterpenoid (diisoprenoid).
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+    
+    Returns:
+        bool: True if molecule is a monoterpenoid indole alkaloid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Check for indole substructure (nH in the five-membered ring)
+    indole_pattern = Chem.MolFromSmarts("[nH]1c2ccccc2cc1")
+    if not mol.HasSubstructMatch(indole_pattern):
+        return False, "No indole moiety found"
+    
+    # Check for at least 20 carbons (approximate for monoterpenoid + indole)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 20:
+        return False, f"Only {c_count} carbons, expected >=20"
+    
+    # Check for multiple rings (indole + terpenoid-derived structure)
+    sssr = Chem.GetSSSR(mol)
+    if len(sssr) < 2:
+        return False, f"Only {len(sssr)} rings, expected multiple"
+    
+    # Check for at least one oxygen (common in terpenoid parts)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 1:
+        return False, "No oxygen atoms found"
+    
+    return True, "Contains indole moiety with terpenoid features"
