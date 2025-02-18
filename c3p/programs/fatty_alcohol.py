@@ -5,7 +5,7 @@ Classifies: CHEBI:24026 fatty alcohol
 Classifies: CHEBI:30843 fatty alcohol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Descriptors
 
 def is_fatty_alcohol(smiles: str):
     """
@@ -40,55 +40,27 @@ def is_fatty_alcohol(smiles: str):
     if aromatic_atoms > 0:
         return False, "Molecule contains aromatic rings, not aliphatic"
 
-    # Check if the molecule is primarily a hydrocarbon chain with an alcohol group
-    # This is a heuristic and may need refinement
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    # Count the number of oxygen atoms (should be at least one, but can be more)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count != 1:
-        return False, f"Expected exactly 1 oxygen (alcohol group), found {o_count}"
+    if o_count < 1:
+        return False, "No oxygen atoms found"
 
     # Check for unsaturation (double or triple bonds)
-    unsaturation = rdMolDescriptors.CalcNumUnsaturatedBonds(mol)
+    unsaturation = sum(1 for bond in mol.GetBonds() if bond.GetBondType() in [Chem.BondType.DOUBLE, Chem.BondType.TRIPLE])
     if unsaturation > 0:
         # Allow unsaturated fatty alcohols
         pass
 
-    # Check for branching
-    # This is optional since fatty alcohols can be branched or unbranched
+    # Check for other functional groups that are not typical in fatty alcohols
+    # For example, carboxylic acids, esters, etc.
+    other_functional_groups = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")  # Carboxylic acid
+    if mol.HasSubstructMatch(other_functional_groups):
+        return False, "Molecule contains carboxylic acid groups, not a fatty alcohol"
 
-    return True, f"Aliphatic alcohol with {c_count} carbon atoms and 1 alcohol group"
+    # Check if the molecule is primarily a hydrocarbon chain with alcohol groups
+    # This is a heuristic and may need refinement
+    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    if h_count < 2 * c_count - 2:  # Rough check for hydrocarbon-like structure
+        return False, "Molecule does not have a hydrocarbon-like structure"
 
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:30843',
-                          'name': 'fatty alcohol',
-                          'definition': 'An aliphatic alcohol consisting of a '
-                                        'chain of 3 to greater than 27 carbon '
-                                        'atoms. Fatty alcohols may be saturated '
-                                        'or unsaturated and may be branched or '
-                                        'unbranched.',
-                          'parents': ['CHEBI:30843', 'CHEBI:25805']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    return True, f"Aliphatic alcohol with {c_count} carbon atoms and {o_count} alcohol groups"
