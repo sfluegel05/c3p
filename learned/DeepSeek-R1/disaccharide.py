@@ -1,204 +1,64 @@
 """
 Classifies: CHEBI:36233 disaccharide
 """
- - beta-D-Glcp-(1->4)-alpha-D-Glcp: SMILES: O([C@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)[C@H]2O[C@H]([C@H](O)[C@H](O)[C@H]2O)CO
- - beta-D-Glcp-(1->3)-alpha-D-Glcp: SMILES: O([C@H]1O[C@H]([C@@H](O)[C@H](O)[C@H]1O)CO)[C@H]2O[C@H]([C@H](O)[C@H](O)[C@H]2O)CO
- - beta-D-Glcp-(1->6)-alpha-D-Glcp: SMILES: O1[C@@H](OC[C@H]2O[C@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1CO
- - alpha-D-Glcp-(1->2)-alpha-D-Glcp: SMILES: O([C@H]1O[C@H]([C@@H](O)[C@H](O)[C@H]1O)CO)[C@H]2O[C@H]([C@H](O)[C@H](O)[C@H]2O)CO
- - alpha-D-Glcp-(1->4)-alpha-D-Glcp: SMILES: O([C@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)[C@H]2O[C@H]([C@H](O)[C@H](O)[C@H]2O)CO
- - alpha-D-Glcp-(1->3)-alpha-D-Glcp: SMILES: O([C@H]1O[C@H]([C@@H](O)[C@H](O)[C@H]1O)CO)[C@H]2O[C@H]([C@H](O)[C@H](O)[C@H]2O)CO
- - alpha-D-Glcp-(1->6)-alpha-D-Glcp: SMILES: O1[C@H](OC[C@H]2O[C@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1CO
- - alpha-D-Glcp-(1->1)-alpha-D-Glcp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Glcp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Glcp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Glcp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Galp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Galp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Galp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Galp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Manp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Manp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Manp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Manp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Xylp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Xylp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Xylp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Xylp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-L-Fucp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - alpha-D-Glcp-(1->1)-beta-L-Fucp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - beta-D-Glcp-(1->1)-alpha-L-Fucp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - beta-D-Glcp-(1->1)-beta-L-Fucp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - alpha-D-Glcp-(1->1)-alpha-D-Rhap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - alpha-D-Glcp-(1->1)-beta-D-Rhap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - beta-D-Glcp-(1->1)-alpha-D-Rhap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - beta-D-Glcp-(1->1)-beta-D-Rhap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - alpha-D-Glcp-(1->1)-alpha-D-Fucp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - alpha-D-Glcp-(1->1)-beta-D-Fucp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - beta-D-Glcp-(1->1)-alpha-D-Fucp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - beta-D-Glcp-(1->1)-beta-D-Fucp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - alpha-D-Glcp-(1->1)-alpha-D-Araf: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - alpha-D-Glcp-(1->1)-beta-D-Araf: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - beta-D-Glcp-(1->1)-alpha-D-Araf: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - beta-D-Glcp-(1->1)-beta-D-Araf: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - alpha-D-Glcp-(1->1)-alpha-D-Ribf: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - alpha-D-Glcp-(1->1)-beta-D-Ribf: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - beta-D-Glcp-(1->1)-alpha-D-Ribf: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C)O
- - beta-D-Glcp-(1->1)-beta-D-Ribf: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C)O
- - alpha-D-Glcp-(1->1)-alpha-D-Kdop: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)O
- - alpha-D-Glcp-(1->1)-beta-D-Kdop: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)O
- - beta-D-Glcp-(1->1)-alpha-D-Kdop: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)O
- - beta-D-Glcp-(1->1)-beta-D-Kdop: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)O
- - alpha-D-Glcp-(1->1)-alpha-D-Neup5Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-beta-D-Neup5Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-alpha-D-Neup5Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-beta-D-Neup5Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-alpha-D-Kdn: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)O
- - alpha-D-Glcp-(1->1)-beta-D-Kdn: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)O
- - beta-D-Glcp-(1->1)-alpha-D-Kdn: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)O
- - beta-D-Glcp-(1->1)-beta-D-Kdn: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)O
- - alpha-D-Glcp-(1->1)-alpha-D-Leg5Ac7Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-beta-D-Leg5Ac7Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-alpha-D-Leg5Ac7Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-beta-D-Leg5Ac7Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-alpha-D-Pse5Ac7Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-beta-D-Pse5Ac7Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-alpha-D-Pse5Ac7Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-beta-D-Pse5Ac7Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-alpha-D-Bac2Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-beta-D-Bac2Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-alpha-D-Bac2Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-beta-D-Bac2Ac: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-alpha-D-4eLeg: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-beta-D-4eLeg: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-alpha-D-4eLeg: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-beta-D-4eLeg: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-alpha-D-Acetamido: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-beta-D-Acetamido: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-alpha-D-Acetamido: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1C(O)=O)NC(C)=O
- - beta-D-Glcp-(1->1)-beta-D-Acetamido: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1C(O)=O)NC(C)=O
- - alpha-D-Glcp-(1->1)-alpha-D-Allp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Allp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Allp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Allp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Altp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Altp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Altp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Altp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Gulp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Gulp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Gulp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Gulp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Idop: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Idop: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Idop: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Idop: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Talp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Talp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Talp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Talp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Psp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Psp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Psp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Psp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Hexp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Hexp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Hexp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Hexp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Pentp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Pentp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Pentp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Pentp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Heptp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Heptp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Heptp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Heptp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Octp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Octp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Octp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Octp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Nonp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Nonp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Nonp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Nonp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Decp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Decp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Decp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Decp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Undecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Undecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Undecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Undecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Dodecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Dodecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Dodecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Dodecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Tridecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Tridecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Tridecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Tridecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Tetradecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Tetradecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Tetradecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Tetradecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Pentadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Pentadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Pentadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Pentadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Hexadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Hexadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Hexadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Hexadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Heptadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Heptadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Heptadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Heptadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Octadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Octadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Octadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Octadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Nonadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Nonadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Nonadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Nonadecp: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Eicosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Eicosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Eicosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Eicosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Heneicosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Heneicosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Heneicosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Heneicosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Docosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Docosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Docosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Docosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Tricosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Tricosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Tricosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Tricosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Tetracosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Tetracosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Tetracosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Tetracosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Pentacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Pentacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Pentacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Pentacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Hexacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Hexacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Hexacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Hexacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Heptacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Heptacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Heptacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Heptacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Octacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Octacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Octacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Octacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Nonacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Nonacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - beta-D-Glcp-(1->1)-alpha-D-Nonacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - beta-D-Glcp-(1->1)-beta-D-Nonacosap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
- - alpha-D-Glcp-(1->1)-alpha-D-Triacontap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O
- - alpha-D-Glcp-(1->1)-beta-D-Triacontap: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]1CO)O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]1CO)O
+"""
+Classifies: CHEBI:15953 disaccharide
+"""
+from rdkit import Chem
+
+def is_disaccharide(smiles: str):
+    """
+    Determines if a molecule is a disaccharide based on its SMILES string.
+    A disaccharide consists of two monosaccharide units joined by a glycosidic bond.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a disaccharide, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if not mol:
+        return False, "Invalid SMILES"
+    
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    
+    # Must have exactly two rings (monosaccharide units)
+    if num_rings != 2:
+        return False, f"Expected 2 rings, found {num_rings}"
+    
+    # Find bridging oxygen (not in any ring) connecting two different rings
+    bridging_oxygens = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:
+            # Check if oxygen is not in any ring
+            in_ring = False
+            for ring in ring_info.AtomRings():
+                if atom.GetIdx() in ring:
+                    in_ring = True
+                    break
+            if in_ring:
+                continue
+            
+            # Check oxygen has exactly two carbon neighbors
+            neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+            if len(neighbors) != 2:
+                continue
+            
+            # Check neighbors are in different rings
+            neighbor_rings = []
+            for n in neighbors:
+                for ring in ring_info.AtomRings():
+                    if n.GetIdx() in ring:
+                        neighbor_rings.append(ring)
+                        break  # each atom can be in only one main ring
+            
+            if len(neighbor_rings) == 2 and neighbor_rings[0] != neighbor_rings[1]:
+                bridging_oxygens += 1
+    
+    if bridging_oxygens == 1:
+        return True, "Two monosaccharide rings connected by a glycosidic bond"
+    else:
+        return False, f"Found {bridging_oxygens} bridging oxygens, need exactly 1"
