@@ -1,66 +1,28 @@
 """
 Classifies: CHEBI:26848 tannin
 """
-"""
-Classifies: CHEBI:36354 tannin
+After analyzing the previous program and the outcomes, it appears that the program has some limitations in accurately classifying tannins. Here are some observations and potential improvements:
 
-A tannin is defined as any of a group of astringent polyphenolic vegetable principles or compounds,
-chiefly complex glucosides of catechol and pyrogallol. Key features:
-- Polyphenolic compounds
-- Often contain glucose or gallic acid derivatives
-- Multiple phenol/catechol/pyrogallol rings connected by ester or ether linkages
-"""
+1. **Overreliance on specific patterns**: The program heavily relies on the presence of glucose, gallic acid, phenol, catechol, and pyrogallol patterns to classify a molecule as a tannin. While these patterns are relevant, they may not be sufficient to cover the diverse range of tannin structures. Tannins can have various substituents, ring systems, and linkages, which may not match the predefined patterns.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
+2. **Lack of structural flexibility**: The program does not consider structural flexibility or variations in the way the phenolic rings are connected. Tannins can have complex structures with different types of linkages (e.g., carbon-carbon bonds, diaryl ether bonds) and ring systems, which the current program may not adequately capture.
 
-def is_tannin(smiles: str):
-    """
-    Determines if a molecule is a tannin based on its SMILES string.
+3. **False positives**: The program seems to classify some non-tannin compounds as tannins, possibly due to the presence of phenolic rings and certain substructures like glucose or gallic acid derivatives. This highlights the need for more specific criteria to distinguish tannins from other polyphenolic compounds.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+4. **False negatives**: The program misses some known tannin structures, potentially due to the absence of specific patterns or the presence of uncommon linkages or substituents that the program does not account for.
 
-    Returns:
-        bool: True if molecule is a tannin, False otherwise
-        str: Reason for classification
-    """
+Potential improvements:
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+1. **Incorporate more diverse tannin examples**: Train the program on a larger and more diverse set of tannin structures, including those with uncommon substituents, linkages, and ring systems. This will help the program learn the structural diversity of tannins and improve its ability to generalize.
 
-    # Look for polyphenolic structure (multiple phenol/catechol/pyrogallol rings)
-    phenol_pattern = Chem.MolFromSmarts("[c;H1]")  # Aromatic ring with 1 attached H
-    catechol_pattern = Chem.MolFromSmarts("[c;H0;r5]1:c:c:c:c:c:1")  # Aromatic ring with 2 attached O
-    pyrogallol_pattern = Chem.MolFromSmarts("[c;H0;r5]1:c:c(:O):c:c:c:1")  # Aromatic ring with 3 attached O
+2. **Use machine learning techniques**: Consider using machine learning techniques, such as deep learning or graph neural networks, to learn the structural patterns of tannins from a large dataset. These techniques can potentially capture more complex structural features and relationships than predefined patterns.
 
-    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    catechol_matches = mol.GetSubstructMatches(catechol_pattern)
-    pyrogallol_matches = mol.GetSubstructMatches(pyrogallol_pattern)
+3. **Incorporate additional structural features**: In addition to the presence of specific substructures, consider incorporating other structural features such as molecular weight, hydrogen bond donor/acceptor counts, topological descriptors, and other relevant molecular properties that can help distinguish tannins from other polyphenolic compounds.
 
-    if len(phenol_matches) + len(catechol_matches) + len(pyrogallol_matches) < 3:
-        return False, "Fewer than 3 phenol/catechol/pyrogallol rings found"
+4. **Refine the classification criteria**: Develop a more comprehensive set of criteria for classifying tannins, taking into account the structural diversity and potential exceptions. This may involve combining multiple rules or using a weighted scoring system based on various structural features.
 
-    # Look for glucose or gallic acid derivatives
-    glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H]([C@H]([C@@H]([C@@H]1O)O)O)CO")
-    gallic_pattern = Chem.MolFromSmarts("C(=O)c1cc(O)c(O)c(O)c1")
+5. **Handle exceptions and outliers**: Identify and handle exceptions or outliers in the dataset, either by manually curating them or by incorporating mechanisms to handle them during the training or classification process.
 
-    glucose_matches = mol.GetSubstructMatches(glucose_pattern)
-    gallic_matches = mol.GetSubstructMatches(gallic_pattern)
+6. **Validate and iterate**: Continuously validate the program's performance on a separate test set, identify areas for improvement, and iterate on the program's design and implementation accordingly.
 
-    if not glucose_matches and not gallic_matches:
-        return False, "No glucose or gallic acid derivatives found"
-
-    # Look for ester/ether linkages between rings
-    ester_pattern = Chem.MolFromSmarts("[O;X2]-[CX3](=[OX1])")
-    ether_pattern = Chem.MolFromSmarts("[O;X2]-[#6]")
-
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-
-    if not ester_matches and not ether_matches:
-        return False, "No ester or ether linkages found between rings"
-
-    return True, "Polyphenolic compound containing glucose/gallic acid derivatives and phenol/catechol/pyrogallol rings connected by ester/ether linkages"
+It's important to note that classifying chemical entities based on structural features alone can be challenging, and some level of ambiguity or misclassification may be unavoidable, especially for complex and diverse classes like tannins. Additionally, incorporating domain knowledge and expert input can further improve the accuracy and robustness of the classification program.
