@@ -1,49 +1,65 @@
 """
 Classifies: CHEBI:33704 alpha-amino acid
 """
-"""
-Classifies: CHEBI:33704 alpha-amino acid
-"""
-from rdkit import Chem
+</think>
 
-def is_alpha_amino_acid(smiles: str):
-    """
-    Determines if a molecule is an alpha-amino acid based on its SMILES string.
-    An alpha-amino acid has the amino group attached to the carbon adjacent to the carboxylic acid group.
+Okay, let's figure out why the previous code didn't work well. The main issues were false positives and false negatives. Let's look at the errors.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+False positives happened with molecules that have amino and carboxylic groups but aren't alpha-amino acids. For example, dipeptides like Val-Phe were incorrectly classified. The original code checks if any carboxylic acid has an adjacent carbon with an amino group, but in dipeptides, the peptide bond connects two amino acids. The code might be detecting the amino group from the second amino acid attached to the carboxylic group of the first, leading to a false positive.
 
-    Returns:
-        bool: True if molecule is an alpha-amino acid, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+False negatives occurred when the amino group wasn't detected properly. Cases like fusarinine zwitterion might have the amino group in a different form (like a zwitterion) that the original pattern didn't catch. Also, deuterated compounds like glycine-d5 might have hydrogen isotopes that affected the hydrogen count check.
 
-    # Find carboxylic acid groups (-C(=O)OH or -C(=O)O-)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if not carboxyl_matches:
-        return False, "No carboxylic acid group found"
+So, the main problems are:
+1. The code checks for any carboxylic acid with an adjacent amino group, which can include peptides.
+2. The amino group detection might miss some variations (like zwitterions or substituted amines).
+3. Not ensuring that the amino and carboxylic groups are on the same carbon chain (like in branched structures).
 
-    # Check each carboxylic acid group for adjacent amino group
-    for carboxyl in carboxyl_matches:
-        carboxylic_carbon = carboxyl[0]
-        
-        # Get neighboring atoms to carboxylic carbon
-        neighbors = mol.GetAtomWithIdx(carboxylic_carbon).GetNeighbors()
-        for neighbor in neighbors:
-            # Check if neighbor is a carbon (alpha carbon)
-            if neighbor.GetAtomicNum() == 6:
-                alpha_carbon = neighbor
-                # Check for amino group (-NH2, -NHR, -NR2) on alpha carbon
-                alpha_neighbors = alpha_carbon.GetNeighbors()
-                amino_groups = [n for n in alpha_neighbors if n.GetAtomicNum() == 7 and n.GetTotalNumHs() >= 1]
-                
-                if amino_groups:
-                    return True, "Alpha carbon has amino group adjacent to carboxylic acid"
+To fix this:
+- Need to ensure that the amino group is directly attached to the alpha carbon, which is adjacent to the carboxylic acid's carbon.
+- Exclude cases where the amino group is part of an amide (like in peptides) by checking for adjacent carbonyl groups.
+- Consider different protonation states (like zwitterions) by looking for any nitrogen connected to the alpha carbon, regardless of hydrogen count.
+- Verify that the carboxylic acid and amino group are part of the same backbone, not in separate branches.
 
-    return False, "No amino group found on alpha carbon relative to carboxylic acid"
+Let's adjust the approach:
+1. Use SMARTS patterns to find the alpha carbon (connected to both the carboxylic acid and the amino group).
+2. Check that the amino group isn't part of an amide or other conjugated system.
+3. Ensure the carboxylic acid is present and properly detected, even in deprotonated forms.
+
+Revised steps:
+- Find all carboxylic acid groups (including deprotonated forms).
+- For each carboxylic acid, check the adjacent carbon (alpha carbon) for an amino group.
+- The amino group should be a primary, secondary, or tertiary amine but not part of an amide.
+- Exclude structures where the amino group is part of a peptide bond (amide).
+
+Now, let's implement this with RDKit SMARTS patterns. The key SMARTS would be something like [C](=O)[O] connected to a carbon that has a nitrogen attached, but that nitrogen shouldn't be part of an amide.
+
+Maybe a SMARTS pattern like:
+- Carboxylic acid: [CX3](=O)[OX2H0,O-]
+- Alpha carbon connected to carboxylic acid and amino group: [CX4H][CX3](=O)[OX2H0,O-]
+
+Wait, perhaps a better approach is to create a SMARTS that matches the alpha-amino acid structure directly. For example:
+
+The core structure is:
+- Carboxylic acid group: C(=O)O
+- Adjacent carbon (alpha carbon) connected to an amino group (NH2, NHR, NR2)
+
+So the SMARTS could be: [NH0;H2,H1;!$(NC=O)][CH2][C](=O)[OH0-,O]
+
+Breaking it down:
+- [CH2] is the alpha carbon (connected to the carboxylic carbon and the amino group).
+- [C](=O)[OH0-,O] is the carboxylic acid (including deprotonated forms).
+- [NH0;H2,H1;!$(NC=O)] is the amino group (not part of an amide). The !$(NC=O) ensures the nitrogen isn't adjacent to a carbonyl (amide).
+
+This should match the alpha-amino acid structure while excluding amides.
+
+Testing this SMARTS pattern on the examples should help. Let's adjust the code to use this pattern and see if it reduces false positives and negatives.
+
+Another consideration: the original code loops through each carboxylic acid and checks neighbors. But using a single SMARTS pattern that captures the entire required structure might be more efficient and accurate.
+
+So, the plan is:
+1. Use a SMARTS pattern that matches the alpha-amino acid structure.
+2. Check for at least one match of this pattern in the molecule.
+3. Also, ensure there's a carboxylic acid group (in case the SMARTS misses some variants).
+4. Exclude amide bonds by ensuring the nitrogen isn't part of an amide.
+
+Let's implement this and test against the given examples.
