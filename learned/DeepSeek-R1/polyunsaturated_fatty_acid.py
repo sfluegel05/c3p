@@ -34,30 +34,23 @@ def is_polyunsaturated_fatty_acid(smiles: str):
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic rings"
 
-    # Check for disqualifying functional groups (ester, amide, phosphate)
-    ester_pattern = Chem.MolFromSmarts('[OD1]-C(=O)-C')
-    amide_pattern = Chem.MolFromSmarts('[ND1]-C(=O)')
-    phosphate_pattern = Chem.MolFromSmarts('[P](=O)(O)(O)')
-    
+    # Check for ester groups (R-O-C(=O)-R') excluding the carboxylic acid
+    ester_pattern = Chem.MolFromSmarts('[OX2]-C(=O)-[OX2]')
     if mol.HasSubstructMatch(ester_pattern):
         return False, "Contains ester group"
-    if mol.HasSubstructMatch(amide_pattern):
-        return False, "Contains amide group"
-    if mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Contains phosphate group"
 
-    # Count non-aromatic carbon-carbon double bonds
+    # Count all aliphatic carbon-carbon double bonds
     double_bond_count = 0
     for bond in mol.GetBonds():
         if bond.GetBondType() == Chem.BondType.DOUBLE:
-            begin = bond.GetBeginAtom()
-            end = bond.GetEndAtom()
-            if begin.GetAtomicNum() == 6 and end.GetAtomicNum() == 6:
-                # Exclude conjugated systems in non-aliphatic parts
-                if not bond.IsInRing() or bond.GetIsConjugated():
-                    double_bond_count += 1
+            # Check if both atoms are carbons and not in aromatic system
+            if (bond.GetBeginAtom().GetAtomicNum() == 6 and 
+                bond.GetEndAtom().GetAtomicNum() == 6 and
+                not bond.IsInRing() and
+                not bond.GetIsAromatic()):
+                double_bond_count += 1
 
     if double_bond_count > 1:
-        return True, f"Contains {double_bond_count} carbon-carbon double bonds"
+        return True, f"Contains {double_bond_count} aliphatic carbon-carbon double bonds"
     else:
-        return False, f"Only {double_bond_count} carbon-carbon double bonds found"
+        return False, f"Only {double_bond_count} aliphatic carbon-carbon double bonds found"
