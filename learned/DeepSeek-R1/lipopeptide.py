@@ -30,81 +30,20 @@ def is_lipopeptide(smiles: str):
     if len(amide_matches) < 2:
         return False, f"Found {len(amide_matches)} amide groups, need at least 2 for a peptide"
 
-    # Precompute ring information to exclude cyclic chains
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
+    # Check for lipid component: long chain (>=8 carbons) attached via amide/ester
+    # Amide-linked lipid pattern: amide connected to at least 8 carbons
+    amide_lipid_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])-!@*[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]")
+    # Ester-linked lipid pattern: ester connected to at least 8 carbons
+    ester_lipid_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])-!@*[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]")
 
-    # Function to calculate maximum linear aliphatic carbon chain length from a given atom
-    def max_carbon_chain(atom, visited=None):
-        if visited is None:
-            visited = set()
-        # Skip if atom is in a ring or already visited
-        if atom.GetAtomicNum() != 6 or atom.GetIdx() in visited:
-            return 0
-        for ring in rings:
-            if atom.GetIdx() in ring:
-                return 0
-        visited.add(atom.GetIdx())
-        max_length = 0
-        for neighbor in atom.GetNeighbors():
-            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
-            if bond.GetBondType() == Chem.BondType.SINGLE and not bond.IsInRing():
-                length = 1 + max_carbon_chain(neighbor, visited)
-                if length > max_length:
-                    max_length = length
-        visited.remove(atom.GetIdx())
-        return max_length
+    has_amide_lipid = mol.HasSubstructMatch(amide_lipid_pattern)
+    has_ester_lipid = mol.HasSubstructMatch(ester_lipid_pattern)
 
-    # Check amide groups for lipid chains (minimum 6 carbons)
-    lipid_found = False
-    for amide_match in amide_matches:
-        n_idx = amide_match[0]
-        n_atom = mol.GetAtomWithIdx(n_idx)
-        # Check substituents on the amide nitrogen (excluding the carbonyl carbon)
-        for neighbor in n_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:
-                chain_length = max_carbon_chain(neighbor)
-                if chain_length >= 5:  # 5 carbons from neighbor = total 6
-                    lipid_found = True
-                    break
-        if lipid_found:
-            break
+    if not (has_amide_lipid or has_ester_lipid):
+        return False, "No lipid chain (>=8 carbons) attached via amide or ester"
 
-    # Check ester groups for lipid chains
-    if not lipid_found:
-        ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-        ester_matches = mol.GetSubstructMatches(ester_pattern)
-        for ester_match in ester_matches:
-            o_idx = ester_match[0]
-            o_atom = mol.GetAtomWithIdx(o_idx)
-            # Check substituents on the ester oxygen (excluding the carbonyl carbon)
-            for neighbor in o_atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:
-                    chain_length = max_carbon_chain(neighbor)
-                    if chain_length >= 5:
-                        lipid_found = True
-                        break
-            if lipid_found:
-                break
+    # Optional: Verify lipid chain length using molecular weight or carbon count
+    # Count total carbons in lipid chain (approximate)
+    # This part is complex; relying on substructure match for simplicity
 
-    # Check ether groups for lipid chains
-    if not lipid_found:
-        ether_pattern = Chem.MolFromSmarts("[OX2]")
-        ether_matches = mol.GetSubstructMatches(ether_pattern)
-        for ether_match in ether_matches:
-            o_idx = ether_match[0]
-            o_atom = mol.GetAtomWithIdx(o_idx)
-            # Check both sides of the ether oxygen
-            for neighbor in o_atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:
-                    chain_length = max_carbon_chain(neighbor)
-                    if chain_length >= 5:
-                        lipid_found = True
-                        break
-            if lipid_found:
-                break
-
-    if not lipid_found:
-        return False, "No lipid chain (>=6 carbons) attached via amide, ester, or ether"
-
-    return True, "Contains peptide with lipid chain attached via amide/ester/ether"
+    return True, "Contains peptide with lipid chain attached via amide/ester"
