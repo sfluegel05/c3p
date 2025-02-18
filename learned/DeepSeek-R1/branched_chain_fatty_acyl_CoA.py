@@ -23,8 +23,8 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define thioester pattern (S-C(=O)-C)
-    thioester_pattern = Chem.MolFromSmarts("[S]-C(=O)-[CX4]")
+    # Define corrected thioester pattern (S-C(=O)-C without valence restriction)
+    thioester_pattern = Chem.MolFromSmarts("[S]-C(=O)-C")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester group found (not an acyl-CoA)"
@@ -32,10 +32,12 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     # Check each thioester match for branched R group
     for match in thioester_matches:
         if len(match) != 3:
-            continue  # Skip invalid matches
+            continue
+        
+        # Get indices of S, C=O, and first R-group carbon
         s_idx, co_idx, r_start_idx = match
         
-        # Traverse R group starting from r_start_idx, excluding thioester atoms
+        # Traverse R-group (fatty acid chain) starting from r_start_idx
         visited = {s_idx, co_idx}
         stack = [r_start_idx]
         r_group_atoms = set()
@@ -46,16 +48,16 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
                 continue
             visited.add(atom_idx)
             r_group_atoms.add(atom_idx)
+            
             atom = mol.GetAtomWithIdx(atom_idx)
             for neighbor in atom.GetNeighbors():
-                n_idx = neighbor.GetIdx()
-                if n_idx not in visited:
-                    stack.append(n_idx)
+                if neighbor.GetIdx() not in visited:
+                    stack.append(neighbor.GetIdx())
         
-        # Check for branching in R group (any carbon with degree >=3)
+        # Check for branching in R-group (any carbon with degree >=3)
         for atom_idx in r_group_atoms:
             atom = mol.GetAtomWithIdx(atom_idx)
             if atom.GetAtomicNum() == 6 and atom.GetDegree() >= 3:
-                return True, "Branched chain found in fatty acid group"
+                return True, "Branched chain detected in fatty acid group"
     
     return False, "No branching detected in fatty acid chain"
