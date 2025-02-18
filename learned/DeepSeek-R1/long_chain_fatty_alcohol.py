@@ -5,45 +5,58 @@ Classifies: CHEBI:17135 long-chain fatty alcohol
 Classifies: long-chain fatty alcohol (C13-C22)
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
-    Determines if a molecule is a long-chain fatty alcohol (C13-C22 chain) based on its SMILES string.
-    A fatty alcohol has a hydroxyl group attached to an aliphatic carbon chain of 13-22 carbons.
+    Determines if a molecule is a long-chain fatty alcohol (C13-C22 chain).
+    Requirements:
+    1. Contains at least one hydroxyl group attached to an aliphatic carbon
+    2. Hydroxyl-bearing carbon is part of a chain of 13-22 carbons connected by single bonds
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Must have at least one hydroxyl group
-    if not any(atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1 for atom in mol.GetAtoms()):
-        return False, "No hydroxyl group"
-
-    # Create carbon-only structure with single bonds for chain analysis
-    emol = Chem.RWMol()
-    carbon_map = {}
+    # Find all hydroxyl-bearing aliphatic carbons
+    oh_carbons = []
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon only
-            new_atom = Chem.Atom(6)
-            idx = emol.AddAtom(new_atom)
-            carbon_map[atom.GetIdx()] = idx
+        if atom.GetAtomicNum() == 8:  # Oxygen
+            if atom.GetTotalNumHs() == 1 and atom.GetDegree() == 1:  # -OH group
+                neighbor = atom.GetNeighbors()[0]
+                if neighbor.GetAtomicNum() == 6 and not neighbor.GetIsAromatic():
+                    oh_carbons.append(neighbor)
 
-    # Add single bonds between carbons
-    for bond in mol.GetBonds():
-        if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
-            i = carbon_map[bond.GetBeginAtom().GetIdx()]
-            j = carbon_map[bond.GetEndAtom().GetIdx()]
-            emol.AddBond(i, j, Chem.BondType.SINGLE)
+    if not oh_carbons:
+        return False, "No hydroxyl group on aliphatic carbon"
 
-    # Calculate longest chain in carbon skeleton
-    mol_carbons = emol.GetMol()
-    if mol_carbons.GetNumAtoms() == 0:
-        return False, "No carbon chain"
+    # Calculate maximum chain length for each OH-bearing carbon
+    def get_max_chain_length(start_atom):
+        visited = set()
+        max_length = 1
+        stack = [(start_atom, 1)]
+        
+        while stack:
+            atom, length = stack.pop()
+            if atom.GetIdx() in visited:
+                continue
+            visited.add(atom.GetIdx())
+            
+            if length > max_length:
+                max_length = length
+                
+            # Explore all adjacent aliphatic carbons connected by single bonds
+            for neighbor in atom.GetNeighbors():
+                if (neighbor.GetAtomicNum() == 6 and 
+                    not neighbor.GetIsAromatic() and 
+                    atom.GetBondTo(neighbor).GetBondType() == Chem.BondType.SINGLE):
+                    stack.append((neighbor, length + 1))
+        
+        return max_length
+
+    # Check chain lengths for all hydroxyl-bearing carbons
+    for carbon in oh_carbons:
+        chain_length = get_max_chain_length(carbon)
+        if 13 <= chain_length <= 22:
+            return True, f"Hydroxyl on C{chain_length} aliphatic chain"
     
-    longest_chain = rdMolDescriptors.CalcLongestChain(mol_carbons)
-
-    # Verify chain length requirement
-    if 13 <= longest_chain <= 22:
-        return True, f"Contains C{longest_chain} chain with hydroxyl group"
-    return False, f"Chain length {longest_chain} not in 13-22 range"
+    return False, "No hydroxyl on C13-C22 chain"
