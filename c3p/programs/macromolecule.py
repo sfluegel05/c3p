@@ -7,7 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_macromolecule(smiles: str):
     """
     Determines if a molecule is a macromolecule based on its SMILES string.
-    Considers molecular weight, repeating structural motifs, and complexity.
+    Considers molecular weight, presence of typical recurring monomer linkages, 
+    and other structural motifs to determine macromolecule classification.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,29 +22,36 @@ def is_macromolecule(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, f"Molecular weight of {mol_wt:.2f} Da is below typical macromolecule threshold."
+    min_macromolecule_weight = 500  # Consider molecular weight threshold
+    if mol_wt < min_macromolecule_weight:
+        return False, f"Molecular weight {mol_wt:.2f} Da is less than the minimum macromolecule threshold {min_macromolecule_weight} Da"
 
-    # Identify repeating structural motifs
-    # Check for peptide bonds, glycosidic linkages, nuclear acid bases
-    peptide_bond = Chem.MolFromSmarts('C(=O)N')
-    glycosidic_bond = Chem.MolFromSmarts('O[C@@H]1C(O)C1')
-    nucleic_acid_base = Chem.MolFromSmarts('C1=NC=CN1')
+    # Detect repeating linkages typical in macromolecules
+    try:
+        # Improved patterns for identifying macromolecular linkages
+        peptide_bond_pattern = Chem.MolFromSmarts('C(=O)N[C@H]')
+        glycosidic_bond_pattern = Chem.MolFromSmarts('O[C@@H]1C(O)C([C@@H]([C@H]1)O)O')
+        nucleic_acid_pattern = Chem.MolFromSmarts('C1=NC=CC(=O)N1')
+        
+        # Expanded search for recurring patterns
+        peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+        glycosidic_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
+        nucleic_matches = mol.GetSubstructMatches(nucleic_acid_pattern)
 
-    # Match counts
-    peptide_count = len(mol.GetSubstructMatches(peptide_bond))
-    glycosidic_count = len(mol.GetSubstructMatches(glycosidic_bond))
-    nucleic_acid_count = len(mol.GetSubstructMatches(nucleic_acid_base))
-
-    # Complex and multi-pattern structures correspond to macromolecules
-    if peptide_count >= 5 or glycosidic_count >= 3 or nucleic_acid_count >= 2:
-        return True, "Recurring polymeric structures suggest macromolecular nature."
+        # More vigorous pattern detection for typical macromolecules
+        if len(peptide_matches) > 5 or len(glycosidic_matches) > 3 or len(nucleic_matches) > 2:
+            if len(peptide_matches) + len(glycosidic_matches) + len(nucleic_matches) > 10:
+                return True, "Considered a macromolecule based on recurrent macromolecular linkages."
+        
+    except Exception as e:
+        return False, f"Failed to match structures due to error: {str(e)}"
     
-    # Additional complexity checks
+    # Check for additional macromolecular characteristics
     if mol.GetNumAtoms() > 100:
-        return True, "Large molecule, suggesting macromolecular structure."
+        # Heuristic: Large structures often correlate with macromolecules
+        return True, "Large molecular structure identified as potential macromolecule."
 
-    return False, "Could not identify distinct macromolecular features."
+    return False, "No sufficient recurring motifs typical of macromolecules detected."
