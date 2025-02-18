@@ -1,180 +1,51 @@
 """
 Classifies: CHEBI:35681 secondary alcohol
 """
- - 3beta-hydroxy-5alpha-pregnan-20-one: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](C)CC[C@]12C
- - (3R,5R,8R,9S,10S,13R,14S,17R)-17-[(1R,4S)-4-hydroxy-2,3,3-trimethylcyclohexyl]-10,13-dimethyl-2,3,4,5,6,7,8,9,11,12,14,15,16,17-tetradecahydro-1H-cyclopenta[a]phenanthrene-3,5,8-triol: SMILES: [C@H]1(CC[C@@]2([C@H]1[C@@H](O)C[C@H]3[C@H]2C[C@H](O)[C@]4([C@H]3C[C@H](O)CC4)C)C)[C@H](C1CC[C@](C)(O)CC1(C)C)C
- - 3beta,7alpha-dihydroxy-5beta-cholan-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 2,3-dihydroxy-9Z-octadecenoic acid: SMILES: OC(CCCCCCCC=CCCCCCCC(O)=O)CO
- - 3beta-hydroxy-5alpha-androstan-17-one: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](C)CC[C@]12C=O
- - (3beta,5alpha,6beta,25R)-spirostane-3,6-diol: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.C[C@H]1CC[C@H]2[C@H](O1)CC[C@]1([C@H]2CC[C@H]2[C@@H]1C[C@H](O)CC2)C
- - (3beta,5alpha,6alpha,25R)-spirostane-3,6-diol: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.C[C@H]1CC[C@H]2[C@H](O1)CC[C@]1([C@H]2CC[C@H]2[C@@H]1C[C@H](O)CC2)C
- - 3beta-hydroxy-5alpha-pregnane-11,20-dione: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](C)CC[C@]12C(=O)C(=O)C
- - 3beta,7alpha-dihydroxy-5beta-cholestan-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholestan-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-24-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholestan-24-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholestan-24-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-22-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-22-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-22-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-22-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-20-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-20-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-20-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-20-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-20-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-20-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-18-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-18-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-18-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-18-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-18-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-18-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-18-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-18-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-18-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-18-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-16-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-16-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-16-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-18-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-18-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-14-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-14-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-14-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-16-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-16-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-18-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-18-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-12-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-12-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-12-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-14-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-14-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-16-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-16-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-18-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-18-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-10-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-10-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-10-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-12-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-12-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-14-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-14-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-16-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-16-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-18-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-18-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-8-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-8-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-8-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-10-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-10-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-12-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-12-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-14-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-14-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-16-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-16-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-18-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-18-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-6-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-6-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-6-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-8-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-8-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-10-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-10-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-12-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-12-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-14-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-14-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-16-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-16-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-18-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-18-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-4-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-4-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-4-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-6-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-6-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-8-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-8-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-10-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-10-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-12-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-12-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-14-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-14-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-16-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-16-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-18-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-18-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-20-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-20-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-22-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-22-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-24-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-24-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-26-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-2-en-26-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-1-en-3-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-1-en-3-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-1-en-5-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-1-en-5-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-1-en-7-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-1-en-7-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydroxy-5beta-cholest-1-en-9-oic acid: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC(=O)O
- - 3beta,7alpha-dihydroxy-5beta-cholest-1-en-9-al: SMILES: [H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@]1([H])[C@@]2([H])CC[C@]2([H])[C@H](O)CC[C@]12C.CC(C)CC=O
- - 3beta,7alpha-dihydro
+"""
+Classifies: Secondary Alcohols (CHEBI:35678)
+"""
+from rdkit import Chem
+
+def is_secondary_alcohol(smiles: str) -> tuple[bool, str]:
+    """
+    Determines if a molecule is a secondary alcohol based on its SMILES string.
+    A secondary alcohol has a hydroxyl group (-OH) attached to a carbon atom
+    that is bonded to exactly two other carbon atoms.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if the molecule is a secondary alcohol, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+
+    # Find all hydroxyl oxygen atoms (OX2H matches -OH groups)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    
+    if not hydroxyl_matches:
+        return False, "No hydroxyl group found"
+
+    for match in hydroxyl_matches:
+        oxygen_idx = match[0]
+        oxygen = mol.GetAtomWithIdx(oxygen_idx)
+        
+        # Get the connected carbon (should be only one neighbor for -OH)
+        neighbors = oxygen.GetNeighbors()
+        if len(neighbors) != 1:
+            continue  # Not a typical hydroxyl group
+        
+        carbon = neighbors[0]
+        if carbon.GetAtomicNum() != 6:
+            continue  # Hydroxyl not attached to carbon
+        
+        # Count carbon neighbors (should have exactly two other carbons)
+        carbon_neighbors = [atom for atom in carbon.GetNeighbors() if atom.GetAtomicNum() == 6]
+        if len(carbon_neighbors) == 2:
+            return True, "Hydroxyl attached to secondary carbon"
+
+    return False, "No secondary alcohol group detected"
