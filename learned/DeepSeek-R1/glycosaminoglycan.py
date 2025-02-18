@@ -1,10 +1,17 @@
 """
 Classifies: CHEBI:18085 glycosaminoglycan
 """
-Wait, but the code has errors. For example, `Chem.PathToSubmol` is not a valid function. Also, checking if a ring has oxygen by using a substructure match on the entire molecule may not be accurate. Let's correct that.
+But this code might not handle the complexity of glycosaminoglycans properly. Let's think about how to better identify polysaccharide structures and aminomonosaccharides.
 
-Revised code:
+Possible issues:
+1. The code checks for multiple rings but doesn't confirm they are connected via glycosidic bonds.
+2. The amino group detection may not be specific enough (could pick up non-saccharide amines).
+3. The 20% threshold is arbitrary and may not align with the definition.
 
-Instead of creating a submol, iterate over each atom in the ring to check for oxygen.
+Improvements:
+- Use more specific patterns for saccharide units (e.g., six-membered rings with oxygen).
+- Check for glycosidic linkages (O connecting two rings).
+- Ensure amino groups are part of the saccharide rings.
+- Consider molecular weight to confirm it's a polysaccharide.
 
-Also, the amino_pattern might need adjustment. Let's try:
+Let's try a better approach:
