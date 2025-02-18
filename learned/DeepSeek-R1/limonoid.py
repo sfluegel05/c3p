@@ -1,146 +1,61 @@
 """
 Classifies: CHEBI:39434 limonoid
 """
- - 1-O-acetyltrichagmalin C: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 6-O-acetylnimbandiol: SMILES: COC(=O)[C@H]1[C@@H](O)C[C@]2(C)[C@H](OC(=O)C)[C@@]3(C)[C@H](C[C@H]4O[C@@]34[C@H](C)[C@H](O)[C@@]2(C)C1=O)c1ccoc1
- - 1-O-acetyltrichagmalin D: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1-O-acetyltrichagmalin E: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3,30-triacetyltrichagmalin F: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(=O)C(C)(C)O)C4=C1[C@H](OC(C)=O)[C@@]3(O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1-O-acetyltrichagmalin F: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(=O)C(C)(C)O)C4=C1[C@H](OC(C)=O)[C@@]3(O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,30-diacetyltrichagmalin C: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 3-O-acetyl-7-O-tigloylsalannin: SMILES: COC(=O)C[C@H]1[C@@]2(C)[C@H](O[C@@H]3C[C@@H](c4ccoc4)C(C)=C23)[C@@H]2OC[C@@]3(C)[C@H]2[C@]1(C)[C@H](C[C@H]3OC(C)=O)OC(=O)C(\C)=C\C
- - 1,3-di-O-acetyltrichagmalin C: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3-di-O-acetyltrichagmalin D: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3-di-O-acetyltrichagmalin E: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3-di-O-acetyltrichagmalin F: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(=O)C(C)(C)O)C4=C1[C@H](OC(C)=O)[C@@]3(O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 3-O-acetylsalannin: SMILES: COC(=O)C[C@H]1[C@@]2(C)[C@H](O[C@@H]3C[C@@H](c4ccoc4)C(C)=C23)[C@@H]2OC[C@@]3(C)[C@H]2[C@]1(C)[C@H](C[C@H]3OC(C)=O)OC(=O)C(\C)=C\C
- - 1,3,30-triacetyltrichagmalin C: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3,30-triacetyltrichagmalin D: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3,30-triacetyltrichagmalin E: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 3-O-acetyl-7-O-tigloylvilasinin: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 1,3,30-tri-O-acetyltrichagmalin C: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3,30-tri-O-acetyltrichagmalin D: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3,30-tri-O-acetyltrichagmalin E: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3,30-tri-O-acetyltrichagmalin F: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(=O)C(C)(C)O)C4=C1[C@H](OC(C)=O)[C@@]3(O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 3-O-acetyl-7-O-tigloylvilasinin lactone: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 1,3,30-tri-O-acetyltrichagmalin B: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 1,3,30-tri-O-acetyltrichagmalin A: SMILES: COC(=O)C[C@H]1[C@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\C)=C\C)c1ccoc1
- - 3-O-acetyl-7-O-tigloylvilasinin methyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin ethyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin propyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin butyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin decyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin undecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dodecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tridecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetradecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentadecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexadecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptadecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octadecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonadecyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin eicosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heneicosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin docosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tricosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetracosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentacosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexacosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptacosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octacosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonacosyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin triacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hentriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dotriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tritriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetratriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentatriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexatriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptatriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octatriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonatriacontyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hentetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dotetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tritetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetratetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentatetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexatetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptatetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octatetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonatetracontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin henpentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dopentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tripentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetrapentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentapentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexapentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptapentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octapentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonapentacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin henehexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dohexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin trihexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetrahexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentahexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexahexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptahexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octahexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonahexacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heneheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin doheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin triheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetraheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentaheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexaheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptaheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octaheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonaheptacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heneoctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dooctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin trioctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetraoctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentaoctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexaoctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptaoctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octaoctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonaoctacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin henenonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dononacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin trinonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetranonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentanonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexanonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptanonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octanonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonanonacontanyl ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin henhecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dohecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin trihecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetrahecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentahecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexahecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptahecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octahecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin nonahecto ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin kilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin henkilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin dokilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin trikilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin tetrakilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin pentakilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin hexakilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin heptakilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7-O-tigloylvilasinin octakilo ester: SMILES: C\C=C(/C)C(=O)O[C@@H]1[C@@H]2OC[C@@]3(C)[C@H]2[C@](C)([C@@H](O)C[C@H]3OC(C)=O)[C@H]2CC[C@@]3(C)[C@H](C4COC(=O)C4)C(=O)C=C3[C@]12C
- - 3-O-acetyl-7
+"""
+Classifies: CHEBI:55498 limonoid
+"""
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+
+def is_limonoid(smiles: str):
+    """
+    Determines if a molecule is a limonoid based on its SMILES string.
+    Limonoids are highly oxygenated triterpenoids with a 4,4,8-trimethyl-17-furanylsteroid skeleton.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a limonoid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Check for furan ring (17-furanyl)
+    furan = Chem.MolFromSmarts('o1cccc1')
+    if not mol.HasSubstructMatch(furan):
+        return False, "No furan ring detected"
+    
+    # Check oxygen count (highly oxygenated)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 4:
+        return False, f"Only {o_count} oxygen atoms, expected >=4"
+    
+    # Check for ester groups (common in limonoids)
+    ester = Chem.MolFromSmarts('[OX2][CX3](=[OX1])')
+    ester_matches = mol.GetSubstructMatches(ester)
+    if len(ester_matches) < 1:
+        # Some might have lactones instead, check for lactone (ester in a ring)
+        lactone = Chem.MolFromSmarts('[O;R][C;R](=O)')
+        if not mol.HasSubstructMatch(lactone):
+            return False, "No ester or lactone groups found"
+    
+    # Check molecular weight (triterpenoids are typically >400 Da)
+    mol_wt = Descriptors.ExactMolWt(mol)
+    if mol_wt < 400:
+        return False, f"Molecule too light ({mol_wt:.1f} Da)"
+    
+    # Check for multiple methyl groups (4,4,8-trimethyl is part of the skeleton)
+    methyl = Chem.MolFromSmarts('[CH3]')
+    methyl_matches = len(mol.GetSubstructMatches(methyl))
+    if methyl_matches < 3:
+        return False, f"Only {methyl_matches} methyl groups, expected at least 3"
+    
+    # Basic triterpenoid check: ~30 carbons (may vary with substituents)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 25:
+        return False, f"Only {c_count} carbons, unlikely triterpenoid"
+    
+    return True, "Contains furan ring, high oxygenation, and ester/lactone groups"
