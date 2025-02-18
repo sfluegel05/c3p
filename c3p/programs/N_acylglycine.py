@@ -2,98 +2,78 @@
 Classifies: CHEBI:16180 N-acylglycine
 """
 """
-Classifies: N‐acylglycine
-Definition: An N‐acyl‐amino acid in which the amino acid specified is glycine.
-Canonical fragment: R-C(=O)-N-CH2-C(=O)[O]
-Requirements:
-  • There is an acyl carbonyl group attached to an amide nitrogen.
-  • The amide nitrogen is attached to a glycine –CH2– group,
-    which in turn is attached to a carboxyl carbon.
-  • The amide nitrogen must only be attached to the acyl carbon and the glycine carbon.
-  • The glycine carbon is a CH2 (exactly 2 hydrogens) and has no extra heavy substitutes.
+Classifies: N‐acylglycine 
+Definition: An N‐acyl‐amino acid in which the amino acid is glycine.
+This function attempts to verify that the molecule contains (at least one)
+the substructure:
+    R‑C(=O)‑N‑CH₂‑C(=O)O 
+where the “CH₂” is enforced (by H2) to represent glycine.
+In order to reduce false positives from peptides (which have multiple amide bonds),
+we also count the total number of amide bonds ([NX3][CX3](=O)) in the molecule.
+If more than one such amide bond is found, we assume that the match is part of
+a peptide chain rather than an isolated N‐acylglycine.
 """
+
 from rdkit import Chem
 
 def is_N_acylglycine(smiles: str):
     """
     Determines if a molecule is an N-acylglycine based on its SMILES string.
 
-    An N-acylglycine is an N-acyl amino acid where the amino acid is glycine.
-    Its canonical fragment is: R-C(=O)-N-CH2-C(=O)[O]
-    (the terminal carboxyl group may appear as -COO⁻ or -COOH).
-
-    Process:
-      1. Parse the SMILES and add explicit hydrogens.
-      2. Try two SMARTS patterns to capture both ionized and unionized forms:
-             Pattern A: [CX3](=O)[NX3][CH2;H2][CX3](=O)[O-]
-             Pattern B: [CX3](=O)[NX3][CH2;H2][CX3](=O)[OH]
-      3. For each match, verify:
-             a. The amide nitrogen (match atom 1) is bonded only to the acyl carbon and the glycine carbon.
-             b. The glycine carbon (match atom 2) is a CH2 (exactly two heavy neighbors: one is the amide nitrogen, one is the carboxyl carbon)
-                and has exactly 2 hydrogens (using GetTotalNumHs).
-      4. If a valid match is found, return True with explanation; otherwise return False.
+    An N-acylglycine is an N-acyl amino acid in which the amino acid is glycine.
+    The canonical substructure is: 
+          R-C(=O)-N-CH2-C(=O)O
+    In this implementation we:
+      1. Require that the CH2 group is exactly a methylene (i.e. has two hydrogens, H2).
+      2. Use a SMARTS pattern that enforces the above.
+      3. Count the number of amide bonds ([NX3][CX3](=O)); if more than one is found,
+         we assume the molecule is a peptide (or has extra amide bonds) and thus not
+         a simple N-acylglycine.
 
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is classified as an N-acylglycine, False otherwise.
+        bool: True if the molecule is an N-acylglycine, False otherwise.
         str: Explanation of the decision.
     """
-    # Parse the molecule from SMILES and add explicit hydrogens for accurate hydrogen count.
+    # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    mol = Chem.AddHs(mol)
+    
+    # Define a refined SMARTS pattern for the N-acylglycine fragment.
+    # [CX3](=O)   --> a carbonyl carbon (acyl carbon)
+    # [NX3]       --> the amide nitrogen (trivalent)
+    # [CH2;H2]    --> a methylene group (CH2 with exactly 2 hydrogens) representing glycine
+    # [C](=O)[O]  --> a carboxyl group (COOH or COO-) attached to the glycine alpha carbon.
+    #
+    # This pattern does not enforce attachment to the remainder R (the acyl chain) or 
+    # the acid proton; it just catches the overall connectivity.
+    n_acylglycine_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3][CH2;H2][C](=O)[O]")
+    if n_acylglycine_pattern is None:
+        return False, "Failed to create SMARTS pattern for N-acylglycine"
+    
+    # Look for substructure matches of the N-acylglycine fragment.
+    matches = mol.GetSubstructMatches(n_acylglycine_pattern)
+    if not matches:
+        return False, "N-acylglycine substructure not found"
+    
+    # To reduce false positives from peptides we count the number of amide bonds.
+    # We define an amide bond SMARTS as any [NX3][CX3](=O) fragment.
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    n_amide_bonds = len(amide_matches)
+    
+    # In a simple N-acylglycine there should be only one amide bond.
+    # If the molecule has additional amide bonds, it is likely a peptide or more complex molecule.
+    if n_amide_bonds > 1:
+        return False, f"Multiple amide bonds found ({n_amide_bonds}); likely part of a peptide chain"
+    
+    # If we have at least one match for the refined fragment and only one amide, we classify as N-acylglycine.
+    return True, "Molecule contains the N-acylglycine substructure (R-C(=O)-N-CH2-C(=O)O)"
 
-    # Define two SMARTS patterns to cover both deprotonated (carboxylate) and protonated carboxyl groups.
-    smarts_list = [
-        "[CX3](=O)[NX3][CH2;H2][CX3](=O)[O-]",  # deprotonated version
-        "[CX3](=O)[NX3][CH2;H2][CX3](=O)[OH]"     # protonated version
-    ]
-
-    for smarts in smarts_list:
-        pattern = Chem.MolFromSmarts(smarts)
-        if pattern is None:
-            continue  # skip if pattern creation fails
-        
-        matches = mol.GetSubstructMatches(pattern)
-        if not matches:
-            continue  # try next SMARTS
-        # Each match is a tuple of indices corresponding to:
-        # 0: Acyl carbon (carbonyl of the acyl group)
-        # 1: Amide nitrogen
-        # 2: Glycine methylene carbon (should be CH2)
-        # 3: Carboxyl carbon (of the glycine acid group)
-        for match in matches:
-            acyl_c = mol.GetAtomWithIdx(match[0])
-            amide_n = mol.GetAtomWithIdx(match[1])
-            glycine_c = mol.GetAtomWithIdx(match[2])
-            carboxyl_c = mol.GetAtomWithIdx(match[3])
-            
-            # Check connectivity for the amide nitrogen:
-            # It should have exactly two heavy (non-H) neighbors: one acyl carbon and one glycine carbon.
-            n_heavy = [nbr for nbr in amide_n.GetNeighbors() if nbr.GetAtomicNum() > 1]
-            if set(n_heavy) != {acyl_c, glycine_c}:
-                continue   # Not matching required connectivity
-            
-            # Check glycine carbon connectivity:
-            # It should have exactly two heavy neighbors: the amide nitrogen and the carboxyl carbon.
-            glycine_heavy = [nbr for nbr in glycine_c.GetNeighbors() if nbr.GetAtomicNum() > 1]
-            if set(glycine_heavy) != {amide_n, carboxyl_c}:
-                continue   # Extra connections on glycine carbon
-            
-            # Also ensure that the glycine carbon really is a CH2 (with exactly 2 hydrogens)
-            if glycine_c.GetTotalNumHs() != 2:
-                continue
-            
-            # If all checks pass, we consider the substructure as valid.
-            return True, "Molecule contains a valid N-acylglycine fragment: R-C(=O)-N-CH2-C(=O)[O]"
-
-    # If no match satisfies all connectivity conditions, then return failure.
-    return False, "N-acylglycine substructure not found or key atom connectivity is ambiguous."
-
-# Example usage (uncomment to test):
-# test_smiles = "CC(=O)NCC(O)=O"  # Should be True for N-acetylglycine.
+# Example usage (for testing independently):
+# test_smiles = "CC(=O)NCC(O)=O"  # N-acetylglycine; expected True
 # result, reason = is_N_acylglycine(test_smiles)
 # print(result, reason)
