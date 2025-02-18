@@ -24,14 +24,26 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for primary alcohol attached to aromatic carbon
-    # [c] is aromatic carbon, [CH2;D2] is methylene group with exactly two bonds (to OH and aromatic carbon)
-    pattern = Chem.MolFromSmarts('[c]-[CH2;D2]-[OH]')
+    # Define SMARTS pattern for primary alcohol attached to any aromatic atom
+    # [a] is any aromatic atom, [CH2;D2] is methylene group with exactly two bonds (to OH and aromatic atom)
+    pattern = Chem.MolFromSmarts('[a]-[CH2;D2]-[OH]')
     
     # Check for matches
     matches = mol.GetSubstructMatches(pattern)
     
-    if matches:
-        return True, "Primary alcohol group attached to aromatic carbon"
-    else:
+    if not matches:
         return False, "No primary alcohol group adjacent to aromatic ring found"
+    
+    # Verify that the aromatic atom is part of a ring
+    valid = False
+    for match in matches:
+        aromatic_atom_idx = match[0]
+        atom = mol.GetAtomWithIdx(aromatic_atom_idx)
+        if atom.IsInRing():
+            valid = True
+            break
+    
+    if valid:
+        return True, "Primary alcohol group attached to aromatic carbon in a ring"
+    else:
+        return False, "Aromatic atom not part of a ring"
