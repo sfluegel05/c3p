@@ -9,126 +9,112 @@ from rdkit.Chem import AllChem
 
 def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     """
-    Determines if a molecule is a 2'-deoxyribonucleoside 5'-monophosphate based on its SMILES string.
+    Determines if a molecule is a 2'-deoxyribonucleoside 5'-monophosphate.
     Criteria: Deoxyribose (no 2'-OH), phosphate at 5' position, nucleobase at 1' position.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule matches the criteria, False otherwise
-        str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
 
-    # General SMARTS pattern for deoxyribose with 5'-phosphate and any base
-    # Allows variable stereochemistry and base attachment
+    # General SMARTS for deoxyribose core with phosphate at C5' and base at C1'
+    # More flexible stereochemistry
     pattern = Chem.MolFromSmarts(
         "[O;R1]"
-        "[C@H]1"  # C1'
-        "[C@@H](O)"  # C3' (with hydroxyl)
-        "[C@@H](COP(=O)([OH,O-])[OH,O-])"  # C4' connected to C5' with phosphate
-        "O"  # O connecting to C1' (part of ring)
-        "[C@H]1"  # Completes the ring
-        "[N,n,O,o]"  # Base attachment (any heteroatom)
+        "C(-[C@H](O)C(-COP(=O)([O-])[O-])[C@H]1O)"  # C1' connected to ring O, C2', C3', C4', C5'
+        "1"  # Ring closure
+        "[N,n,o,O]"  # Base attached to C1'
     )
     if mol.HasSubstructMatch(pattern):
-        return True, "Core structure with deoxyribose, 5'-phosphate, and base"
-
-    # Alternative pattern with different stereochemistry
-    alt_pattern = Chem.MolFromSmarts(
-        "[O;R1]"
-        "[C@@H]1"  # C1'
-        "[C@H](O)"  # C3'
-        "[C@H](COP(=O)([OH,O-])[OH,O-])"  # C4'
-        "O"  # Ring O
-        "[C@@H]1"  # Completes ring
-        "[N,n,O,o]"  # Base
-    )
-    if mol.HasSubstructMatch(alt_pattern):
-        return True, "Alternative stereochemistry match"
-
-    # Check for deoxyribose characteristics manually
-    # Find all 5-membered rings with oxygen
+        # Verify C2' has no -OH
+        matches = mol.GetSubstructMatches(pattern)
+        for match in matches:
+            c2_prime = None
+            # Get C1' atom index from match (index 1 in SMARTS)
+            c1_prime_idx = match[1]
+            c1_prime = mol.GetAtomWithIdx(c1_prime_idx)
+            # Find C2' (connected to C1' in the ring)
+            for neighbor in c1_prime.GetNeighbors():
+                if neighbor.GetIdx() in match:  # Check if in the ring part
+                    bond = mol.GetBondBetweenAtoms(c1_prime_idx, neighbor.GetIdx())
+                    if bond.GetBondType() == Chem.BondType.SINGLE:
+                        c2_prime = neighbor
+                        break
+            if c2_prime:
+                # Check for absence of -OH on C2'
+                has_oh = any(atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() > 0 
+                            for atom in c2_prime.GetNeighbors())
+                if not has_oh:
+                    return True, "Core structure match with 5'-phosphate and no 2'-OH"
+        
+    # Manual verification for edge cases
     ring_info = mol.GetRingInfo()
     for ring in ring_info.AtomRings():
         if len(ring) != 5:
             continue
-        o_present = any(mol.GetAtomWithIdx(a).GetAtomicNum() == 8 for a in ring)
-        if not o_present:
+        # Check for furanose oxygen
+        o_in_ring = any(mol.GetAtomWithIdx(a).GetAtomicNum() == 8 for a in ring)
+        if not o_in_ring:
             continue
 
-        # Check for 2'-deoxy (no OH on C2')
-        # Find the ring oxygen and adjacent carbons (C1' and C4')
-        for o_idx in [a for a in ring if mol.GetAtomWithIdx(a).GetAtomicNum() == 8]:
-            o_atom = mol.GetAtomWithIdx(o_idx)
-            neighbors = [n for n in o_atom.GetNeighbors() if n.GetIdx() in ring]
-            if len(neighbors) != 2:
+        # Find C1' (connected to base and ring O)
+        c1_prime = None
+        for a in ring:
+            atom = mol.GetAtomWithIdx(a)
+            if atom.GetSymbol() != 'C':
                 continue
-            c1_prime, c4_prime = neighbors
+            # Connected to ring O and has a heteroatom (base) outside the ring
+            neighbors = atom.GetNeighbors()
+            o_neighbor = any(n.GetAtomicNum() == 8 and n.GetIdx() in ring for n in neighbors)
+            base_neighbor = any(n.GetAtomicNum() in [7,8] and n.GetIdx() not in ring for n in neighbors)
+            if o_neighbor and base_neighbor:
+                c1_prime = atom
+                break
+        if not c1_prime:
+            continue
 
-            # Find C2' as neighbor of C1' in the ring
-            c2_prime = None
-            for a in ring:
-                if a == o_idx or a == c1_prime.GetIdx() or a == c4_prime.GetIdx():
-                    continue
-                if mol.GetBondBetweenAtoms(c1_prime.GetIdx(), a):
-                    c2_prime = mol.GetAtomWithIdx(a)
+        # Check C2' (next to C1' in ring) has no OH
+        c2_prime = None
+        for a in ring:
+            if a == c1_prime.GetIdx():
+                continue
+            if mol.GetBondBetweenAtoms(c1_prime.GetIdx(), a):
+                c2_prime = mol.GetAtomWithIdx(a)
+                break
+        if not c2_prime or any(n.GetAtomicNum() == 8 and n.GetTotalNumHs() > 0 for n in c2_prime.GetNeighbors()):
+            continue
+
+        # Check C5' (connected to C4') has phosphate
+        c4_prime = None
+        for a in ring:
+            if a == c1_prime.GetIdx() or a == c2_prime.GetIdx():
+                continue
+            if mol.GetBondBetweenAtoms(c1_prime.GetIdx(), a):
+                # Assuming ring order, find C4'
+                c4_prime = mol.GetAtomWithIdx(a)
+                break
+        if not c4_prime:
+            continue
+
+        c5_prime = None
+        for neighbor in c4_prime.GetNeighbors():
+            if neighbor.GetIdx() not in ring and neighbor.GetSymbol() == 'C':
+                c5_prime = neighbor
+                break
+        if not c5_prime:
+            continue
+
+        # Check phosphate attached to C5'
+        phosphate = False
+        for bond in c5_prime.GetBonds():
+            other = bond.GetOtherAtom(c5_prime)
+            if other.GetSymbol() == 'O':
+                for o_bond in other.GetBonds():
+                    if o_bond.GetOtherAtom(other).GetSymbol() == 'P':
+                        phosphate = True
+                        break
+                if phosphate:
                     break
-            if not c2_prime:
-                continue
+        if phosphate:
+            return True, "Manual check: deoxyribose, 5'-phosphate, base"
 
-            # Check C2' has no hydroxyl
-            has_oh = any(bond.GetOtherAtom(c2_prime).GetAtomicNum() == 8 and 
-                         bond.GetOtherAtom(c2_prime).GetTotalNumHs() > 0 
-                         for bond in c2_prime.GetBonds())
-            if has_oh:
-                continue
-
-            # Check C5' (connected to C4') has phosphate
-            c5_prime = None
-            for neighbor in c4_prime.GetNeighbors():
-                if neighbor.GetIdx() not in ring:
-                    c5_prime = neighbor
-                    break
-            if not c5_prime or c5_prime.GetSymbol() != 'C':
-                continue
-
-            # Check C5' is connected to phosphate via O
-            phosphate_found = False
-            for bond in c5_prime.GetBonds():
-                other_atom = bond.GetOtherAtom(c5_prime)
-                if other_atom.GetSymbol() == 'O':
-                    for o_bond in other_atom.GetBonds():
-                        p_atom = o_bond.GetOtherAtom(other_atom)
-                        if p_atom.GetSymbol() == 'P':
-                            phosphate_found = True
-                            break
-                if phosphate_found:
-                    break
-            if not phosphate_found:
-                continue
-
-            # Check C1' is connected to a nucleobase (heterocycle)
-            base_attached = None
-            for neighbor in c1_prime.GetNeighbors():
-                if neighbor.GetIdx() not in ring:
-                    base_attached = neighbor
-                    break
-            if not base_attached:
-                continue
-
-            # Verify base is a heterocycle (ring with N/O)
-            base_rings = ring_info.AtomRings(base_attached.GetIdx())
-            if not base_rings:
-                continue
-            hetero_in_ring = any(
-                mol.GetAtomWithIdx(a).GetAtomicNum() in [7, 8] 
-                for a in base_rings[0]
-            )
-            if hetero_in_ring:
-                return True, "Manual verification: deoxyribose with 5'-phosphate and nucleobase"
-
-    return False, "Does not meet all criteria"
+    return False, "Does not meet criteria"
