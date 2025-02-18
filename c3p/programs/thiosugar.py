@@ -5,14 +5,19 @@ Classifies: CHEBI:73754 thiosugar
 """
 Classifies: Thiosugar
 
-A thiosugar is defined as a carbohydrate derivative in which one or more of the oxygens
-or hydroxy groups of the parent carbohydrate is replaced by sulfur or -SR.
+A thiosugar is defined as a carbohydrate derivative in which one or more of the oxygens 
+or hydroxy groups of the parent carbohydrate is replaced by sulfur or –SR.
 
-The algorithm first searches for sugar rings (5- or 6-membered rings) that have
-(sugar-like) external hydroxyl substituents. If such a ring is found,
-either (A) its intrinsic heteroatom is S or (B) one of its ring carbons bears a simple S substituent.
-If no ring candidate is found, it does an open-chain search for a contiguous chain of carbons (4-6)
-that has predominantly oxygen substituents and at least one sulfur substituent.
+This improved algorithm uses explicit hydrogens to confirm that oxygen substituents are 
+actually hydroxyl groups. For cyclic candidates (5- or 6-membered rings) it requires a 
+typical sugar ring pattern (saturated, with exactly one intrinsic heteroatom and at least 
+three external –OH substituents). If the intrinsic heteroatom is S or if one of the ring 
+carbons bears a simple S substituent, the molecule is classified as a thiosugar.
+
+If no sugar ring is found, then an open‐chain search is performed on contiguous chains of 
+exactly 5 or 6 carbons (typical for linear carbohydrates). Such chains must display at least 
+three hydroxyl (–OH attached) substituents, at least one S substituent, and only few other 
+(“nonsugar”) substituents.
 """
 
 from rdkit import Chem
@@ -24,7 +29,7 @@ def is_thiosugar(smiles: str):
     
     Args:
         smiles (str): SMILES string of the molecule
-        
+    
     Returns:
         bool: True if the molecule is classified as a thiosugar, False otherwise.
         str: Reason for the classification.
@@ -33,102 +38,96 @@ def is_thiosugar(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    # Add explicit hydrogens for better analysis of hydroxyl groups.
+    mol = Chem.AddHs(mol)
     
     ring_info = mol.GetRingInfo()
     sugar_candidate_found = False
-
-    # Process each ring that is 5 or 6 members.
+    
+    # First, check for cyclic (ring) sugar candidates.
     for ring in ring_info.AtomRings():
         if len(ring) not in (5, 6):
             continue
-        
-        atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
-        # Count ring heteroatoms (non-carbon) and note the index of first one.
-        ring_hetero_idxs = [idx for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() != 6]
-        # A typical sugar ring should have exactly one intrinsic heteroatom.
-        if len(ring_hetero_idxs) != 1:
+        # Get atoms in the ring.
+        atoms_in_ring = [mol.GetAtomWithIdx(i) for i in ring]
+        # Discard aromatic rings.
+        if any(atom.GetIsAromatic() for atom in atoms_in_ring):
             continue
-
-        # Check that all ring atoms are sp3 hybridized.
-        valid_ring = True
-        # Count hydroxyl (or oxygen) substituents on ring atoms.
-        hydroxyl_subs = 0
+        # Require that all atoms are sp3-hybridized.
+        if any(atom.GetHybridization() != rdchem.HybridizationType.SP3 for atom in atoms_in_ring):
+            continue
+        
+        # Count intrinsic heteroatoms in the ring (non-carbon and non-hydrogen).
+        hetero_atoms = [atom for atom in atoms_in_ring if atom.GetAtomicNum() not in (6, 1)]
+        if len(hetero_atoms) != 1:
+            continue
+        
+        # Count external hydroxyl substituents on ring atoms.
+        hydroxyl_count = 0
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            if atom.GetHybridization() != rdchem.HybridizationType.SP3:
-                valid_ring = False
-                break
             for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
                     continue
-                # Count an O substituent only if it is attached as -OH (i.e. no double bonds)
+                # Only count oxygen as -OH if it is single‐bonded and bears an explicit hydrogen.
                 if nbr.GetSymbol() == "O":
-                    # Check if O is connected to a hydrogen, assuming implicit H counts.
-                    hydroxyl_subs += 1
-        if not valid_ring or hydroxyl_subs < 2:
-            continue  # not sugar-like enough
-
-        # We have a sugar ring candidate
+                    if any(n.GetSymbol() == "H" for n in nbr.GetNeighbors()):
+                        hydroxyl_count += 1
+        # Require at least three hydroxyl substituents.
+        if hydroxyl_count < 3:
+            continue
+        
+        # We now have a good sugar ring candidate.
         sugar_candidate_found = True
         
-        # CASE A: If the intrinsic heteroatom (in the ring) is sulfur, classify as thiosugar.
-        ring_hetero = mol.GetAtomWithIdx(ring_hetero_idxs[0])
-        if ring_hetero.GetSymbol() == "S":
+        # CASE A: The intrinsic heteroatom is sulfur.
+        hetero_atom = hetero_atoms[0]
+        if hetero_atom.GetSymbol() == "S":
             return True, "Sugar ring has sulfur replacing the intrinsic ring oxygen"
-
-        # CASE B: Check if any carbon in the ring has a simple sulfur substituent.
+        
+        # CASE B: Check if a ring carbon bears a simple S substituent.
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() != 6:  # only checking carbons
+            if atom.GetAtomicNum() != 6:  # only consider carbons
                 continue
             for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
                     continue
                 if nbr.GetSymbol() == "S":
-                    # Check that this sulfur substituent is "simple": 
-                    # It should have at most one heavy-atom (atomic num > 1) neighbor besides the ring carbon.
-                    heavy_neighbors = [a for a in nbr.GetNeighbors() if a.GetAtomicNum() > 1 and a.GetIdx() != atom.GetIdx()]
+                    # A simple S substituent should not be heavily decorated:
+                    heavy_neighbors = [n for n in nbr.GetNeighbors() if n.GetAtomicNum() > 1 and n.GetIdx() != atom.GetIdx()]
                     if len(heavy_neighbors) <= 1:
                         return True, "Sugar ring has thio substitution at a hydroxyl-bearing carbon"
-                    # If more heavy neighbors, check for possible carbonyl (e.g. glucosinolate-like) decoration.
-                    glucosinolate_like = False
-                    for bond in nbr.GetBonds():
-                        if bond.GetBondType() == rdchem.BondType.DOUBLE:
-                            other_atom = bond.GetOtherAtom(nbr)
-                            if other_atom.GetSymbol() == "O":
-                                glucosinolate_like = True
-                                break
-                    if not glucosinolate_like:
-                        return True, "Sugar ring has thio substitution at a hydroxyl-bearing carbon"
+                    # Even if there is more substitution, we may consider sugar decoration.
+                    # (More checks could be added here if needed.)
+                    return True, "Sugar ring has thio substitution at a hydroxyl-bearing carbon"
+        # No S substitution found in this ring candidate.
     
-    # End ring processing.
-
-    # If no proper sugar ring candidate was detected, try an open-chain search.
-    # The idea is to find a contiguous carbon chain of length 4–6 with mostly sugar-like substituents.
+    # Next, search for open-chain sugar candidates only if no ring has returned a positive.
+    # Look for a contiguous chain of exactly 5 or 6 sp3 carbons (non‐cyclic) that have predominantly
+    # hydroxyl substituents and at least one S substituent.
     atoms = mol.GetAtoms()
     for atom in atoms:
         if atom.GetAtomicNum() != 6:
             continue
+        if atom.IsInRing():
+            continue
         chain = []
         visited = set()
-        # Simple DFS to get contiguous chain of carbons up to length 6.
-        def dfs(a, depth):
-            if depth > 6:
-                return
-            chain.append(a.GetIdx())
-            visited.add(a.GetIdx())
-            for nbr in a.GetNeighbors():
-                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited:
-                    dfs(nbr, depth+1)
-        dfs(atom, 1)
-        if len(chain) < 4 or len(chain) > 6:
+        # Perform a simple Depth First Search to collect contiguous (non‐ring) carbons.
+        def dfs(a):
+            if a.GetAtomicNum() == 6 and (not a.IsInRing()):
+                chain.append(a.GetIdx())
+                visited.add(a.GetIdx())
+                for nbr in a.GetNeighbors():
+                    if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited and (not nbr.IsInRing()):
+                        dfs(nbr)
+        dfs(atom)
+        if len(chain) not in (5, 6):
             continue
-
-        # Check substituents on atoms in chain. We require at least 2 oxygen substituents (hydroxyls)
-        # and at least one sulfur substituent.
         hydroxyl_count = 0
         sulfur_count = 0
-        extra_substituents = 0  # count substituents that are neither O nor S
+        extra_substituents = 0  # substituents that are neither -OH (from oxygen) nor sulfur.
         for idx in chain:
             a = mol.GetAtomWithIdx(idx)
             for nbr in a.GetNeighbors():
@@ -136,31 +135,32 @@ def is_thiosugar(smiles: str):
                     continue
                 symbol = nbr.GetSymbol()
                 if symbol == "O":
-                    hydroxyl_count += 1
+                    # Check for a bonded H.
+                    if any(n.GetSymbol() == "H" for n in nbr.GetNeighbors()):
+                        hydroxyl_count += 1
                 elif symbol == "S":
                     sulfur_count += 1
                 elif nbr.GetAtomicNum() > 1:
                     extra_substituents += 1
-        # To be considered sugar-like, the chain should not have too many non-sugar substituents.
-        if extra_substituents > len(chain):  
+        # Avoid chains decorated with many non-sugar substituents.
+        if extra_substituents > len(chain):
             continue
-        if hydroxyl_count >= 2 and sulfur_count >= 1:
+        if hydroxyl_count >= 3 and sulfur_count >= 1:
             return True, "Open-chain carbohydrate derivative with thio substitution"
     
-    # If a sugar candidate was found but no thio substitution was detected, then report accordingly.
+    # If a sugar-like candidate was found but no thio substitution evidence was detected.
     if sugar_candidate_found:
         return False, "Sugar-like patterns detected but no clear thio substitution found"
     else:
         return False, "No sugar-like pattern detected"
 
-
-# Example usage (for testing, uncomment the block below):
+# For testing (uncomment below if running as a script):
 # if __name__ == '__main__':
 #     test_examples = {
 #         "butylglucosinolic acid": "[C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\\OS(O)(=O)=O)/CCCC",
 #         "celesticetin": "COC(C)C(NC(=O)[C@@H]1CCCN1C)[C@H]2O[C@H](SCCOC(=O)C3=CC=CC=C3O)[C@H](O)[C@@H](O)[C@H]2O",
-#         "non-thiosugar control": "CC(=O)OC1=CC=CC=C1C(=O)O"  # Aspirin - not a sugar
+#         "non-thiosugar control": "CC(=O)OC1=CC=CC=C1C(=O)O"  # example of a non-sugar molecule
 #     }
 #     for name, smi in test_examples.items():
-#         result, reason = is_thiosugar(smi)
-#         print(f"{name}: {result} ({reason})")
+#         flag, reason = is_thiosugar(smi)
+#         print(f"{name}: {flag} ({reason})")
