@@ -21,24 +21,27 @@ def is_glucosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify β-D-glucose moiety with possible stereochemistry
-    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](CO)O[C@H]1")
+    # Identify β-D-glucose moiety
+    glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@H](CO)O1")
     if not mol.HasSubstructMatch(glucose_pattern):
-        return False, "No -glucose group found"
+        return False, "No β-D-glucose moiety found"
 
     # Identify amide linkage (N-C(=O))
     amide_pattern = Chem.MolFromSmarts("NC(=O)")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
 
-    # Identify sphingosine backbone (typical C18 chain with amine and alcohol functionalities)
-    sphingosine_pattern = Chem.MolFromSmarts("[#6]-[#6]-[#6]-[#6]-[#6](=[#8])-[#7]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6](-[#6])-[#6]")
-    if not mol.HasSubstructMatch(sphingosine_pattern):
+    # Identify sphingosine backbone: C18 chain with amine, two hydroxyls, and possible double bond
+    sphingosine_patterns = [
+        Chem.MolFromSmarts("[NH2]CC(CO)[C@H](O)CCCCCCCC=CCCC"),  # Common sphingosine pattern
+        Chem.MolFromSmarts("[NH2]CC(CO)[C@H](O)CCCCCCCCCCCCCC") # Stereochemistry variant
+    ]
+    if not any(mol.HasSubstructMatch(pat) for pat in sphingosine_patterns):
         return False, "No sphingosine backbone found"
 
-    # Identify long fatty acid chain (carbon chain extending from backbone)
-    long_chain_pattern = Chem.MolFromSmarts("C" * 16)  # At least 16 carbons
+    # Identify long fatty acid chain (At least 16 carbons, preferably attached to the amide)
+    long_chain_pattern = Chem.MolFromSmarts("C" * 16)  # Flexible long chain
     if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long fatty acid chain found"
+        return False, "No sufficiently long fatty acid chain found"
 
     return True, "Contains glucose moiety linked to sphingosine backbone with a fatty acid chain"
