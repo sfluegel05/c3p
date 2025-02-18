@@ -10,7 +10,8 @@ from rdkit.Chem import Mol
 def is_hydroxynaphthoquinone(smiles: str):
     """
     Determines if a molecule is a hydroxynaphthoquinone based on its SMILES string.
-    A hydroxynaphthoquinone is a naphthoquinone with at least one hydroxyl group substituent.
+    A hydroxynaphthoquinone is a naphthoquinone (naphthalene with two ketone groups) 
+    substituted by at least one hydroxyl group on the naphthalene moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,14 +25,41 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for naphthoquinone structure: two ketone groups on naphthalene
-    quinone_pattern = Chem.MolFromSmarts("c1c2ccccc2c(c1=O)=O")  # Naphthoquinone pattern
-    if not mol.HasSubstructMatch(quinone_pattern):
-        return False, "No naphthoquinone moiety found"
+    # Find naphthalene systems (two fused benzene rings)
+    naphtha_pattern = Chem.MolFromSmarts("c1ccc2ccccc2c1")  # Naphthalene pattern
+    naphtha_matches = mol.GetSubstructMatches(naphtha_pattern)
+    if not naphtha_matches:
+        return False, "No naphthalene moiety found"
 
-    # Check for at least one hydroxyl group (-OH) attached to the aromatic rings
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]-c")  # Hydroxyl attached to aromatic carbon
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Missing hydroxyl substituent on aromatic ring"
+    # Collect all atoms in naphthalene systems
+    naphtha_atoms = set()
+    for match in naphtha_matches:
+        naphtha_atoms.update(match)
 
-    return True, "Contains naphthoquinone moiety with at least one hydroxyl group"
+    # Check for exactly two ketone groups (C=O) in the naphthalene system
+    ketone_count = 0
+    for atom_idx in naphtha_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() != 6:  # Only check carbon atoms
+            continue
+        # Look for double bonds to oxygen (C=O)
+        for bond in atom.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                neighbor = bond.GetOtherAtom(atom)
+                if neighbor.GetAtomicNum() == 8:  # Oxygen
+                    ketone_count += 1
+    if ketone_count != 2:
+        return False, f"Found {ketone_count} ketone groups in naphthalene (needs exactly 2)"
+
+    # Check for hydroxyl groups attached to naphthalene carbons
+    hydroxyl_found = False
+    hydroxyl_pattern = Chem.MolFromSmarts("[c]-[OH]")  # Hydroxyl attached to aromatic carbon
+    for match in mol.GetSubstructMatches(hydroxyl_pattern):
+        carbon_idx = match[0]
+        if carbon_idx in naphtha_atoms:
+            hydroxyl_found = True
+            break
+    if not hydroxyl_found:
+        return False, "No hydroxyl group attached to naphthalene system"
+
+    return True, "Naphthoquinone with hydroxyl substituent on aromatic ring"
