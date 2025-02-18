@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_glucosylceramide(smiles: str):
     """
     Determines if a molecule is a glucosylceramide based on its SMILES string.
-    A glucosylceramide consists of a glucose moiety linked to a sphingosine backbone
-    with a fatty acid chain.
+    A glucosylceramide contains a glucose moiety, a sphingosine backbone, and a long fatty acid chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,8 +21,8 @@ def is_glucosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify -glucose ring with stereochemistry
-    glucose_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](CO)O[C@H]1CO")
+    # Identify β-D-glucose moiety with possible stereochemistry
+    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](CO)O[C@H]1")
     if not mol.HasSubstructMatch(glucose_pattern):
         return False, "No -glucose group found"
 
@@ -32,14 +31,14 @@ def is_glucosylceramide(smiles: str):
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
 
-    # Identify sphingosine backbone (assumption: long hydrocarbon with amine and hydroxyl)
-    sphingosine_pattern = Chem.MolFromSmarts("[C@@H](NC=O)[C@@H](O)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O")
+    # Identify sphingosine backbone (typical C18 chain with amine and alcohol functionalities)
+    sphingosine_pattern = Chem.MolFromSmarts("[#6]-[#6]-[#6]-[#6]-[#6](=[#8])-[#7]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6](-[#6])-[#6]")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
 
-    # Identify long fatty acid chain (10+ carbons)
-    long_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC")
+    # Identify long fatty acid chain (carbon chain extending from backbone)
+    long_chain_pattern = Chem.MolFromSmarts("C" * 16)  # At least 16 carbons
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "No long fatty acid chain found"
 
-    return True, "Contains glucose moiety linked to sphingosine with a fatty acid chain"
+    return True, "Contains glucose moiety linked to sphingosine backbone with a fatty acid chain"
