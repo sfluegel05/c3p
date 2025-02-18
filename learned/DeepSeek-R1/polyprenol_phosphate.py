@@ -1,301 +1,256 @@
 """
 Classifies: CHEBI:16460 polyprenol phosphate
 """
- - beta-D-GlcNAc-(1->4)-alpha-D-Man-(1->3)-beta-D-Glc-(1->4)-alpha-D-Glc-1-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O[C@H]3O[C@H](CO)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4O)[C@H]3O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - all-trans-octaprenyl diphosphate: SMILES: CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\COP(O)(=O)OP(O)(O)=O
- - all-trans-tetraprenyl diphosphate: SMILES: CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\COP(O)(=O)OP(O)(O)=O
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O[C@@H]5O[C@H](CO)[C@H](O[C@@H]6O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]6O)[C@H](NC(C)=O)[C@H]5O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-Glc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O[C@@H]5O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]5O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - all-trans-nonaprenyl diphosphate: SMILES: CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\COP(O)(=O)OP(O)(O)=O
- - all-trans-pentaprenyl diphosphate: SMILES: CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\COP(O)(=O)OP(O)(O)=O
- - alpha-D-Gal-(1->3)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-Gal-(1->4)-alpha-D-GlcNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-Gal-(1->3)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-Gal-(1->6)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GlcNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-Gal-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->4)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->6)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->2)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-Gal-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->4)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->6)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->4)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->6)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->2)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->4)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->6)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O[C@@H]5O[C@H](CO)[C@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]7O)[C@H](NC(C)=O)[C@H]6O)[C@H](NC(C)=O)[C@H]5O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O[C@@H]5O[C@H](CO)[C@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@H](O[C@@H]8O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]8O)[C@H](NC(C)=O)[C@H]7O)[C@H](NC(C)=O)[C@H]6O)[C@H](NC(C)=O)[C@H]5O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O[C@@H]5O[C@H](CO)[C@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@H](O[C@@H]8O[C@H](CO)[C@H](O[C@@H]9O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]9O)[C@H](NC(C)=O)[C@H]8O)[C@H](NC(C)=O)[C@H]7O)[C@H](NC(C)=O)[C@H]6O)[C@H](NC(C)=O)[C@H]5O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O[C@@H]5O[C@H](CO)[C@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@H](O[C@@H]8O[C@H](CO)[C@H](O[C@@H]9O[C@H](CO)[C@H](O[C@@H]%10O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]%10O)[C@H](NC(C)=O)[C@H]9O)[C@H](NC(C)=O)[C@H]8O)[C@H](NC(C)=O)[C@H]7O)[C@H](NC(C)=O)[C@H]6O)[C@H](NC(C)=O)[C@H]5O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O[C@@H]5O[C@H](CO)[C@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@H](O[C@@H]8O[C@H](CO)[C@H](O[C@@H]9O[C@H](CO)[C@H](O[C@@H]%10O[C@H](CO)[C@H](O[C@@H]%11O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]%11O)[C@H](NC(C)=O)[C@H]%10O)[C@H](NC(C)=O)[C@H]9O)[C@H](NC(C)=O)[C@H]8O)[C@H](NC(C)=O)[C@H]7O)[C@H](NC(C)=O)[C@H]6O)[C@H](NC(C)=O)[C@H]5O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-(1->3)-beta-D-GalNAc-diphospho-ditrans,octacis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
- - alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,polycis-undecaprenol: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@@H]3O[C@H](CO)[C@H](O[C@@H]4O[C@H](CO)[C@H](O[C@@H]5O[C@H](CO)[C@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@H](O[C@@H]8O[C@H](CO)[C@H](O[C@@H]9O[C@H](CO)[C@H](O[C@@H]%10O[C@H](CO)[C@H](O[C@@H]%11O[C@H](CO)[C@H](O[C@@H]%12O[C@H](CO)[C@H](O)[C@H](NC(C)=O)[C@H]%12O)[C@H](NC(C)=O)[C@H]%11O)[C@H](NC(C)=O)[C@H]%10O)[C@H](NC(C)=O)[C@H]9O)[C@H](NC(C)=O)[C@H]8O)[C@H](NC(C)=O)[C@H]7O)[C@H](NC(C)=O)[C@H]6O)[C@H](NC(C)=O)[C@H]5O)[C@H](NC(C)=O)[C@H]4O)[C@H](NC(C)=O)[C@H]3O)[C@H](NC(C)=O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(\C)CC\C=C(/C)CC\C=C(/C)CCC=C(C)C
-</think>
+But wait, in the example SMILES, the phosphate is connected via an oxygen to a carbon. So this SMARTS would match that. Then, after confirming the presence of the phosphate ester, we need to check if the carbon attached to the oxygen is allylic (adjacent to a double bond).
 
-Okay, let's tackle this problem. I need to write a Python function using RDKit to determine if a given SMILES string is a polyprenol phosphate. The definition says it's a prenol phosphate formed by condensing the terminal allylic hydroxy group of a polyprenol with phosphoric acid. 
+So the code would:
 
-First, I need to understand what a polyprenol is. Polyprenols are long-chain isoprenoid alcohols with multiple prenyl units. They have a hydroxyl group at the end, which in this case is replaced by a phosphate group. The structure typically has a series of isoprene units (C5H8) arranged in a specific pattern, often with trans and cis configurations.
+1. Check for the presence of the phosphate ester group (C-O-P(=O)(O)O).
+2. For each match, get the carbon attached to the oxygen.
+3. Check if that carbon is adjacent to a double bond.
 
-So, the key features to check in the molecule are:
-1. Presence of a phosphate group attached to the polyprenol chain.
-2. The polyprenol chain should have multiple isoprene units (probably at least three or more).
-3. The phosphate should be esterified to the terminal allylic hydroxyl group. That means the phosphate is connected via an oxygen to the terminal carbon of the polyprenol chain, which is part of an allylic system (adjacent to a double bond).
+For example, in the SMILES ...C(C)=C\COP(O)(O)=O, the carbon attached to the oxygen (O in COP) is connected to another carbon (C in C(C)=C). That carbon has a double bond. So the carbon attached to the oxygen is adjacent to a double bond.
 
-Let's break down the steps:
-1. **Parse the SMILES**: Check if the SMILES is valid.
-2. **Identify the phosphate group**: Look for a phosphate group (O-P-O linkages). The phosphate can be a mono-, di-, or triphosphate, but according to the definition, it's a condensation with one equivalent of phosphoric acid, so it should be a single phosphate group (O-P(=O)(O)O).
-3. **Check the attachment of the phosphate**: The phosphate should be connected to an oxygen that's part of an allylic system. The oxygen should be attached to a carbon that's adjacent to a double bond (allylic position).
-4. **Verify the polyprenol structure**: The polyprenol chain should have multiple isoprene units. This can be checked by ensuring there's a long chain of carbons with alternating double bonds (though the exact configuration might vary between cis and trans). However, RDKit might not easily count isoprene units directly, so maybe checking for a certain number of double bonds and chain length.
+So the code would:
 
-Potential challenges:
-- The polyprenol chain can vary in length, so setting a minimum number of double bonds or carbons might be tricky. Maybe require at least three isoprene units (so at least three double bonds? Or a certain number of carbons).
-- The configuration of the double bonds (cis/trans) might vary, so the SMARTS pattern needs to account for any configuration.
-- The phosphate might be part of a larger structure (like a sugar attached), but according to the examples, the phosphate is directly attached to the polyprenol chain.
+- Find all matches of the phosphate ester pattern.
+- For each match, get the carbon atom (the C in [C]-O-P...).
+- Check if that carbon has any neighboring atoms that are part of a double bond.
 
-Let me think about how to structure the SMARTS patterns. The phosphate group can be matched with a pattern like [O]-P(=O)([O])-[O]. But in the molecule, the phosphate's oxygen should be connected to the polyprenol chain. So the polyprenol's terminal oxygen is connected to the phosphate.
+Wait, the carbon attached to the oxygen (let's call it C1) is connected to other atoms. If any of C1's neighbors are part of a double bond, then C1 is allylic.
 
-The allylic position: the oxygen is attached to a carbon that is adjacent to a double bond. So the structure would be C=C-C-O-P. But the double bond could be in either configuration (cis or trans), and the chain could be longer. So a SMARTS pattern like [O]-C-[$([CX3]=[CX3])] where the oxygen is on a carbon adjacent to a double bond.
+Alternatively, check if C1 has a neighbor that is part of a double bond. For example, in the structure C-O-P..., the C is connected to O and possibly other carbons. If any of those other carbons are part of a double bond, then C is allylic.
 
-Wait, the allylic position is the carbon adjacent to the double bond. So the phosphate's oxygen should be on a carbon that is adjacent to a double bond. So the SMARTS would be something like [CX3]=[CX3]-[CX2]-O-P. But the exact arrangement might vary. Alternatively, the oxygen is on a carbon that is adjacent to a double bond, which could be part of a longer chain.
+Wait, the allylic position is a carbon adjacent to a double bond. So if the C attached to the oxygen (C-O-P) is adjacent to a double bond, then it's allylic.
 
-Another approach: Find all phosphate groups, then check if any of them are attached to an oxygen that is on a carbon adjacent to a double bond.
+But in the example, the structure is C=C-C-O-P. So the C attached to O is the third carbon from the double bond. Wait, no: in ...C(C)=C\COP..., the C attached to O is the one after the double bond. So the structure is C=C-C-O-P. The C attached to O is adjacent to the double bond (the previous carbon is part of the double bond). So the C attached to O is adjacent to a carbon that is part of a double bond. So that C is allylic.
 
-So the steps in code would be:
-1. Check for the presence of a phosphate group (like OP(O)(O)=O or similar).
-2. Find the oxygen atom in the phosphate that is connected to the rest of the molecule (the one that's part of the ester linkage).
-3. Check if that oxygen is attached to a carbon that is allylic (i.e., adjacent to a double bond).
-4. Ensure that the rest of the molecule (the polyprenol chain) has multiple isoprene units, which can be approximated by having a certain number of double bonds and a minimum chain length.
+Wait, the allylic position is the carbon adjacent to the double bond. So if the C attached to O is adjacent to a carbon that is part of a double bond, then it's allylic.
 
-Let me also look at the example SMILES provided. For instance, "undecaprenyl dihydrogen phosphate" has a long chain with multiple double bonds and ends with a phosphate group. The SMILES is CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\COP(O)(O)=O. The phosphate is at the end, attached to a CH2 group, which is adjacent to a double bond (the ...C(C)=C\COP part). So the oxygen is on a carbon next to a double bond.
+So the code should check if the C attached to O has a neighbor (any neighbor) that is part of a double bond.
 
-So the SMARTS pattern for the phosphate attachment would be something like [O]-[CH2]-[C]=[C]. But the double bond could be in any position relative to the oxygen. Alternatively, the oxygen is attached to a carbon that is adjacent to any double bond.
+For example, for the C in C-O-P, check each neighbor of C. If any neighbor is part of a double bond, then it's allylic.
 
-Wait, the allylic position is a carbon adjacent to a double bond. So the oxygen is attached to a carbon that is adjacent to a double bond. So the SMARTS would be [O]-[C]-, where that [C] is adjacent to a double bond. So maybe:
+So in code:
 
-[O]-C-@[C]=C
+matches = mol.GetSubstructMatches(phosphate_ester_pattern)
+if not matches:
+    return False, "No phosphate ester group"
 
-But SMARTS can be written as [O][CX3][CX3]=[CX3]. Not sure. Alternatively, use a recursive SMARTS to find a carbon attached to oxygen that is adjacent to a double bond.
+for match in matches:
+    # The first atom in the match is the carbon attached to the oxygen
+    c_idx = match[0]
+    carbon = mol.GetAtomWithIdx(c_idx)
+    # Check all neighbors of this carbon
+    for neighbor in carbon.GetNeighbors():
+        # Check if the bond between carbon and neighbor is a double bond
+        bond = mol.GetBondBetweenAtoms(c_idx, neighbor.GetIdx())
+        if bond and bond.GetBondType() == Chem.BondType.DOUBLE:
+            # The carbon is adjacent to a double bond (it's part of a double bond)
+            # But wait, this would mean the carbon itself is part of a double bond, which is not the case.
+            # We need to check if the neighbor is part of a double bond with another atom.
+            for bond2 in neighbor.GetBonds():
+                if bond2.GetBondType() == Chem.BondType.DOUBLE and bond2.GetBeginAtomIdx() != c_idx and bond2.GetEndAtomIdx() != c_idx:
+                    # The neighbor is part of a double bond with another atom
+                    return True, "Phosphate ester attached to allylic carbon"
 
-Alternatively, find all oxygen atoms connected to phosphorus (part of the phosphate group), then trace the connection to the carbon chain and check if that carbon is allylic.
+    # Alternatively, check if any neighbor of the carbon has a double bond
+    for neighbor in carbon.GetNeighbors():
+        for bond in neighbor.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE and (bond.GetBeginAtom() == neighbor or bond.GetEndAtom() == neighbor):
+                # The neighbor is part of a double bond
+                return True, "Phosphate ester attached to allylic carbon"
 
-Another approach: The phosphate group is connected via an oxygen to a carbon that is part of an allylic system. So the structure is O-P-O-C-adjacent-to-double-bond.
+return False, "Phosphate not attached to allylic carbon"
 
-So the SMARTS pattern could be:
+This approach checks if any neighbor of the carbon attached to the phosphate's oxygen is part of a double bond. If so, then the carbon is allylic.
 
-[O][P](=[O])([O])[O][C][C]=C
-
-But this might be too specific. Maybe the oxygen connected to P is connected to a carbon, which is adjacent to a double bond. So:
-
-[O]-P(=O)(O)-O-C-[$([CX3]=[CX3])]
-
-But the exact path could vary. For example, the oxygen from the phosphate is connected to a carbon, which is adjacent (single bond) to a carbon with a double bond. So the SMARTS pattern would be:
-
-[O]-P(=O)(O)-O-C-!@[CX3]=[CX3]
-
-The !@ ensures that the bond between the C and the next atom is not aromatic. But maybe a more general approach is needed.
-
-Alternatively, find the phosphate group, then check if the oxygen connected to the carbon chain is part of an allylic system.
-
-Once the phosphate is identified, the next step is to check the polyprenol chain. The polyprenol is a long isoprenoid chain. Isoprene units are C5H8, so each unit has four carbons in a row with a double bond. The chain would have repeating units like C-C=C-C-C, but the configuration (cis/trans) and the position of the double bonds can vary.
-
-However, RDKit can't directly count isoprene units, but we can check for a certain number of double bonds and a certain chain length. For example, requiring at least three double bonds (indicative of at least three isoprene units) and a certain number of carbons (like more than 10?).
+Additionally, check for the polyprenol chain's length and number of double bonds. For example, require at least three double bonds in the molecule.
 
 Putting it all together:
 
-1. Check if the molecule has a phosphate group (OP(O)(O)=O or similar). The exact SMARTS for the phosphate could be "[OX2]-[PX4](=[OX1])(-[OX2-])-[OX2]". But maybe using a more general phosphate pattern.
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-2. Find the oxygen in the phosphate that is connected to the carbon chain.
+def is_polyprenol_phosphate(smiles: str):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
 
-3. Check if that oxygen is attached to a carbon that is allylic (adjacent to a double bond).
+    # Check for phosphate ester group (C-O-P(=O)(O)O)
+    phosphate_ester_pattern = Chem.MolFromSmarts("[C]-O-P(=O)([O])[O]")
+    if not mol.HasSubstructMatch(phosphate_ester_pattern):
+        return False, "No phosphate ester group"
 
-4. Check that the carbon chain (the polyprenol part) has multiple double bonds (e.g., >=3) and sufficient length (e.g., number of carbons >= 11? Looking at examples like undecaprenyl which has 11 isoprene units? Wait, undecaprenyl is C55, but maybe in the examples, the chain is long enough. However, setting a fixed number might not be reliable. Alternatively, check for at least a certain number of double bonds, say >=3, which would imply at least three isoprene units.
+    # Find the carbon attached to the phosphate's oxygen
+    matches = mol.GetSubstructMatches(phosphate_ester_pattern)
+    for match in matches:
+        c_idx = match[0]
+        carbon = mol.GetAtomWithIdx(c_idx)
+        # Check if this carbon is adjacent to a double bond
+        for neighbor in carbon.GetNeighbors():
+            # Check if the neighbor has any double bonds
+            for bond in neighbor.GetBonds():
+                if bond.GetBondType() == Chem.BondType.DOUBLE:
+                    # Check if the bond involves the neighbor and another atom
+                    other_atom = bond.GetOtherAtom(neighbor)
+                    if other_atom.GetIdx() != c_idx:
+                        # Found a double bond adjacent to the carbon
+                        # Now check the polyprenol chain has multiple double bonds
+                        double_bonds = sum(1 for b in mol.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE)
+                        if double_bonds >= 3:
+                            return True, "Phosphate ester attached to allylic carbon of polyprenol chain"
+                        else:
+                            return False, f"Only {double_bonds} double bonds, need at least 3"
 
-But perhaps for the purpose of this function, it's better to check for the presence of the phosphate in the correct position and the presence of a long isoprenoid chain with multiple double bonds.
-
-Another thing to note: The phosphate is at the end of the chain, so the oxygen connected to the phosphate should be at a terminal position in the carbon chain. So the carbon attached to the phosphate oxygen should have only one neighbor (i.e., it's a terminal carbon). Wait, no: in the example SMILES, the phosphate is attached to a carbon that is part of a longer chain. For example, in "undecaprenyl dihydrogen phosphate", the structure ends with COP(O)(O)=O. The C here is connected to O-P, and the previous part is a long chain. The carbon attached to the O is part of a CH2 group connected to a double bond. So the structure is ...C(C)=C\COP(O)(O)=O. The carbon attached to O is a CH2, which is adjacent to a double bond (C=C). So that carbon is part of an allylic system.
-
-So the SMARTS pattern should find an oxygen connected to a carbon that is adjacent to a double bond. The oxygen is part of the phosphate group.
-
-So perhaps the SMARTS pattern would be:
-
-[O]-[C]-[C]=C
-
-But with the first O being part of the phosphate. Alternatively, the phosphate group is connected via an oxygen to a carbon, which is adjacent to a double bond.
-
-Another approach: Find all atoms that are part of a phosphate group, then check if any of their oxygen atoms are connected to a carbon that is allylic.
-
-Wait, the phosphate group in the molecule is connected via one oxygen to the polyprenol chain. The other oxygens are either double-bonded or as hydroxyls. For example, in "undecaprenyl dihydrogen phosphate", the phosphate is O=P(O)(O)O-C..., so the connecting oxygen is single-bonded to P and to C.
-
-So the SMARTS for the phosphate ester group would be:
-
-[O]-P(=O)([O-])[O-]
-
-But charges might vary. Alternatively, use:
-
-[O]-P(=O)(O)O
-
-But the exact protonation state might not matter. So using a SMARTS that matches any phosphate group connected via an oxygen to a carbon chain.
-
-So the steps in code:
-
-1. Parse the SMILES into a molecule.
-2. Check if there's a phosphate group. Using SMARTS like "[O][P](=O)([O])[O]". But maybe better to use a more flexible pattern.
-3. For each phosphate group, check if one of the oxygens is connected to a carbon that is allylic (adjacent to a double bond).
-4. Also, check that the carbon chain has multiple double bonds (indicative of isoprene units).
-
-So in code:
-
-- Find all phosphate groups using SMARTS.
-- For each phosphate, check the connecting oxygen's carbon.
-- Check if that carbon is adjacent to a double bond.
-- Count the number of double bonds in the molecule to ensure it's a polyprenol (maybe >=3).
-
-Potential code outline:
-
-mol = Chem.MolFromSmiles(smiles)
-if not mol:
-    return False, "Invalid SMILES"
-
-phosphate_pattern = Chem.MolFromSmarts("[O]-P(=O)([O])[O]")
-if not mol.HasSubstructMatch(phosphate_pattern):
-    return False, "No phosphate group found"
-
-# Now check if the phosphate is attached to an allylic carbon
-allylic_pattern = Chem.MolFromSmarts("[O]-[C]-[C]=C")
-matches = mol.GetSubstructMatches(allylic_pattern)
-if not matches:
     return False, "Phosphate not attached to allylic carbon"
 
-# Check for multiple double bonds
-double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-if double_bonds < 3:
-    return False, f"Only {double_bonds} double bonds, need at least 3 for polyprenol chain"
+Wait, but this code has a problem: once it finds a phosphate ester and a double bond adjacent to the carbon, it returns True. But the example might have multiple phosphate groups. Also, the check for double bonds >=3 is inside the loop, which may not be correct. Maybe the double bonds count should be checked outside, after confirming the phosphate is in the correct position.
 
-# Also check the chain length? Maybe count carbons in the polyprenol part
-# But how to isolate the polyprenol part? Maybe the part connected to the phosphate's oxygen.
-# This might be more complex. Alternatively, check total carbons > a threshold.
+Revised code:
 
-total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-if total_carbons < 10:
-    return False, "Insufficient carbons for polyprenol chain"
+def is_polyprenol_phosphate(smiles: str):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
 
-return True, "Phosphate group attached to allylic carbon of polyprenol chain"
+    # Check for phosphate ester group (C-O-P(=O)(O)O)
+    phosphate_ester_pattern = Chem.MolFromSmarts("[C]-O-P(=O)([O])[O]")
+    if not mol.HasSubstructMatch(phosphate_ester_pattern):
+        return False, "No phosphate ester group"
 
-But this is a simplified approach. The actual polyprenol chain might have a certain structure, but without explicitly checking for isoprene units, this might be the best approximation.
+    # Check if the phosphate is attached to an allylic carbon
+    allylic_found = False
+    matches = mol.GetSubstructMatches(phosphate_ester_pattern)
+    for match in matches:
+        c_idx = match[0]
+        carbon = mol.GetAtomWithIdx(c_idx)
+        for neighbor in carbon.GetNeighbors():
+            # Check if neighbor has any double bonds
+            for bond in neighbor.GetBonds():
+                if bond.GetBondType() == Chem.BondType.DOUBLE:
+                    other_atom = bond.GetOtherAtom(neighbor)
+                    if other_atom.GetIdx() != c_idx:
+                        allylic_found = True
+                        break
+            if allylic_found:
+                break
+        if allylic_found:
+            break
 
-Another thing: The phosphate should be at the end of the chain. So the oxygen connected to the phosphate should be terminal in the carbon chain. Wait, in the example, the chain is long, and the phosphate is at the end. So the carbon attached to the phosphate's oxygen should have only one neighbor (i.e., it's a terminal carbon). Let me check the example SMILES:
+    if not allylic_found:
+        return False, "Phosphate not attached to allylic carbon"
 
-In "undecaprenyl dihydrogen phosphate", the end is COP(O)(O)=O. The C in COP is connected to O-P and to two other carbons (from the chain). Wait, no: looking at the SMILES: ...CC\C(C)=C\CC\C(C)=C\COP(O)(O)=O. The C in COP is connected to O-P, and to two other carbons (from the chain). So it's not a terminal carbon. So the previous approach of checking allylic position is better.
+    # Check for multiple double bonds in the molecule (indicative of polyprenol chain)
+    double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if double_bonds < 3:
+        return False, f"Only {double_bonds} double bonds, need at least 3 for polyprenol chain"
 
-Hmm. So the carbon attached to the phosphate's oxygen is part of the chain and is adjacent to a double bond. So the SMARTS pattern should find a situation where the oxygen is connected to a carbon that is adjacent to a double bond.
+    # Optional: Check chain length? Not sure, but examples have long chains
+    # For example, undecaprenyl has 11 isoprene units (55 carbons?), but maybe not necessary to check here
 
-Alternatively, the carbon attached to the oxygen has a double bond in the adjacent carbon. So the SMARTS could be [O]-C-C=C.
+    return True, "Phosphate ester attached to allylic carbon of polyprenol chain with multiple double bonds"
 
-But the double bond could be in either direction. So maybe [O]-C-[$([CX3]=[CX3])].
+This code first checks for the presence of a phosphate ester group. Then, it checks if the carbon attached to the phosphate's oxygen is adjacent to a double bond (allylic). Finally, it checks that there are at least three double bonds in the molecule, which is a rough indicator of a polyprenol chain.
 
-Using SMARTS for that:
+Testing this code against the examples:
 
-The pattern would be [O]-[CX3]-[CX3]=[CX3]
+Take "undecaprenyl dihydrogen phosphate" SMILES: CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\COP(O)(O)=O
 
-But in the example, the structure is C=C-C-O-P. So the oxygen is on the third carbon from the double bond. Wait, no: in the example, the structure is ...C(C)=C\COP... So the double bond is between two carbons, and the next carbon is connected to O-P. So the O is attached to a carbon that is adjacent to a double bond. So the SMARTS should be [O]-[CX3]-[CX3]=[CX3].
+- The phosphate ester is present.
+- The carbon attached to the oxygen (C in COP) is adjacent to a double bond (the C=C in ...C(C)=C\COP...).
+- The molecule has multiple double bonds (more than 3).
 
-Wait, the carbon attached to O is connected to the double bond via a single bond. So the carbon attached to O is adjacent to a double bond. So the SMARTS would be [O]-[CX3]-[CX3]=[CX3].
+So this should return True.
 
-But in RDKit SMARTS, [CX3] denotes a carbon with three bonds. Wait, in the case of a double bond, the adjacent carbons would have two bonds (the double bond) plus other single bonds. Hmm, maybe better to use [C] instead of [CX3].
+Another example: "geranyl phosphate" SMILES: CC(=CCC/C(=C/COP(O)(=O)O)/C)C
 
-Alternatively, use a more general pattern: [O]-C-C=C.
+- Phosphate ester present.
+- The carbon attached to O is part of a C=C (allylic position).
+- Double bonds: 2 (maybe), which would fail the >=3 check. But geranyl has two isoprene units (3 double bonds?), wait, geranyl is C10H17OPO3, with two double bonds. So this might return False, but according to the examples, it's a valid polyprenol phosphate. So this code would give a false negative.
 
-But the double bond could be in any position. So perhaps:
+Hmm, this is a problem. Geranyl phosphate has two double bonds, but according to the examples, it's a valid polyprenol phosphate. So requiring at least three double bonds is incorrect.
 
-[O]-C-!@C=!@C
+So the check for double bonds >=3 is wrong. The definition says "polyprenol", which is a polymer of isoprene units. The minimum number of isoprene units for a polyprenol is typically three (triprenyl), but sometimes even two (geranyl) is considered. So perhaps the double bond check should be >=2.
 
-But I'm not sure. Maybe a recursive SMARTS to find any carbon attached to the oxygen that has a neighboring double bond.
+Alternatively, remove the double bond count check and rely on the structure. But that might lead to false positives.
 
-Alternatively, after finding the phosphate group, for each oxygen in the phosphate that is connected to the carbon chain, check if that carbon has a neighboring double bond.
+Alternatively, the problem is that geranyl phosphate is a prenol phosphate, but not a polyprenol phosphate. Wait, the user's examples include "geranyl phosphate" as a valid example. So according to the problem statement, it should be considered a polyprenol phosphate. But geranyl has two isoprene units (prenol is a single isoprene unit?), so maybe the definition of polyprenol requires at least three. But the user's examples include it, so the code must accept it.
 
-Here's a plan:
+Thus, the double bond check should be >=1. Or perhaps not check the number of double bonds at all, relying solely on the structure of the phosphate attachment.
 
-1. Find all phosphate groups using the SMARTS "[O]-P(=O)([O])[O]".
+But that might lead to false positives. For example, a molecule with a single double bond next to a phosphate would be considered a polyprenol phosphate, which might not be correct.
 
-2. For each match, get the oxygen atom connected to the carbon chain (the one that's not part of the P=O or the other O's).
+But according to the problem statement, the examples include geranyl phosphate, which has two isoprene units (maybe two double bonds?), so the code must accept it. Hence, the double bond check should be adjusted to >=1.
 
-3. Check if that oxygen is connected to a carbon that has a neighboring double bond.
+So modifying the code to check for at least one double bond:
 
-Wait, perhaps for each phosphate group, the oxygen atoms connected to P are:
+    double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if double_bonds < 1:
+        return False, "No double bonds, not a polyprenol chain"
 
-- One double-bonded O (P=O)
-- Two single-bonded O's (which could be hydroxyls or connected to the rest of the molecule)
+But even this might not be sufficient. Alternatively, remove the double bond check and just rely on the allylic position and phosphate ester.
 
-Wait, in the phosphate group, the structure is O-P(=O)(O)O-R, where R is the polyprenol chain. So the oxygen connecting to R is one of the single-bonded oxygens.
+Because the definition is about the formal condensation of the terminal allylic hydroxy group of a polyprenol. The key is the allylic position of the hydroxyl (now replaced by phosphate). So even a single isoprene unit (like geranyl) would qualify if it meets the other criteria.
 
-But in the SMILES examples, the phosphate is written as OP(O)(O)=O, but in reality, the ester linkage would be O-P-O-R. So the connecting oxygen is the one attached to R.
+Thus, perhaps the double bond check is unnecessary. The main criteria are:
 
-So in the SMARTS, the oxygen connected to R is part of the phosphate group. So in the SMARTS "[O]-P(=O)([O])[O]", the first [O] is the one connected to R. Wait, no: the SMARTS "[O]-P(=O)([O])[O]" would match any oxygen connected to P, including the ester oxygen. So maybe to find the ester oxygen, we need to look for an oxygen connected to P that is also connected to a carbon.
+1. Presence of a phosphate ester group.
+2. The ester oxygen is attached to a carbon that is allylic (adjacent to a double bond).
 
-Alternatively, iterate through all atoms in the phosphate matches and find the oxygen that is connected to a carbon outside the phosphate group.
+So the code can omit the double bond count check.
 
-This might be more complex. Perhaps using the following approach:
+Revised code:
 
-For each phosphate match (assuming the SMARTS is "[O]-P(=O)([O])[O]"), the oxygen atoms in the match are:
+def is_polyprenol_phosphate(smiles: str):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
 
-- O connected to P (the ester oxygen)
-- O double-bonded to P
-- Two other O's (which could be hydroxyls or other substituents)
+    # Check for phosphate ester group (C-O-P(=O)(O)O)
+    phosphate_ester_pattern = Chem.MolFromSmarts("[C]-O-P(=O)([O])[O]")
+    if not mol.HasSubstructMatch(phosphate_ester_pattern):
+        return False, "No phosphate ester group"
 
-But the ester oxygen is the one connected to the rest of the molecule. So, for each phosphate group, the ester oxygen is the one that has a neighbor outside the phosphate group.
+    # Check if the phosphate is attached to an allylic carbon
+    allylic_found = False
+    matches = mol.GetSubstructMatches(phosphate_ester_pattern)
+    for match in matches:
+        c_idx = match[0]
+        carbon = mol.GetAtomWithIdx(c_idx)
+        for neighbor in carbon.GetNeighbors():
+            # Check if neighbor has any double bonds
+            for bond in neighbor.GetBonds():
+                if bond.GetBondType() == Chem.BondType.DOUBLE:
+                    other_atom = bond.GetOtherAtom(neighbor)
+                    if other_atom.GetIdx() != c_idx:
+                        allylic_found = True
+                        break
+            if allylic_found:
+                break
+        if allylic_found:
+            break
 
-Alternatively, after finding all phosphate groups, for each oxygen in the phosphate, check if it's connected to a carbon atom. The ester oxygen would be the one connected to a carbon.
+    if not allylic_found:
+        return False, "Phosphate not attached to allylic carbon"
 
-Once we have that oxygen, check if the carbon it's connected to is adjacent to a double bond.
+    return True, "Phosphate ester attached to allylic carbon"
 
-So in code:
+This code checks for the phosphate ester and the allylic position. It should work for geranyl phosphate (which has a double bond adjacent to the phosphate's carbon) and other examples.
 
-phos_matches = mol.GetSubstructMatches(phosphate_pattern)
-if not phos_matches:
-    return False, "No phosphate group"
+Testing geranyl phosphate SMILES: CC(=CCC/C(=C/COP(O)(=O)O)/C)C
 
-for phos_match in phos_matches:
-    # phos_match contains the indices of the O, P, and other O's
-    # the first O in the match is the one connected to the carbon chain
-    # Wait, depends on how the SMARTS is written. Let's check:
-    # The SMARTS "[O]-P(=O)([O])[O]" has four atoms: O-P, O (double bond), O, O.
-    # The first O is connected to P via a single bond. The other O's are the ones in =O and two others.
-    # So the ester oxygen is the first O in the match.
-    # So for each match, the first atom is the ester oxygen.
-    ester_oxygen_idx = phos_match[0]
-    ester_oxygen = mol.GetAtomWithIdx(ester_oxygen_idx)
-    # Get the neighboring atoms to this oxygen (should be P and maybe others)
-    # Wait, no: the ester oxygen is connected only to P (in the phosphate group). But in the molecule, it's connected to P and possibly a carbon.
-    # Wait, in the SMARTS "[O]-P(=O)([O])[O]", the first O is connected to P. But in reality, that O is connected to P and to a carbon (if it's the ester oxygen). Wait, no: in the ester, the O is connected to P and to a carbon. So in the SMILES, it's O-P-O-C..., but in the SMARTS, the O is only connected to P. So the SMARTS would not capture the O connected to a carbon. Hmm, this is a problem.
+The phosphate ester is present. The carbon attached to O is part of the structure C=C/COP. The carbon attached to O is connected to a carbon (C) that is part of a double bond (C=O). Wait, no: the SMILES is /C(=C/COP...)/, so the carbon attached to O is part of a double bond. Wait, the SMILES is CC(=CCC/C(=C/COP(O)(=O)O)/C)C. Let's parse this:
 
-Wait, the SMARTS "[O]-P(=O)([O])[O]" would match an O connected to P, but in the actual molecule, the ester oxygen is connected to both P and a carbon. So the SMARTS as written would not match that because the oxygen has two bonds (to P and C). Therefore, the SMARTS should allow the oxygen to have two connections. So maybe "[O;X2]-P(=O)([O])[O]".
+The structure is CC(=CCC/C(=C/COP(O)(=O)O)/C)C. The part /C(=C/COP...)/ indicates a double bond between the two C's. So the carbon attached to O is part of a double bond. Wait, no: the part is C(=C/COP...), which means a carbon connected via double bond to another carbon, which is connected to O-P. So the structure is C=C-OP... So the carbon attached to O is adjacent to a double bond (the C=C). Thus, the code would detect the allylic position.
 
-Wait, the ester oxygen in the phosphate group is connected to P and to the carbon chain. So it has two bonds. So in SMARTS, we need to match an oxygen with two bonds. So the SMARTS would be "[O;X2]-P(=O)([O;X1])[O;X1]". But I'm not sure. Alternatively, use "[O]-&@P(=O)([O])[O]" but I'm not sure.
+But in this case, the carbon attached to O is directly part of the double bond. Wait, no: the SMILES is C(=C/COP...), which means the carbon is double-bonded to another carbon, which is connected to O-P. So the carbon attached to O is not part of the double bond but is adjacent to it. So the code would detect that the neighbor (the double-bonded carbon) has a double bond, making the carbon attached to O allylic.
 
-Alternatively, use a more general SMARTS for the phosphate ester group: "P(=O)([O-])([O-])O[C]". But this might not capture all cases.
+Thus, this code should correctly identify geranyl phosphate as a polyprenol phosphate.
 
-Alternatively, the correct SMARTS for a phosphate ester is "O=P(O)(O)OC". But in SMILES, the phosphate ester is written as OP(O)(=O)OCC... So the SMARTS could be "[O]-P(=O)([O])[O]-[C]".
+Another example: "all-trans-nonaprenyl diphosphate" SMILES: CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C(C)=C\COP(O)(=O)OP(O)(O)=O
 
-But to match that, the SMARTS would be "[O]P(=O)([O])[O]C".
+This has a phosphate ester and the carbon attached to O is adjacent to a double bond. The code should return True.
 
-But this is too specific. Instead, perhaps match any oxygen connected to P that is also connected to a carbon.
-
-So the SMARTS would be "[C]-O-P(=O)([O])[O]".
-
-Yes, that makes sense. The ester oxygen is connected to a carbon and to the phosphorus. So the SMARTS would be "[C]-O-P(=O)([O])[O]".
-
-So the code
+Thus, this code should handle the examples correctly.
+</think>
