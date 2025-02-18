@@ -25,52 +25,47 @@ def is_polyphenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Initialize count of benzene rings with hydroxy substitutions
-    benzene_with_hydroxy_count = 0
+    # Define phenol SMARTS pattern (hydroxy group attached to aromatic carbon)
+    phenol_pattern = Chem.MolFromSmarts('[OX1H]-[c]')
+
+    # Find all phenol groups in the molecule
+    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
+
+    if not phenol_matches:
+        return False, "No phenol groups found"
 
     # Get ring information
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
 
-    # Iterate over all rings in the molecule
-    for ring in atom_rings:
-        # Check if ring is six-membered
-        if len(ring) != 6:
-            continue
+    # Set to keep track of unique benzene rings with hydroxy substitution
+    benzene_rings_with_hydroxy = set()
 
-        # Check if all atoms in the ring are aromatic (benzene ring)
-        is_benzene = True
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if not atom.GetIsAromatic():
-                is_benzene = False
-                break
-        if not is_benzene:
-            continue  # Not a benzene ring
+    # Iterate over phenol groups
+    for match in phenol_matches:
+        oxygen_idx, carbon_idx = match  # Indices of O and C in [OH]-[c]
 
-        # Check for hydroxy substitution on the benzene ring
-        has_hydroxy = False
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            for neighbor in atom.GetNeighbors():
-                nbr_idx = neighbor.GetIdx()
-                # Skip if neighbor is part of the ring
-                if nbr_idx in ring:
-                    continue
-                # Check if neighbor is oxygen
-                if neighbor.GetAtomicNum() == 8:
-                    # Check if the oxygen has only one heavy atom neighbor (the ring atom)
-                    if neighbor.GetDegree() == 1:
-                        has_hydroxy = True
-                        break  # Found hydroxy group
-            if has_hydroxy:
-                break  # No need to check other atoms in the ring
+        # Get the rings that the carbon atom is part of
+        rings_with_carbon = [ring for ring in atom_rings if carbon_idx in ring]
 
-        if has_hydroxy:
-            benzene_with_hydroxy_count += 1
+        # Check each ring
+        for ring in rings_with_carbon:
+            # Check if ring is six-membered
+            if len(ring) != 6:
+                continue
 
-    # Determine if molecule is a polyphenol
-    if benzene_with_hydroxy_count >= 2:
-        return True, f"Molecule is a polyphenol with {benzene_with_hydroxy_count} benzene rings each substituted by at least one hydroxy group"
+            # Check if all atoms in the ring are aromatic
+            is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
+            if not is_aromatic:
+                continue  # Not an aromatic ring
+
+            # Add the ring (as a frozenset of atom indices) to the set
+            benzene_rings_with_hydroxy.add(frozenset(ring))
+
+    # Determine the number of unique benzene rings with hydroxy substitution
+    ring_count = len(benzene_rings_with_hydroxy)
+
+    if ring_count >= 2:
+        return True, f"Molecule is a polyphenol with {ring_count} benzene rings each substituted by at least one hydroxy group"
     else:
-        return False, f"Molecule has {benzene_with_hydroxy_count} benzene rings with hydroxy substitution, needs at least 2 to be a polyphenol"
+        return False, f"Molecule has {ring_count} benzene rings with hydroxy substitution, needs at least 2 to be a polyphenol"
