@@ -11,8 +11,8 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     """
     Determines if a molecule is a 2-oxo monocarboxylic acid anion.
     The structure must have:
-    - Exactly one carboxylic acid group (deprotonated as -COO⁻)
-    - Oxo group (=O) at the alpha (2nd) position as a ketone
+    - Exactly one carboxylic acid group (deprotonated as -COO-)
+    - Oxo group (=O) at the alpha (2nd) position as a ketone (not amide, ester, etc.)
     - Overall negative charge
     """
     mol = Chem.MolFromSmiles(smiles)
@@ -27,33 +27,48 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
 
     carboxyl_carbon = carboxylate_matches[0][0]
 
-    # Find alpha carbon(s) (directly adjacent to carboxyl carbon)
-    alpha_carbons = [neighbor.GetIdx() for neighbor in mol.GetAtomWithIdx(carboxyl_carbon).GetNeighbors()
-                     if neighbor.GetAtomicNum() == 6]
+    # Find alpha carbon (adjacent to carboxyl carbon)
+    alpha_carbons = []
+    for bond in mol.GetAtomWithIdx(carboxyl_carbon).GetBonds():
+        neighbor = bond.GetOtherAtomIdx(carboxyl_carbon)
+        if mol.GetAtomWithIdx(neighbor).GetAtomicNum() == 6:  # Carbon
+            alpha_carbons.append(neighbor)
 
     if not alpha_carbons:
-        return False, "No alpha carbon adjacent to carboxyl group"
+        return False, "No alpha carbon found"
 
-    # Check if any alpha carbon has a ketone group
-    ketone_found = False
-    for alpha_idx in alpha_carbons:
-        alpha_atom = mol.GetAtomWithIdx(alpha_idx)
-        
+    # Check each alpha carbon for ketone group
+    valid_alpha = False
+    for alpha in alpha_carbons:
+        alpha_atom = mol.GetAtomWithIdx(alpha)
         # Check for double bond to oxygen
         for bond in alpha_atom.GetBonds():
             if bond.GetBondType() == Chem.BondType.DOUBLE:
-                neighbor = bond.GetOtherAtomIdx(alpha_idx)
+                neighbor = bond.GetOtherAtomIdx(alpha)
                 neighbor_atom = mol.GetAtomWithIdx(neighbor)
-                if neighbor_atom.GetAtomicNum() == 8 and neighbor_atom.GetDegree() == 1:
-                    ketone_found = True
-                    break
-        if ketone_found:
+                if neighbor_atom.GetAtomicNum() == 8:  # Oxygen
+                    # Check oxygen has no other bonds
+                    if neighbor_atom.GetDegree() == 1:
+                        # Check other neighbors of alpha are carbons
+                        valid = True
+                        for b in alpha_atom.GetBonds():
+                            other_idx = b.GetOtherAtomIdx(alpha)
+                            if other_idx == neighbor:  # skip the oxygen
+                                continue
+                            other_atom = mol.GetAtomWithIdx(other_idx)
+                            if other_atom.GetAtomicNum() != 6:
+                                valid = False
+                                break
+                        if valid:
+                            valid_alpha = True
+                            break
+        if valid_alpha:
             break
 
-    if not ketone_found:
-        return False, "No ketone group found on alpha carbon"
+    if not valid_alpha:
+        return False, "Alpha carbon lacks ketone group or has non-carbon substituents"
 
-    # Verify overall negative charge
+    # Check overall charge is negative
     charge = Chem.GetFormalCharge(mol)
     if charge >= 0:
         return False, f"Charge is {charge}, must be negative"
