@@ -1,18 +1,52 @@
 """
 Classifies: CHEBI:28034 beta-D-galactoside
 """
-</think>
+"""
+Classifies: CHEBI:17716 beta-D-galactoside
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Okay, let's figure out why the previous code didn't work well. The main issue was that it had a lot of false positives. The function correctly identified beta-D-galactose rings but didn't properly check the glycosidic bond configuration. Let's think about what's needed for a beta-D-galactoside.
+def is_beta_D_galactoside(smiles: str):
+    """
+    Determines if a molecule is a beta-D-galactoside based on its SMILES string.
+    A beta-D-galactoside must have a D-galactose ring with beta configuration at the anomeric carbon (C1),
+    and a glycosidic bond at the anomeric oxygen.
 
-First, the galactose must be in the D configuration, which means the hydroxyl groups are in specific positions. The anomeric carbon (C1) should have a beta configuration, which in the pyranose form means the hydroxyl is in the axial position (up in Haworth projection). But in SMILES, the actual stereodescriptors depend on the ring structure.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-The previous SMARTS pattern might not have captured the exact stereochemistry. Also, checking for the glycosidic bond correctly is crucial. The beta configuration means the glycosidic oxygen is on the same side as the C5 hydroxyl in the chair conformation.
+    Returns:
+        bool: True if molecule is a beta-D-galactoside, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Another problem could be that the code allowed any substitution on the anomeric oxygen, even if it wasn't a glycosidic bond (like if it's part of an ester or something else). We need to ensure that the oxygen is connected to another sugar or aglycone via a single bond (O-C-...).
+    # Standardize beta-D-galactose pattern with explicit stereochemistry
+    # Pattern matches pyranose form with correct substituent orientations:
+    # - C1 (anomeric) has beta configuration (axial O-glycosidic bond)
+    # - C2: R configuration (hydroxyl equatorial)
+    # - C3: R configuration (hydroxyl equatorial)
+    # - C4: S configuration (hydroxyl axial)
+    # - C5: R configuration (CH2OH group)
+    beta_D_galactose_pattern = Chem.MolFromSmarts(
+        "[C@@H]1([C@H](O)[C@@H](O)[C@H](O[C@H](CO)[C@H]1O)O)O[!H0]"
+    )
+    
+    # Check for core beta-D-galactose structure with glycosidic bond
+    if not mol.HasSubstructMatch(beta_D_galactose_pattern):
+        return False, "No beta-D-galactose core with proper stereochemistry"
+    
+    # Verify glycosidic oxygen is connected to non-sugar moiety
+    # (already enforced by [!H0] in SMARTS pattern)
+    
+    # Optional: Check molecular weight > typical monosaccharides (150-200 Da)
+    # Helps filter out free galactose or small fragments
+    mol_wt = AllChem.CalcExactMolWt(mol)
+    if mol_wt < 180:
+        return False, "Molecular weight too low for glycoside"
 
-So, to improve, the SMARTS pattern should strictly define the beta configuration. Maybe use a more precise pattern that includes the correct stereochemistry around the anomeric center. Also, ensure that the glycosidic oxygen is connected to a non-hydrogen atom (like another carbon) outside the galactose ring.
-
-Let me adjust the SMARTS pattern to better capture the beta configuration. The beta-D-galactopyranose has specific stereochemistry: C1 (anomeric) is R configuration, and the ring oxygen is in the pyranose (6-membered) ring. The hydroxyls on C2, C3, C4 are in the equatorial positions (down, up, down in Haworth). Wait, maybe using SMARTS with explicit stereodescriptors for each chiral center would help.
-
-Also, in the previous code, checking for the glycosidic bond by looking for an oxygen connected to another atom might not be sufficient. We need to make sure that the oxygen is part of an O-glycosidic bond, not an ester or other linkage. But how to differentiate that? Maybe by ensuring
+    return True, "Contains beta-D-galactose core with proper stereochemistry and glycosidic bond"
