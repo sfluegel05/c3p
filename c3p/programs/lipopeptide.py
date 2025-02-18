@@ -25,31 +25,64 @@ def is_lipopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify peptide bonds (amide linkages between amino acids)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")  # Pattern for an amide bond
+    # Identify peptide bonds (amide bonds between amino acids)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N[C;!R]")  # Amide bond to non-ring carbon
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
-    if len(peptide_bonds) < 2:
-        return False, "Insufficient peptide bonds found"
+    if len(peptide_bonds) < 3:
+        return False, f"Insufficient peptide bonds found ({len(peptide_bonds)} found, need at least 3)"
 
-    # Identify amino acid residues (alpha-amino acids)
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4H]([#6])[CX3](=O)")  # N-C-C(=O) pattern
+    # Identify amino acid residues (N-C-C(=O) pattern)
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4H][CX3](=O)")  # N-C-C(=O)
     amino_acids = mol.GetSubstructMatches(amino_acid_pattern)
-    if len(amino_acids) < 2:
-        return False, "Insufficient amino acid residues found"
+    if len(amino_acids) < 3:
+        return False, f"Insufficient amino acid residues found ({len(amino_acids)} found, need at least 3)"
 
-    # Identify lipid chains (long aliphatic chains)
-    lipid_chain_pattern = Chem.MolFromSmarts("C[C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")  # Chain of at least 7 carbons
-    lipid_chains = mol.GetSubstructMatches(lipid_chain_pattern)
-    if len(lipid_chains) == 0:
-        return False, "No lipid chains found"
+    # Function to find the longest aliphatic carbon chain
+    def get_longest_aliphatic_chain(mol):
+        max_length = 0
+        chains = Chem.GetSymmSSSR(mol)
+        for bond in mol.GetBonds():
+            if bond.IsInRing():
+                continue
+            if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
+                path = Chem.FindAllPathsOfLengthN(mol, 8, useBonds=True, useHs=False)
+                for p in path:
+                    is_aliphatic = True
+                    for idx in p:
+                        atom = mol.GetAtomWithIdx(idx)
+                        if atom.GetAtomicNum() != 6 or atom.IsInRing():
+                            is_aliphatic = False
+                            break
+                    if is_aliphatic:
+                        max_length = max(max_length, len(p))
+        return max_length
 
-    # Check for sufficient length of lipid chain
-    aliphatic_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() == 2 and not atom.IsInRing())
-    if aliphatic_carbons < 7:
-        return False, "Lipid chain is too short"
+    # Find the longest aliphatic chain
+    longest_chain_length = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and not atom.IsInRing():
+            length = dfs_aliphatic_chain(atom, set(), mol)
+            longest_chain_length = max(longest_chain_length, length)
 
-    # Check if both peptide and lipid parts are connected
-    if not Chem.GetMolFrags(mol, asMols=False, sanitizeFrags=False):
+    if longest_chain_length < 8:
+        return False, f"No lipid chain found (longest aliphatic chain is {longest_chain_length} carbons, need at least 8)"
+
+    # Verify that the lipid chain is connected to the peptide chain
+    # Simplified check: molecule is connected
+    if len(Chem.GetMolFrags(mol)) > 1:
         return False, "Molecule is disconnected"
 
-    return True, "Contains both peptide bonds and lipid chains indicative of a lipopeptide"
+    return True, "Contains both peptide bonds and lipid chain indicative of a lipopeptide"
+
+def dfs_aliphatic_chain(atom, visited, mol):
+    """
+    Depth-first search to find the length of an aliphatic carbon chain.
+    """
+    length = 1
+    visited.add(atom.GetIdx())
+    for neighbor in atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6 and not neighbor.IsInRing() and neighbor.GetIdx() not in visited:
+            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+            if bond.GetBondType() == Chem.BondType.SINGLE:
+                length = max(length, 1 + dfs_aliphatic_chain(neighbor, visited.copy(), mol))
+    return length
