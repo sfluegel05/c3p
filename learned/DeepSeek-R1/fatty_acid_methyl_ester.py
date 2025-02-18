@@ -24,56 +24,73 @@ def is_fatty_acid_methyl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for exactly one methyl ester group (O=C-O-CH3)
+    # Check for at least one methyl ester group (O=C-O-CH3)
     methyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH3]")
     methyl_ester_matches = mol.GetSubstructMatches(methyl_ester_pattern)
-    if len(methyl_ester_matches) != 1:
-        return False, f"Found {len(methyl_ester_matches)} methyl ester groups, need exactly 1"
+    if not methyl_ester_matches:
+        return False, "No methyl ester groups found"
 
-    # Ensure no other ester groups (any other O-C=O-O- groups)
+    # Ensure all ester groups are methyl esters
     ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+    for ester in ester_matches:
+        # Check if the ester is a methyl ester
+        carbonyl_carbon = ester[0]
+        oxygen = ester[1]
+        # Find the atom attached to the ester oxygen (should be CH3)
+        oxygen_atom = mol.GetAtomWithIdx(oxygen)
+        neighbors = oxygen_atom.GetNeighbors()
+        # The neighbor should be a carbon with three hydrogens (CH3)
+        is_methyl = False
+        for neighbor in neighbors:
+            if neighbor.GetIdx() == carbonyl_carbon:
+                continue
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() == 1:  # CH3
+                is_methyl = True
+        if not is_methyl:
+            return False, "Non-methyl ester group present"
 
     # Check for absence of carboxylic acid groups (-COOH)
     carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     if mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "Carboxylic acid group present"
 
-    # Extract the R group (the part attached to the carbonyl carbon)
-    # Get the carbonyl carbon from the methyl ester match
-    carbonyl_carbon = methyl_ester_matches[0][0]
-    # Find the R group atom (connected to carbonyl carbon, not part of ester oxygen or carbonyl oxygen)
-    neighbors = mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors()
-    r_group_atom = None
-    for neighbor in neighbors:
-        if neighbor.GetIdx() not in {methyl_ester_matches[0][1], methyl_ester_matches[0][2]}:
-            r_group_atom = neighbor
-            break
-    if r_group_atom is None:
-        return False, "No R group attached to carbonyl carbon"
+    # Check each methyl ester's R group (hydrocarbon chain with >=4 carbons)
+    for methyl_ester in methyl_ester_matches:
+        carbonyl_carbon = methyl_ester[0]
+        # Get the R group atom attached to the carbonyl carbon (not part of the ester)
+        r_group_atom = None
+        for neighbor in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors():
+            if neighbor.GetIdx() not in {methyl_ester[1], methyl_ester[2], methyl_ester[3]}:
+                r_group_atom = neighbor
+                break
+        if r_group_atom is None:
+            return False, "No R group attached to carbonyl carbon"
 
-    # Traverse R group to count carbons and check for other heteroatoms (allowed in substituents)
-    # Count carbons in the R group (excluding the ester part)
-    visited = set()
-    stack = [r_group_atom]
-    r_group_carbons = 0
+        # Traverse R group to check for hydrocarbons and count carbons
+        visited = set()
+        stack = [r_group_atom]
+        r_group_carbons = 0
+        valid_hydrocarbon = True
 
-    while stack:
-        atom = stack.pop()
-        if atom.GetIdx() in visited:
-            continue
-        visited.add(atom.GetIdx())
-        if atom.GetAtomicNum() == 6:
+        while stack:
+            atom = stack.pop()
+            if atom.GetIdx() in visited:
+                continue
+            visited.add(atom.GetIdx())
+            # Check if atom is carbon
+            if atom.GetAtomicNum() != 6:
+                valid_hydrocarbon = False
+                break
             r_group_carbons += 1
-        # Add all neighbors except those in the ester group
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() not in {carbonyl_carbon, methyl_ester_matches[0][1], methyl_ester_matches[0][2], methyl_ester_matches[0][3]}:
-                stack.append(neighbor)
+            # Add all neighbors except those in the ester group
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() not in visited and neighbor.GetIdx() != carbonyl_carbon:
+                    stack.append(neighbor)
 
-    # Check minimum carbon count in R group (at least 4 carbons)
-    if r_group_carbons < 4:
-        return False, f"R group has only {r_group_carbons} carbons, need at least 4"
+        if not valid_hydrocarbon:
+            return False, "R group contains non-carbon atoms"
+        if r_group_carbons < 4:
+            return False, f"R group has only {r_group_carbons} carbons, need at least 4"
 
-    return True, "Contains a methyl ester group with a hydrocarbon chain of sufficient length"
+    return True, "Contains methyl ester(s) with hydrocarbon chain(s) of sufficient length"
