@@ -20,26 +20,25 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more specific peptide bond pattern: N-[C](=O)-[N]
-    peptide_bond_pattern = Chem.MolFromSmarts("[#6;X3](=O)[#7;X3]")
+    # Define a peptide bond pattern: N-C(=O)
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
 
-    # Find matches for peptide bonds
-    num_peptide_bonds = len(mol.GetSubstructMatches(peptide_bond_pattern))
+    # Define amino acid residue patterns (generic backbone N-C-C)
+    residue_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)")
 
-    # Verify if potential tetrapeptide is not part of larger cycle incorrectly picked up
-    # Verify that all 3 peptide bonds correspond to non-overlapping terminal-amidic linkages.
-    # For a tetrapeptide, there should be 3 peptide bonds linking 4 residues.
-    if num_peptide_bonds == 3:
-        # Check if end groups are capped (if applicable)
-        num_cap_groups = sum([1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and atom.GetDegree() == 3])
-        
-        # Modification: Verify if we've exactly two non-bonded terminal groups (likely capping groups)
-        if num_cap_groups >= 2:
-            return True, "Contains four amino-acid residues connected by peptide linkages"
-        else:
-            return False, "Does not have expected terminal amidic capping groups"
+    # Find matches for peptide bonds and residues
+    peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
+    residues = mol.GetSubstructMatches(residue_pattern)
+
+    num_peptide_bonds = len(peptide_bonds)
+    num_residues = len(residues)
+
+    # For a tetrapeptide, there must be 4 residues and 3 peptide bonds linking them
+    if num_residues == 4 and num_peptide_bonds == 3:
+        return True, "Contains four amino-acid residues connected by peptide linkages"
     
-    return False, f"Found {num_peptide_bonds} peptide bonds, requires exactly 3 to be a tetrapeptide"
+    # If checks fail
+    return False, f"Found {num_residues} residues and {num_peptide_bonds} peptide bonds, requires 4 residues and 3 peptide bonds"
 
 # Example usage in debug mode
 smiles = "C[C@H](N)C(=O)N[C@@H](Cc1ccccc1)C(=O)N[C@@H](CC(O)=O)C(=O)N[C@@H](CC(O)=O)C(O)=O"
