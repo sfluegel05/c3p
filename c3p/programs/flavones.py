@@ -27,7 +27,8 @@ def is_flavones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the flavone core pattern: 2-aryl-1-benzopyran-4-one
-    flavone_core_pattern = Chem.MolFromSmarts("[cH1]1[cH1][cH1][cH1][cH1][cH1]c2oc(-c3[cH1][cH1][cH1][cH1][cH1][cH1]3)cc(=O)c12")
+    # The pattern allows for substituents on the aromatic rings
+    flavone_core_pattern = Chem.MolFromSmarts("c1ccc2c(c1)oc(-c3ccccc3)cc2=O")
     
     # Check if the molecule matches the flavone core pattern
     if not mol.HasSubstructMatch(flavone_core_pattern):
