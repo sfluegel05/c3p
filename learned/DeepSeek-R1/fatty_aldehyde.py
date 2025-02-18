@@ -28,16 +28,31 @@ def is_fatty_aldehyde(smiles: str):
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
     if len(aldehyde_matches) != 1:
         return False, f"Found {len(aldehyde_matches)} aldehyde groups (needs exactly 1)"
-
-    # Check that the aldehyde carbon is terminal (only one adjacent carbon)
     aldehyde_carbon = aldehyde_matches[0][0]
-    neighbors = [atom for atom in mol.GetAtomWithIdx(aldehyde_carbon).GetNeighbors() if atom.GetAtomicNum() == 6]
-    if len(neighbors) != 1:
-        return False, "Aldehyde group is not at the end of a carbon chain"
 
-    # Check for absence of carboxylic acid groups
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "Contains carboxylic acid group"
+    # Verify terminal position (only one adjacent carbon)
+    adj_carbons = [atom for atom in mol.GetAtomWithIdx(aldehyde_carbon).GetNeighbors() if atom.GetAtomicNum() == 6]
+    if len(adj_carbons) != 1:
+        return False, "Aldehyde not terminal"
+    first_chain_carbon = adj_carbons[0].GetIdx()
 
-    return True, "Terminal aldehyde group with a carbon chain, derived from fatty acid"
+    # Check chain is aliphatic (no aromatic rings)
+    if mol.GetAtomWithIdx(first_chain_carbon).GetIsAromatic():
+        return False, "Aldehyde attached to aromatic system"
+
+    # Check for forbidden elements (only C, H, O allowed)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in [1, 6, 8]:
+            return False, "Contains non-C/H/O atoms"
+
+    # Check oxygen atoms are only in aldehyde or hydroxyl groups
+    bad_oxygen = Chem.MolFromSmarts("[O;!$(O=[CX3H1]);!$(O[H])]")
+    if mol.HasSubstructMatch(bad_oxygen):
+        return False, "Contains non-aldehyde/hydroxyl oxygen"
+
+    # Check minimum chain length (total carbons >=4)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 4:
+        return False, "Chain too short (min 4 carbons)"
+
+    return True, "Terminal aldehyde in aliphatic chain with no forbidden groups"
