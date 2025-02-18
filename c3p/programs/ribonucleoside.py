@@ -7,14 +7,8 @@ Classifies: any nucleoside where the sugar component is D-ribose (ribonucleoside
 Definition:
 A ribonucleoside is a nucleoside that has its nucleobase linked via an N-glycosidic bond to a D-ribofuranose unit.
 The ribofuranose is a five-membered ring (4 carbons and 1 oxygen) and possesses an exocyclic CH2OH group 
-(at the 5'-position) attached to one of its carbons. Additionally, one ring carbon is directly bonded 
-to an aromatic nitrogen (representing the nucleobase linkage).
-
-Improvements over previous attempts:
-  1. Reject compounds containing phosphorus (avoid nucleotides).
-  2. Look for five-membered rings having exactly 1 oxygen and 4 carbons.
-  3. For each candidate ring, check that one of its carbons is attached to an exocyclic CH2OH group.
-  4. Also require that at least one ring carbon is attached (outside the ring) to an aromatic nitrogen.
+attached to one of its carbons. Additionally, one ring carbon must be directly bonded to an aromatic nitrogen 
+(as part of the nucleobase).
 """
 
 from rdkit import Chem
@@ -22,13 +16,13 @@ from rdkit.Chem import AllChem
 
 def is_ribonucleoside(smiles: str):
     """
-    Determines if a molecule is a ribonucleoside (nucleoside with D-ribose sugar)
+    Determines if a molecule is a ribonucleoside (a nucleoside where the sugar is D-ribose) 
     by checking for:
-      - absence of phosphorus,
-      - presence of a five-membered ring (4 carbons, 1 oxygen),
-      - at least one ring carbon bearing an exocyclic CH2OH group,
-      - and a linkage (via an aromatic nitrogen) to a nucleobase.
-    
+       - Absence of phosphorus (to avoid nucleotides).
+       - Presence of a five-membered ring with exactly one oxygen and four carbons (ribofuranose).
+       - At least one ring carbon having an exocyclic CH2OH group.
+       - At least one ring carbon attached outside the ring to an aromatic nitrogen (nucleobase linkage).
+
     Args:
         smiles (str): SMILES string of the molecule.
         
@@ -36,80 +30,73 @@ def is_ribonucleoside(smiles: str):
         bool: True if the molecule is classified as a ribonucleoside, else False.
         str: Explanation for the classification decision.
     """
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Reject molecules containing phosphorus (e.g. nucleotides)
-    if any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms()):
-        return False, "Molecule contains phosphorus; likely a nucleotide rather than a nucleoside"
+    # 1. Reject any molecules that contain phosphorus (atomic number 15)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 15:
+            return False, "Molecule contains phosphorus; likely a nucleotide rather than a nucleoside"
 
-    # For proper substituent perception, add explicit hydrogens.
+    # For better substituent perception, add explicit hydrogens.
     molH = Chem.AddHs(mol)
     ring_info = molH.GetRingInfo()
 
-    # Helper function: determine if an atom is a CH2 (methylene) that is part of a CH2OH group.
-    def is_CH2OH(candidate, attached_from_ring):
-        # Candidate must be a carbon (atomic number 6)
-        if candidate.GetAtomicNum() != 6:
+    # Define a helper function to decide if an exocyclic atom is a CH2OH substituent.
+    def is_exocyclic_CH2OH(atom):
+        # Must be a carbon atom.
+        if atom.GetAtomicNum() != 6:
             return False
-        # Check that candidate is not part of the sugar ring (exocyclic)
-        # Count explicit hydrogens (if not provided, GetTotalNumHs() can be used)
-        # We expect a CH2 to have two hydrogens.
-        if candidate.GetTotalNumHs() != 2:
+        # Check that it has exactly two hydrogens.
+        if atom.GetTotalNumHs() != 2:
             return False
-        # It should be attached to exactly one oxygen that is itself an -OH group.
-        oxygen_neighbors = [nbr for nbr in candidate.GetNeighbors() 
-                            if nbr.GetAtomicNum() == 8 and nbr.GetIdx() != attached_from_ring]
-        if len(oxygen_neighbors) != 1:
-            return False
-        # Check that this oxygen has at least one hydrogen (i.e. is -OH)
-        oxygen = oxygen_neighbors[0]
-        if oxygen.GetTotalNumHs() < 1:
-            return False
-        return True
+        # It must be attached to an oxygen that bears at least one hydrogen (i.e. is -OH).
+        for nbr in atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() >= 1:
+                return True
+        return False
 
-    # Iterate over each ring in the molecule.
+    # Iterate over each ring in the molecule to find candidate ribofuranose rings.
     for ring in ring_info.AtomRings():
-        # We only consider rings with exactly five atoms.
+        # Consider only rings of exactly five atoms.
         if len(ring) != 5:
             continue
-        
-        # Gather atoms of the ring (by indices in the current molH)
+
+        # Get the atoms of the ring.
         ring_atoms = [molH.GetAtomWithIdx(idx) for idx in ring]
-        # Count how many are oxygen (atomic number 8) and carbon (atomic number 6)
+        # Count oxygen and carbon atoms within the ring.
         num_oxygens = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
         num_carbons = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 6)
+        # The ring must contain exactly 1 oxygen and 4 carbons.
         if num_oxygens != 1 or num_carbons != 4:
-            continue  # This ring does not match the ribofuranose pattern.
+            continue
 
-        # Now, check for the exocyclic CH2OH group.
+        # Two features we need for ribose:
+        #  - exocyclic CH2OH group attached to one ring atom
+        #  - a linkage to a nucleobase as indicated by an aromatic nitrogen attached to a ring atom
         ch2oh_found = False
-        # Also check for nucleobase linkage via aromatic nitrogen.
-        nucleobase_attached = False
-        
-        # For every atom in the ring:
+        base_link_found = False
+
+        # For each atom in this candidate ring...
         for idx in ring:
             ring_atom = molH.GetAtomWithIdx(idx)
-            # Check neighbors not in the ring.
+            # Get neighbors outside of the ring.
             for nbr in ring_atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
-                    continue  # Skip atoms inside the ring.
-                # Check if this neighbor is a CH2OH group.
-                # We require that the exocyclic candidate attached to the ring is a carbon that qualifies as CH2OH.
-                if nbr.GetAtomicNum() == 6 and is_CH2OH(nbr, ring_atom.GetIdx()):
+                    continue  # Skip atoms that are part of the ring.
+                # Check for CH2OH substituent.
+                if is_exocyclic_CH2OH(nbr):
                     ch2oh_found = True
-                # Also check if a neighbor is an aromatic nitrogen; this can mark nucleobase attachment.
+                # Check for nucleobase linkage: an aromatic nitrogen.
                 if nbr.GetAtomicNum() == 7 and nbr.GetIsAromatic():
-                    nucleobase_attached = True
-            # If we already found a nucleobase link on one of the ring atoms,
-            # we can also check for the CH2OH on some (possibly different) ring atom.
-            # (Do not short-circuit until both are true.)
-        
-        # If both features are found in this candidate ribofuranose ring, we classify as ribonucleoside.
-        if ch2oh_found and nucleobase_attached:
-            return True, ("Found five-membered ribofuranose ring (1 O and 4 C) with an exocyclic CH2OH substituent "
-                          "and a ring carbon attached to an aromatic nitrogen (nucleobase linkage)")
+                    base_link_found = True
+
+        # If both substituents are detected for this ring, we have found a ribofuranose unit.
+        if ch2oh_found and base_link_found:
+            return True, ("Found a ribofuranose ring (1 O and 4 C) with an exocyclic CH2OH group and "
+                          "a nucleobase linkage via an aromatic nitrogen")
     
     return False, "No ribose moiety (with CH2OH and nucleobase linkage) found"
 
@@ -127,5 +114,5 @@ if __name__ == "__main__":
     }
     
     for name, smi in examples.items():
-        res, reason = is_ribonucleoside(smi)
-        print(f"{name}: {res} ({reason})")
+        is_ribo, reason = is_ribonucleoside(smi)
+        print(f"{name}: {is_ribo} ({reason})")
