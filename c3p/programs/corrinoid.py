@@ -21,8 +21,7 @@ def is_corrinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Corrin ring pattern is hard to capture in a singular SMARTS
-    # We can check for cobalt and a large macrocycle as proxy
+    # Look for cobalt atom
     cobalt_atom = None
     for atom in mol.GetAtoms():
         if atom.GetSymbol() == 'Co':
@@ -30,12 +29,13 @@ def is_corrinoid(smiles: str):
             break
     if not cobalt_atom:
         return False, "Cobalt atom not found"
+    
+    # Define a SMARTS pattern for a corrin-like macrocyclic ring, simplified as complex structure
+    # Note: This is a rough representation and might need further refinement
+    corrin_pattern = Chem.MolFromSmarts("[#6;R][#7;R][$([#7]=[#6]-[#6])]-[$([#6]=[#6]-[#7])][#6;R]")
+    
+    # Check if the molecule contains this pattern
+    if not mol.HasSubstructMatch(corrin_pattern):
+        return False, "Corrin-like macrocycle pattern not found"
 
-    # Attempt to identify a macrocyclic ring structure (indicative of a corrin)
-    # Corrin-specific patterns would make use of detailed SMARTS capturing the macrocycle
-    # This is a simplified check to capture a large ring presence
-    ri = mol.GetRingInfo()
-    if not any(len(r) > 10 for r in ri.AtomRings()):
-        return False, "No large macrocyclic ring found"
-
-    return True, "Contains cobalt and large macrocyclic ring consistent with corrinoid structure"
+    return True, "Contains cobalt and corrin-like macrocycle consistent with corrinoid structure"
