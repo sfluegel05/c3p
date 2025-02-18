@@ -19,54 +19,48 @@ def is_bioconjugate(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Refined and additional biological substructure patterns to enhance accuracy
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)][CX4][CX3](=O)[O,N,R]")
-    sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H](O)[C@H]([O,N])[C@H]1O")
-    lipid_chain_pattern = Chem.MolFromSmarts("[CH3][CH2]{7,}")
-    nucleotide_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)[N,O]")
+    try:
+        # Biological pattern SMARTS (e.g., amino acids, sugars, nucleotides)
+        amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)][CX4][CX3](=O)[O,N,R]")
+        sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H](O)[C@H]([O,N])[C@H]1O")
+        nucleotide_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)")
 
-    # Covalent linkage patterns (extended to capture amide, thioester, ether, etc.)
-    ester_linkage_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[O][#6]")
-    amide_linkage_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3][CX4]")
-    thioester_linkage_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[S][#6]")
-    ether_linkage_pattern = Chem.MolFromSmarts("[C][O][C]")
-    disulfide_linkage_pattern = Chem.MolFromSmarts("[S][S]")
+        # Covalent linkage patterns (e.g., amide, disulfide)
+        amide_linkage_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3][CX4]")
+        disulfide_linkage_pattern = Chem.MolFromSmarts("[S][S]")
 
-    # Biological patterns map
-    patterns = {
-        "amino acid": amino_acid_pattern,
-        "sugar": sugar_pattern,
-        "lipid chain": lipid_chain_pattern,
-        "nucleotide": nucleotide_pattern,
-    }
+        # Biological structures
+        bio_patterns = {
+            "amino acid": amino_acid_pattern,
+            "sugar": sugar_pattern,
+            "nucleotide": nucleotide_pattern,
+        }
 
-    # Covalent link patterns map
-    linkage_patterns = {
-        "ester linkage": ester_linkage_pattern,
-        "amide linkage": amide_linkage_pattern,
-        "thioester linkage": thioester_linkage_pattern,
-        "ether linkage": ether_linkage_pattern,
-        "disulfide linkage": disulfide_linkage_pattern,
-    }
+        # Linkage structures
+        linkage_patterns = {
+            "amide linkage": amide_linkage_pattern,
+            "disulfide linkage": disulfide_linkage_pattern,
+        }
 
-    # Detected patterns
-    detected_bio_patterns = set()
-    detected_cov_link_patterns = set()
+        # Check for biological substructures
+        detected_bio_patterns = set()
+        for name, pattern in bio_patterns.items():
+            if pattern and mol.HasSubstructMatch(pattern):
+                detected_bio_patterns.add(name)
 
-    # Detect biological structures
-    for name, pattern in patterns.items():
-        if mol.HasSubstructMatch(pattern):
-            detected_bio_patterns.add(name)
+        # Check for linkage types
+        detected_link_patterns = set()
+        for name, pattern in linkage_patterns.items():
+            if pattern and mol.HasSubstructMatch(pattern):
+                detected_link_patterns.add(name)
 
-    # Detect covalent links
-    for name, pattern in linkage_patterns.items():
-        if mol.HasSubstructMatch(pattern):
-            detected_cov_link_patterns.add(name)
+        # Determine bioconjugate status based on detected patterns
+        if len(detected_bio_patterns) >= 2 and len(detected_link_patterns) > 0:
+            return True, f"Contains {len(detected_bio_patterns)} biological structures and {len(detected_link_patterns)} covalent link types"
+        else:
+            return False, f"Contains {len(detected_bio_patterns)} biological structures and {len(detected_link_patterns)} covalent link types. Requires at least 2 biological substructures with 1 linkage."
 
-    # Determine bioconjugate status
-    if len(detected_bio_patterns) >= 2 and len(detected_cov_link_patterns) > 0:
-        return True, f"Contains {len(detected_bio_patterns)} biologically relevant substructures and {len(detected_cov_link_patterns)} types of covalent linkages"
-    else:
-        return False, f"Contains {len(detected_bio_patterns)} biologically relevant substructures and {len(detected_cov_link_patterns)} types of covalent linkages, need at least 2 biological substructures with at least 1 covalent linkage"
+    except Exception as e:
+        return None, f"Error in pattern matching: {e}"
