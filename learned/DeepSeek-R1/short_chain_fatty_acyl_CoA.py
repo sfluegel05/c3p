@@ -23,10 +23,17 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Check for adenine moiety (part of CoA)
-    adenine_pattern = Chem.MolFromSmarts("[n]1c([nH])nc2c1ncn2")  # Adjusted for adenine in CoA
+    # Improved adenine pattern (purine core with amino group)
+    # Matches the adenine component in CoA (N6-amino group)
+    adenine_pattern = Chem.MolFromSmarts("[nH0]1c2ncnc2c([nH0])n1")
     if not mol.HasSubstructMatch(adenine_pattern):
         return False, "Missing adenine moiety (CoA component)"
+    
+    # Verify CoA's pantetheine-phosphate backbone components
+    # Check for presence of phosphate groups (at least two)
+    phosphate_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)  # Phosphorus atoms
+    if phosphate_count < 3:  # CoA typically has 3 phosphate groups
+        return False, "Insufficient phosphate groups for CoA structure"
     
     # Check for thioester group (C(=O)S-)
     thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
