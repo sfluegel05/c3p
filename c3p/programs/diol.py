@@ -24,8 +24,8 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for hydroxyl groups (-OH) that are not part of carboxylic acids or sulfonic acids
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H;!$(O[C,S]=O)]")
+    # Define a SMARTS pattern for hydroxyl groups (-OH)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     
     # Find all matches for the hydroxyl pattern
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
