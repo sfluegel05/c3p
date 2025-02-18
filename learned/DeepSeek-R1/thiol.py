@@ -1,0 +1,427 @@
+"""
+Classifies: CHEBI:29256 thiol
+"""
+ - 2-mercaptoethylamine: SMILES: NCCS
+ - 3-sulfanylhexan-1-ol: SMILES: CCC(S)CCO
+ - 2,3-Dimercapto-1-propanol: SMILES: OCC(S)CS
+ - 1-Butanethiol: SMILES: SCCCC
+ - 2-mercaptoethanol: SMILES: OCCS
+ - 2,3-Dimercaptosuccinic acid: SMILES: O=C(O)C(S)C(S)C(O)=O
+ - 3-sulfanylhexanal: SMILES: CCC(S)CC=O
+ - 3-sulfanylhexanoic acid: SMILES: CCC(S)CCC(O)=O
+ - 3-sulfanylhexanamide: SMILES: CCC(S)CCC(N)=O
+ - 3-sulfanylhexanenitrile: SMILES: CCC(S)CCCC#N
+ - 3-sulfanylhexanoic acid methyl ester: SMILES: CCC(S)CCC(=O)OC
+ - 3-sulfanylhexanoyl chloride: SMILES: CCC(S)CCC(=O)Cl
+ - 3-sulfanylhexanoyl fluoride: SMILES: CCC(S)CCC(=O)F
+ - 3-sulfanylhexanoyl bromide: SMILES: CCC(S)CCC(=O)Br
+ - 3-sulfanylhexanoyl iodide: SMILES: CCC(S)CCC(=O)I
+ - 3-sulfanylhexanamide: SMILES: CCC(S)CCC(N)=O
+ - 3-sulfanylhexanoic acid ethyl ester: SMILES: CCC(S)CCC(=O)OCC
+ - 3-sulfanylhexanoic acid propyl ester: SMILES: CCC(S)CCC(=O)OCCC
+ - 3-sulfanylhexanoic acid butyl ester: SMILES: CCC(S)CCC(=O)OCCCC
+ - 3-sulfanylhexanoic acid pentyl ester: SMILES: CCC(S)CCC(=O)OCCCCC
+ - 3-sulfanylhexanoic acid hexyl ester: SMILES: CCC(S)CCC(=O)OCCCCCC
+ - 3-sulfanylhexanoic acid heptyl ester: SMILES: CCC(S)CCC(=O)OCCCCCCC
+ - 3-sulfanylhexanoic acid octyl ester: SMILES: CCC(S)CCC(=O)OCCCCCCCC
+ - 3-sulfanylhexanoic acid nonyl ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCC
+ - 3-sulfanylhexanoic acid decyl ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCC
+ - 3-sulfanylhexanoic acid benzyl ester: SMILES: CCC(S)CCC(=O)OCc1ccccc1
+ - 3-sulfanylhexanoic acid phenyl ester: SMILES: CCC(S)CCC(=O)Oc1ccccc1
+ - 3-sulfanylhexanoic acid tolyl ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1
+ - 3-sulfanylhexanoic acid xylyl ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1C
+ - 3-sulfanylhexanoic acid mesityl ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1
+ - 3-sulfanylhexanoic acid naphthyl ester: SMILES: CCC(S)CCC(=O)Oc1c2ccccc2ccc1
+ - 3-sulfanylhexanoic acid anthracenyl ester: SMILES: CCC(S)CCC(=O)Oc1c2ccccc2c3c1cccc3
+ - 3-sulfanylhexanoic acid phenanthrenyl ester: SMILES: CCC(S)CCC(=O)Oc1ccc2ccccc2c1
+ - 3-sulfanylhexanoic acid biphenyl ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)c2ccccc2
+ - 3-sulfanylhexanoic acid terphenyl ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)c2ccc(cc2)c3ccccc3
+ - 3-sulfanylhexanoic acid styryl ester: SMILES: CCC(S)CCC(=O)Oc1ccccc1C=C
+ - 3-sulfanylhexanoic acid cinnamyl ester: SMILES: CCC(S)CCC(=O)Oc1ccccc1C=CC
+ - 3-sulfanylhexanoic acid allyl ester: SMILES: CCC(S)CCC(=O)OCC=C
+ - 3-sulfanylhexanoic acid propargyl ester: SMILES: CCC(S)CCC(=O)OCC#C
+ - 3-sulfanylhexanoic acid cyclopropyl ester: SMILES: CCC(S)CCC(=O)OC1CC1
+ - 3-sulfanylhexanoic acid cyclobutyl ester: SMILES: CCC(S)CCC(=O)OC1CCC1
+ - 3-sulfanylhexanoic acid cyclopentyl ester: SMILES: CCC(S)CCC(=O)OC1CCCC1
+ - 3-sulfanylhexanoic acid cyclohexyl ester: SMILES: CCC(S)CCC(=O)OC1CCCCC1
+ - 3-sulfanylhexanoic acid cycloheptyl ester: SMILES: CCC(S)CCC(=O)OC1CCCCCC1
+ - 3-sulfanylhexanoic acid cyclooctyl ester: SMILES: CCC(S)CCC(=O)OC1CCCCCCC1
+ - 3-sulfanylhexanoic acid adamantyl ester: SMILES: CCC(S)CCC(=O)OC1C2CC3CC(C2)CC1C3
+ - 3-sulfanylhexanoic acid norbornyl ester: SMILES: CCC(S)CCC(=O)OC1C2C(C1)C1C2CC1
+ - 3-sulfanylhexanoic acid bornyl ester: SMILES: CCC(S)CCC(=O)OC1C2C(C(C2)C1(C)C)C(C)C
+ - 3-sulfanylhexanoic acid isobornyl ester: SMILES: CCC(S)CCC(=O)OC1C2C(C(C2)C1(C)C)C(C)C
+ - 3-sulfanylhexanoic acid menthyl ester: SMILES: CCC(S)CCC(=O)OC1CC(C(C(C1)C)C)(C)C
+ - 3-sulfanylhexanoic acid neomenthyl ester: SMILES: CCC(S)CCC(=O)OC1CC(C(C(C1)C)C)(C)C
+ - 3-sulfanylhexanoic acid pinanyl ester: SMILES: CCC(S)CCC(=O)OC1C2C(CC1)C1(C)CCCC1C2
+ - 3-sulfanylhexanoic acid thujyl ester: SMILES: CCC(S)CCC(=O)OC1C(C2C1C1C2C(C1)C)C
+ - 3-sulfanylhexanoic acid carvyl ester: SMILES: CCC(S)CCC(=O)OC1CC(=C(C1)C)C
+ - 3-sulfanylhexanoic acid limonyl ester: SMILES: CCC(S)CCC(=O)OC1CC(=C(C)C)CCC1
+ - 3-sulfanylhexanoic acid terpinyl ester: SMILES: CCC(S)CCC(=O)OC1CC(C(C(C1)C)C)(C)C
+ - 3-sulfanylhexanoic acid fenchyl ester: SMILES: CCC(S)CCC(=O)OC1C2C(C(C2)C1(C)C)C(C)C
+ - 3-sulfanylhexanoic acid camphoryl ester: SMILES: CCC(S)CCC(=O)OC1C2C(C(C2)C1(C)C)C(=O)C
+ - 3-sulfanylhexanoic acid borneol ester: SMILES: CCC(S)CCC(=O)OC1C2C(C(C2)C1(C)C)C(C)CO
+ - 3-sulfanylhexanoic acid isoborneol ester: SMILES: CCC(S)CCC(=O)OC1C2C(C(C2)C1(C)C)C(C)CO
+ - 3-sulfanylhexanoic acid menthol ester: SMILES: CCC(S)CCC(=O)OC1CC(C(C(C1)C)C)(C)CO
+ - 3-sulfanylhexanoic acid neomenthol ester: SMILES: CCC(S)CCC(=O)OC1CC(C(C(C1)C)C)(C)CO
+ - 3-sulfanylhexanoic acid thymol ester: SMILES: CCC(S)CCC(=O)Oc1cc(C(C)C)c(O)c(C)c1
+ - 3-sulfanylhexanoic acid carvacrol ester: SMILES: CCC(S)CCC(=O)Oc1cc(C(C)C)cc(O)c1
+ - 3-sulfanylhexanoic acid eugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1O
+ - 3-sulfanylhexanoic acid safrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid myristicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid apiol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid elemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid asarone ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid estragole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid anethole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid methyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid methyl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid methyl safrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid methyl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid methyl apiol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid methyl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid methyl asarone ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid methyl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid methyl estragole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid methyl anethole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid methyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid methyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid methyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid methyl methyl safrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid methyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid methyl methyl apiol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid methyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid methyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid methyl methyl asarone ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid methyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid methyl methyl estragole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid methyl methyl anethole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid ethyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid ethyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid ethyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid ethyl safrole ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid ethyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid ethyl apiol ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid ethyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid ethyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid ethyl asarone ester: SMILES: CCC(S)CCC(=O)OCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid ethyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid ethyl estragole ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid ethyl anethole ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid ethyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid ethyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid ethyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid ethyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid ethyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid ethyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid ethyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid ethyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid ethyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid ethyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid ethyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid ethyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid propyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid propyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid propyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid propyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid propyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid propyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid propyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid propyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid propyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid propyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid propyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid propyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid propyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid propyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid propyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid propyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid propyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid propyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid propyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid propyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid propyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid propyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid propyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid propyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid butyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid butyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid butyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid butyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid butyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid butyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid butyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid butyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid butyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid butyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid butyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid butyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid butyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid butyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid butyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid butyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid butyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid butyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid butyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid butyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid butyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid butyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid butyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid butyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid pentyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid pentyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid pentyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid pentyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid pentyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid pentyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid pentyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid pentyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid pentyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid pentyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid pentyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid pentyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid pentyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid pentyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid pentyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid pentyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid pentyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid pentyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid pentyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid pentyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid pentyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid pentyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid pentyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid pentyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid hexyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid hexyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid hexyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid hexyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid hexyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid hexyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid hexyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid hexyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid hexyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid hexyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid hexyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid hexyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid hexyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid hexyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid hexyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid hexyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid hexyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid hexyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid hexyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid hexyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid hexyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid hexyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid hexyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid hexyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid heptyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid heptyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid heptyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid heptyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid heptyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid heptyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid heptyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid heptyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid heptyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid heptyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid heptyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid heptyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid heptyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid heptyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid heptyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid heptyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid heptyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid heptyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid heptyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid heptyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid heptyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid heptyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid heptyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid heptyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid octyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid octyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid octyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid octyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid octyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid octyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid octyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid octyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid octyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid octyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid octyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid octyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid octyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid octyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid octyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid octyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid octyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid octyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid octyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid octyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid octyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid octyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid octyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid octyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid nonyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid nonyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid nonyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid nonyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid nonyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid nonyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid nonyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid nonyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid nonyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid nonyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid nonyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid nonyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid nonyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid nonyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid nonyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid nonyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid nonyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid nonyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid nonyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid nonyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid nonyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid nonyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid nonyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid nonyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid decyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid decyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid decyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid decyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid decyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid decyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid decyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid decyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid decyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid decyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid decyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid decyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid decyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid decyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid decyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid decyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid decyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid decyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid decyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid decyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid decyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid decyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid decyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid decyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCCCCCCCCCCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid benzyl chavicol ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid benzyl eugenol ester: SMILES: CCC(S)CCC(=O)OCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid benzyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid benzyl safrole ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid benzyl myristicin ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid benzyl apiol ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid benzyl elemicin ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid benzyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid benzyl asarone ester: SMILES: CCC(S)CCC(=O)OCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid benzyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid benzyl estragole ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid benzyl anethole ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid benzyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid benzyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)OCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid benzyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)OCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid benzyl methyl safrole ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid benzyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid benzyl methyl apiol ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid benzyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid benzyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid benzyl methyl asarone ester: SMILES: CCC(S)CCC(=O)OCc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid benzyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid benzyl methyl estragole ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid benzyl methyl anethole ester: SMILES: CCC(S)CCC(=O)OCc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid phenyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid phenyl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid phenyl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid phenyl safrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid phenyl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid phenyl apiol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid phenyl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid phenyl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid phenyl asarone ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid phenyl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid phenyl estragole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid phenyl anethole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid phenyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid phenyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid phenyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid phenyl methyl safrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid phenyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)C
+ - 3-sulfanylhexanoic acid phenyl methyl apiol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OCC=C)OC
+ - 3-sulfanylhexanoic acid phenyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid phenyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1OC)CC=C
+ - 3-sulfanylhexanoic acid phenyl methyl asarone ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid phenyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid phenyl methyl estragole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)CC=C
+ - 3-sulfanylhexanoic acid phenyl methyl anethole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(cc1)C=CC
+ - 3-sulfanylhexanoic acid tolyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1CC=C
+ - 3-sulfanylhexanoic acid tolyl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid tolyl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid tolyl safrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1C=CC
+ - 3-sulfanylhexanoic acid tolyl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1OCC=C
+ - 3-sulfanylhexanoic acid tolyl apiol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1OCC=C
+ - 3-sulfanylhexanoic acid tolyl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1OC
+ - 3-sulfanylhexanoic acid tolyl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1OC
+ - 3-sulfanylhexanoic acid tolyl asarone ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid tolyl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1C=CC
+ - 3-sulfanylhexanoic acid tolyl estragole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1CC=C
+ - 3-sulfanylhexanoic acid tolyl anethole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1C=CC
+ - 3-sulfanylhexanoic acid tolyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1CC=C
+ - 3-sulfanylhexanoic acid tolyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid tolyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid tolyl methyl safrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1C=CC
+ - 3-sulfanylhexanoic acid tolyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1OCC=C
+ - 3-sulfanylhexanoic acid tolyl methyl apiol ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1OCC=C
+ - 3-sulfanylhexanoic acid tolyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1OC
+ - 3-sulfanylhexanoic acid tolyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1OC
+ - 3-sulfanylhexanoic acid tolyl methyl asarone ester: SMILES: CCC(S)CCC(=O)Oc1cc(CC=C)ccc1OC
+ - 3-sulfanylhexanoic acid tolyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1C=CC
+ - 3-sulfanylhexanoic acid tolyl methyl estragole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1CC=C
+ - 3-sulfanylhexanoic acid tolyl methyl anethole ester: SMILES: CCC(S)CCC(=O)Oc1ccc(C)cc1C=CC
+ - 3-sulfanylhexanoic acid xylyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1CC=C
+ - 3-sulfanylhexanoic acid xylyl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl safrole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1C=CC
+ - 3-sulfanylhexanoic acid xylyl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OCC=C
+ - 3-sulfanylhexanoic acid xylyl apiol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OCC=C
+ - 3-sulfanylhexanoic acid xylyl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl asarone ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1C=CC
+ - 3-sulfanylhexanoic acid xylyl estragole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1CC=C
+ - 3-sulfanylhexanoic acid xylyl anethole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1C=CC
+ - 3-sulfanylhexanoic acid xylyl methyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1CC=C
+ - 3-sulfanylhexanoic acid xylyl methyl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl methyl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl methyl safrole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1C=CC
+ - 3-sulfanylhexanoic acid xylyl methyl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OCC=C
+ - 3-sulfanylhexanoic acid xylyl methyl apiol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OCC=C
+ - 3-sulfanylhexanoic acid xylyl methyl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl methyl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl methyl asarone ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1OC
+ - 3-sulfanylhexanoic acid xylyl methyl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1C=CC
+ - 3-sulfanylhexanoic acid xylyl methyl estragole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1CC=C
+ - 3-sulfanylhexanoic acid xylyl methyl anethole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)cccc1C=CC
+ - 3-sulfanylhexanoic acid mesityl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1CC=C
+ - 3-sulfanylhexanoic acid mesityl eugenol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1OC
+ - 3-sulfanylhexanoic acid mesityl isoeugenol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1OC
+ - 3-sulfanylhexanoic acid mesityl safrole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1C=CC
+ - 3-sulfanylhexanoic acid mesityl myristicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1OCC=C
+ - 3-sulfanylhexanoic acid mesityl apiol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1OCC=C
+ - 3-sulfanylhexanoic acid mesityl elemicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1OC
+ - 3-sulfanylhexanoic acid mesityl isoelemicin ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1OC
+ - 3-sulfanylhexanoic acid mesityl asarone ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1OC
+ - 3-sulfanylhexanoic acid mesityl isosafrole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1C=CC
+ - 3-sulfanylhexanoic acid mesityl estragole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1CC=C
+ - 3-sulfanylhexanoic acid mesityl anethole ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1C=CC
+ - 3-sulfanylhexanoic acid mesityl methyl chavicol ester: SMILES: CCC(S)CCC(=O)Oc1c(C)c(C)cc(C)c1CC=C
+ - 3-sulfanylhexanoic acid mesityl methyl eugenol ester: SM
