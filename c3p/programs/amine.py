@@ -21,24 +21,32 @@ def is_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Refined SMARTS patterns for primary, secondary, and tertiary amines:
+    # SMARTS patterns for primary, secondary, tertiary amines:
     primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][#6]")
     secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1]([#6])[#6]")
     tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([#6])([#6])[#6]")
     
-    # Check the molecule for amine patterns excluding amides, imines, nitriles, etc.
+    # Exclusion patterns
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
     imine_pattern = Chem.MolFromSmarts("[NX2]=[CX3]")
     nitrile_pattern = Chem.MolFromSmarts("[NX1]#[CX2]")
     
-    # Checking for amine but not amides, imines, nitriles and not part of a ring
-    if (not mol.HasSubstructMatch(amide_pattern) and
-        not mol.HasSubstructMatch(imine_pattern) and
-        not mol.HasSubstructMatch(nitrile_pattern) and
-        not mol.GetRingInfo().IsAtomInRingOfSize(mol.GetSubstructMatches(primary_amine_pattern)[0][0], 5) and
-        (mol.HasSubstructMatch(primary_amine_pattern) or
-         mol.HasSubstructMatch(secondary_amine_pattern) or
-         mol.HasSubstructMatch(tertiary_amine_pattern))):
-        return True, "Contains amine group"
+    # If a nitrogen is amide, imine, or nitrile, we exclude it
+    if mol.HasSubstructMatch(amide_pattern) or mol.HasSubstructMatch(imine_pattern) or mol.HasSubstructMatch(nitrile_pattern):
+        return False, "Structure matches amide, imine, or nitrile, excluding it as an amine"
+
+    # Functions to check if there is any amine pattern match
+    def has_amine_structure(pattern):
+        matches = mol.GetSubstructMatches(pattern)
+        for match in matches:
+            if not mol.GetRingInfo().IsAtomInRingOfSize(match[0], 5):
+                # Check if the matched nitrogen is part of a ring
+                if not mol.GetRingInfo().NumAtomRings(match[0]):
+                    return True
+        return False
     
-    return False, "No amine group found, or nitrogen not bonded as required for amines"
+    # Check if any primary, secondary, or tertiary amine structure matches
+    if has_amine_structure(primary_amine_pattern) or has_amine_structure(secondary_amine_pattern) or has_amine_structure(tertiary_amine_pattern):
+        return True, "Contains amine group not part of excluded structures"
+    
+    return False, "No amine group found, or nitrogen not bonded as required"
