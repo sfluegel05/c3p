@@ -23,25 +23,26 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for 3-oxo group (carbonyl in a ring)
-    ketone_pattern = Chem.MolFromSmarts('[C;R]=[O]')
-    if not mol.HasSubstructMatch(ketone_pattern):
-        return False, "No 3-oxo group detected"
+    # Check steroid nucleus using SMARTS pattern for tetracyclic system
+    steroid_smarts = Chem.MolFromSmarts("[C@]12[C@]3[C@]([C@H]([C@@H]1CC2)C)(CC[C@H]4[C@@]3(CC[C@H](C4)O)C)C")
+    if not mol.HasSubstructMatch(steroid_smarts):
+        return False, "No steroid nucleus detected"
 
-    # Check for conjugated double bond at Delta(4) position (C=C adjacent to ketone in same ring)
-    conjugated_pattern = Chem.MolFromSmarts('[C;R](=[O])-[C;R]=[C;R]')
-    conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
+    # Locate 3-oxo group in ring A (should be in 6-membered ring)
+    ring_a_ketone = Chem.MolFromSmarts("[C;R1](=O)[C;R1][C;R1][C;R1][C;R1][C;R1]")
+    ketone_matches = mol.GetSubstructMatches(ring_a_ketone)
+    if not ketone_matches:
+        return False, "3-oxo group not found in ring A"
+
+    # Verify conjugated double bond in positions 4-5 (adjacent to ketone in same ring)
+    conjugated_system = Chem.MolFromSmarts("[C;R1]=[C;R1]-[C;R1](=O)")
+    conjugated_matches = mol.GetSubstructMatches(conjugated_system)
     if not conjugated_matches:
-        return False, "No conjugated double bond at alpha,beta position"
+        return False, "No conjugated Delta(4) system adjacent to 3-oxo group"
 
-    # Verify steroid nucleus characteristics (4+ fused rings)
-    ring_info = mol.GetRingInfo()
-    if len(ring_info.AtomRings()) < 4:
-        return False, "Insufficient rings for steroid structure"
-
-    # Basic molecular weight check (steroids typically >250 Da)
+    # Molecular weight sanity check (typical steroids >280 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250:
+    if mol_wt < 280:
         return False, f"Molecular weight ({mol_wt:.1f} Da) too low for steroid"
 
     return True, "Contains 3-oxo group and conjugated Delta(4) system in steroid nucleus"
