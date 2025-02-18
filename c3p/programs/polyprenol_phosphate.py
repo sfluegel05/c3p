@@ -29,12 +29,12 @@ def is_polyprenol_phosphate(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Check for polyprenol chain (at least 3 isoprene units)
+    # Check for polyprenol chain (at least 2 isoprene units)
     # More flexible pattern to account for different bond types and stereochemistry
     isoprene_pattern = Chem.MolFromSmarts("[C]=[C]-[C]-[C]-[C]=[C]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 3:
-        return False, f"Found {len(isoprene_matches)} isoprene units, need at least 3"
+    if len(isoprene_matches) < 2:
+        return False, f"Found {len(isoprene_matches)} isoprene units, need at least 2"
 
     # Check that the phosphate is attached to the terminal carbon of the polyprenol chain
     # The phosphate should be connected to a carbon with a single hydroxyl group
@@ -43,19 +43,14 @@ def is_polyprenol_phosphate(smiles: str):
     if not mol.HasSubstructMatch(terminal_phosphate_pattern):
         return False, "Phosphate not properly attached to terminal carbon of polyprenol chain"
 
-    # Check for long carbon chain (at least 10 carbons)
-    carbon_chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
+    # Check for long carbon chain (at least 6 carbons)
+    carbon_chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]~[C]")
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "No long carbon chain found"
 
-    # Check molecular weight - polyprenol phosphates typically have MW > 300 Da
+    # Check molecular weight - polyprenol phosphates typically have MW > 200 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
+    if mol_wt < 200:
         return False, "Molecular weight too low for polyprenol phosphate"
-
-    # Additional check for terminal double bond near phosphate
-    terminal_double_bond_pattern = Chem.MolFromSmarts("[C]=[C]~[C]([OX2]P(=O)([OX2])[OX2])")
-    if not mol.HasSubstructMatch(terminal_double_bond_pattern):
-        return False, "No terminal double bond near phosphate group"
 
     return True, "Contains polyprenol chain with terminal phosphate group properly attached"
