@@ -29,5 +29,12 @@ def is_organofluorine_compound(smiles: str):
     c_f_bond_pattern = Chem.MolFromSmarts("[C]-[F]")
     if mol.HasSubstructMatch(c_f_bond_pattern):
         return True, "Contains at least one carbon-fluorine bond"
-    else:
-        return False, "No carbon-fluorine bonds found"
+    
+    # Additionally, check if any fluorine atom is bonded to a carbon atom
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 9:  # Fluorine atom
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                    return True, "Contains at least one carbon-fluorine bond"
+    
+    return False, "No carbon-fluorine bonds found"
