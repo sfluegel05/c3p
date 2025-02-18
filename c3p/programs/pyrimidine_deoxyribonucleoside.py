@@ -6,6 +6,7 @@ Classifies: pyrimidine deoxyribonucleoside
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_pyrimidine_deoxyribonucleoside(smiles: str):
     """
@@ -24,61 +25,63 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphate group (to exclude nucleotides)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
-    if phosphate_pattern is None:
-        return None, "Invalid phosphate SMARTS pattern"
+    # Remove salts and small fragments
+    frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
+    if len(frags) > 1:
+        mol = max(frags, default=mol, key=lambda m: m.GetNumAtoms())
+
+    # Exclude molecules with phosphate groups (nucleotides)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
     if mol.HasSubstructMatch(phosphate_pattern):
         return False, "Molecule is a nucleotide (contains phosphate group)"
 
-    # Find pyrimidine ring
-    pyrimidine_pattern = Chem.MolFromSmarts("n1cnccc1")
-    if pyrimidine_pattern is None:
-        return None, "Invalid pyrimidine SMARTS pattern"
-    pyrimidine_matches = mol.GetSubstructMatches(pyrimidine_pattern)
-    if not pyrimidine_matches:
+    # Define pyrimidine base SMARTS (allows for substitutions)
+    pyrimidine_smarts = "n1c([aH0])[nH0]c([aH0])c([aH0])c1[aH0]"
+    pyrimidine_pattern = Chem.MolFromSmarts(pyrimidine_smarts)
+    if mol.HasSubstructMatch(pyrimidine_pattern):
+        pyrimidine_match = mol.GetSubstructMatch(pyrimidine_pattern)
+    else:
         return False, "No pyrimidine base found"
 
-    # Find sugar ring (five-membered ring containing oxygen)
-    sugar_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1")
-    if sugar_pattern is None:
-        return None, "Invalid sugar SMARTS pattern"
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
+    # Define deoxyribose sugar SMARTS (five-membered ring with oxygen and without 2' OH)
+    deoxyribose_smarts = "[C@@H]1O[C@@H]([C@H](C1)O)CO"
+    deoxyribose_pattern = Chem.MolFromSmarts(deoxyribose_smarts)
+    if mol.HasSubstructMatch(deoxyribose_pattern):
+        sugar_match = mol.GetSubstructMatch(deoxyribose_pattern)
+    else:
         return False, "No deoxyribose sugar found"
 
-    # Now check for glycosidic bond between N1 of pyrimidine and C1' of sugar
-    # For each pyrimidine ring
-    for pyrimidine in pyrimidine_matches:
-        n1_idx = pyrimidine[0]  # N1 atom index
-        n1_atom = mol.GetAtomWithIdx(n1_idx)
-        # Check bonds from N1
-        for bond in n1_atom.GetBonds():
-            neighbor_atom = bond.GetOtherAtom(n1_atom)
-            neighbor_idx = neighbor_atom.GetIdx()
-            if neighbor_atom.GetAtomicNum() == 6:
-                # Check if neighbor atom is part of sugar ring
-                for sugar in sugar_matches:
-                    if neighbor_idx in sugar:
-                        # Found potential glycosidic bond
-                        # Now check for deoxyribose (no OH at 2' position)
-                        # Identify the carbons in the sugar ring
-                        carbon_indices = [idx for idx in sugar if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
-                        # Check for OH group at 2' position
-                        has_2prime_OH = False
-                        for c_idx in carbon_indices:
-                            c_atom = mol.GetAtomWithIdx(c_idx)
-                            # Count how many carbons in ring the carbon atom is connected to
-                            ring_carbons = [nbr for nbr in c_atom.GetNeighbors() if nbr.GetIdx() in carbon_indices]
-                            if len(ring_carbons) == 2:
-                                # This is likely C2' position
-                                for neighbor in c_atom.GetNeighbors():
-                                    if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in sugar:
-                                        # Found OH group at 2' position
-                                        has_2prime_OH = True
-                        if has_2prime_OH:
-                            return False, "Sugar is ribose (has OH at 2' position)"
-                        else:
-                            return True, "Contains pyrimidine base attached to deoxyribose via N-glycosidic bond"
+    # Check for glycosidic bond between N1 of pyrimidine and C1' of sugar
+    n1_atom_idx = pyrimidine_match[0]  # Assuming N1 is the first atom in the pattern
+    c1_prime_idx = sugar_match[0]      # Assuming C1' is the first atom in the sugar pattern
+    bond = mol.GetBondBetweenAtoms(n1_atom_idx, c1_prime_idx)
+    if bond is None:
+        return False, "No glycosidic bond between pyrimidine base N1 and sugar C1'"
 
-    return False, "No glycosidic bond between pyrimidine base and sugar found"
+    # Ensure the molecule is not overly complex (no additional rings)
+    ri = mol.GetRingInfo()
+    num_rings = ri.NumRings()
+    if num_rings > 2:
+        return False, f"Molecule has {num_rings} rings; expected 2 (pyrimidine and sugar)"
+
+    # Check for additional substituents on the sugar (excluding necessary hydroxyls)
+    sugar_atoms = set(sugar_match)
+    for atom_idx in sugar_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in sugar_atoms and neighbor.GetAtomicNum() != 8:
+                    return False, "Sugar has additional substituents"
+
+    # Check for additional substituents on the pyrimidine base
+    base_atoms = set(pyrimidine_match)
+    for atom_idx in base_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() in (6, 7):  # Carbon or nitrogen atom
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in base_atoms and neighbor.GetAtomicNum() != 1:
+                    return False, "Pyrimidine base has additional substituents"
+
+    return True, "Contains pyrimidine base attached to deoxyribose via N-glycosidic bond"
