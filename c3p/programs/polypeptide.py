@@ -15,27 +15,22 @@ def is_polypeptide(smiles: str):
         bool: True if molecule is a polypeptide, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined pattern to match a broader range of amino acid structures
-    # This pattern captures diverse amino acids, including standard and some modified residues
-    amino_acid_patterns = [
-        Chem.MolFromSmarts('[NX3][C@@H](C)C(=O)O'),  # Standard amino acid pattern
-        Chem.MolFromSmarts('[NX3][C@@H]([C@@H](C)O)C(=O)O'),  # Example for hydroxy-amino acids, etc.
-        # Further patterns can be added to capture other common modifications
-    ]
+    # Define a broader range of amino acid residue patterns
+    # Common peptide bond: -C(=O)-NH-
+    peptide_bond_pattern = Chem.MolFromSmarts('C(=O)N')
 
-    num_amino_acids = 0
-    
-    for pattern in amino_acid_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        num_amino_acids += len(matches)
+    # Count the number of peptide bonds as a proxy for the number of amino acid residues
+    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    num_peptide_bonds = len(peptide_bond_matches)
 
-    if num_amino_acids >= 10:
-        return True, f"Contains {num_amino_acids} amino acid residues, classifying as polypeptide"
+    # For polypeptides with 10+ residues, there should be at least 9 peptide bonds
+    if num_peptide_bonds >= 9:
+        return True, f"Contains {num_peptide_bonds + 1} amino acid residues, classifying as polypeptide"
     else:
-        return False, f"Contains {num_amino_acids} amino acid residues, not enough for a polypeptide"
+        return False, f"Contains {num_peptide_bonds + 1} amino acid residues, not enough for a polypeptide"
