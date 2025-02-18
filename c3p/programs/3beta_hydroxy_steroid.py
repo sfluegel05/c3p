@@ -1,22 +1,21 @@
 """
 Classifies: CHEBI:36836 3beta-hydroxy steroid
 """
+#!/usr/bin/env python
 """
 Classifies: 3β-hydroxy steroid
-Definition: A 3-hydroxy steroid in which the 3-hydroxy substituent is in the β‐position.
+Definition: A 3-hydroxy steroid in which the 3-hydroxy substituent is in the β–position.
 
-Our improved classifier proceeds as follows:
-  1. Parse the molecule and obtain rings.
-  2. Filter to rings of sizes 5 or 6 in which at least 67% of the atoms are carbon.
-  3. Build a fused ring graph (where rings sharing at least 2 atoms are connected).
-  4. For each connected fused ring component, require:
-       - At least 4 rings are present.
-       - At least one of the rings is 5-membered and at least three are 6-membered.
-       - The union of atoms (the candidate steroid nucleus) is of a reasonable size (15–23 atoms)
-         and is predominantly (>=80%) carbon.
-  5. Look for at least one beta–oriented hydroxyl group ([C@@H](O)) whose carbon is within the nucleus.
-  
-If all conditions are met, we classify the molecule as a 3β–hydroxy steroid.
+This implementation parses the SMILES and then:
+  1. Obtains rings (only 5- and 6-membered ones are candidates).
+  2. Builds a graph of rings fused by at least 2 common atoms.
+  3. Searches for a fused component (the steroid nucleus) that ideally:
+       - Contains exactly 4 rings (the typical tetracyclic steroid core) where one is 5-membered and three are 6-membered;
+         or if not available, then contains >=4 rings and the union of ring atoms is between 15 and 25 with >=70% carbons.
+  4. Finally, it checks for at least one beta–oriented hydroxyl group ([C@@H](O))
+     that is attached on a nucleus atom.
+     
+If all these conditions are met, the molecule is classified as a 3β–hydroxy steroid.
 """
 
 from rdkit import Chem
@@ -24,50 +23,41 @@ from rdkit import Chem
 def is_3beta_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 3β-hydroxy steroid based on its SMILES string.
-
-    The classifier checks:
-      1. That a steroid nucleus is present – by finding a fused tetracyclic system (4 or more rings)
-         with at least one 5-membered and three 6-membered rings. In addition, the union of atoms 
-         making up the cluster (“nucleus”) must be of a size consistent with steroids (15–23 atoms)
-         and mostly carbon (>=80%).
-      2. That at least one beta–oriented hydroxyl group ([C@@H](O)) is attached to an atom of the nucleus.
-      
+    
     Args:
-        smiles (str): SMILES string of the molecule.
-        
+        smiles (str): SMILES string for the molecule.
+    
     Returns:
         bool: True if the molecule is classified as a 3β–hydroxy steroid, False otherwise.
-        str: Explanation for the classification decision.
+        str: Explanation of the decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Obtain all rings from the molecule
+    # Get all rings from the molecule.
     ring_info = mol.GetRingInfo().AtomRings()
     
-    # Step 1: Filter for rings of size 5 or 6 with at least 67% carbon.
-    filtered_rings = []
+    # Filter for rings of size 5 or 6.
+    candidate_rings = []
     for ring in ring_info:
-        if len(ring) not in (5, 6):
-            continue
-        n_carbons = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-        if n_carbons / len(ring) >= 0.67:
-            filtered_rings.append(ring)
-    if not filtered_rings:
-        return False, "No rings of size 5 or 6 with sufficient carbon content found"
+        if len(ring) in (5, 6):
+            candidate_rings.append(ring)
     
-    # Step 2: Build graph of fused rings (rings sharing at least 2 atoms are fused).
-    ring_graph = {i: set() for i in range(len(filtered_rings))}
-    for i in range(len(filtered_rings)):
-        ring_i = set(filtered_rings[i])
-        for j in range(i+1, len(filtered_rings)):
-            ring_j = set(filtered_rings[j])
-            if len(ring_i & ring_j) >= 2:
+    if not candidate_rings:
+        return False, "No 5- or 6-membered rings found"
+    
+    # Build a graph of rings fused by at least 2 atoms.
+    ring_graph = {i:set() for i in range(len(candidate_rings))}
+    for i in range(len(candidate_rings)):
+        ring_i = set(candidate_rings[i])
+        for j in range(i+1, len(candidate_rings)):
+            ring_j = set(candidate_rings[j])
+            if len(ring_i.intersection(ring_j)) >= 2:
                 ring_graph[i].add(j)
                 ring_graph[j].add(i)
-                
-    # Gather connected components from the fused ring graph.
+    
+    # Discover connected components in the fuse graph.
     seen = set()
     fused_components = []
     for i in ring_graph:
@@ -80,65 +70,72 @@ def is_3beta_hydroxy_steroid(smiles: str):
             if node in comp:
                 continue
             comp.add(node)
-            for neighbor in ring_graph[node]:
-                if neighbor not in comp:
-                    stack.append(neighbor)
-        seen |= comp
+            for neigh in ring_graph[node]:
+                if neigh not in comp:
+                    stack.append(neigh)
+        seen.update(comp)
         fused_components.append(comp)
     
-    # Step 3: Look for a fused component with at least 4 rings,
-    # with at least one 5-membered ring and at least three 6-membered rings.
-    # Also require that the nucleus (the union of ring atoms) is of a reasonable size (15-23 atoms)
-    # and that at least 80% of its atoms are carbons.
     steroid_nucleus = None
+    nucleus_reason = ""
+    # First try to find a fused component with exactly 4 rings and with 1 five-membered and 3 six-membered rings.
     for comp in fused_components:
-        if len(comp) < 4:
-            continue
-        n5 = sum(1 for idx in comp if len(filtered_rings[idx]) == 5)
-        n6 = sum(1 for idx in comp if len(filtered_rings[idx]) == 6)
-        if n5 < 1 or n6 < 3:
-            continue
+        if len(comp) == 4:
+            n5 = sum(1 for idx in comp if len(candidate_rings[idx]) == 5)
+            n6 = sum(1 for idx in comp if len(candidate_rings[idx]) == 6)
+            if n5 >= 1 and n6 >= 3:
+                # Gather all atoms participating in these rings.
+                nucleus_atoms = set()
+                for idx in comp:
+                    nucleus_atoms.update(candidate_rings[idx])
+                steroid_nucleus = nucleus_atoms
+                nucleus_reason = "Found tetracyclic (4-ring) nucleus with 1 five-membered and 3 six-membered rings"
+                break
 
-        # Get the union of atoms corresponding to this fused component.
-        nucleus_atoms = set()
-        for idx in comp:
-            nucleus_atoms.update(filtered_rings[idx])
-            
-        # Check the nucleus size is in a typical steroid core range.
-        if not (15 <= len(nucleus_atoms) <= 23):
-            # If the fused component is too big, it might be part of a decorated ring system.
-            continue
-            
-        # Check that the nucleus is predominantly carbon.
-        nucleus_carbons = sum(1 for idx in nucleus_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-        if nucleus_carbons / len(nucleus_atoms) < 0.80:
-            continue
-            
-        steroid_nucleus = nucleus_atoms
-        break
+    # If no ideal tetracyclic nucleus was found, try candidates with >=4 rings and a nucleus size in [15,25],
+    # and at least 70% carbons.
+    if steroid_nucleus is None:
+        for comp in fused_components:
+            if len(comp) < 4:
+                continue
+            nucleus_atoms = set()
+            for idx in comp:
+                nucleus_atoms.update(candidate_rings[idx])
+            if not (15 <= len(nucleus_atoms) <= 25):
+                continue
+            n_carbons = sum(1 for idx in nucleus_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+            if (n_carbons / len(nucleus_atoms)) < 0.70:
+                continue
+            # Additionally, require at least one 5-membered and one 6-membered ring overall.
+            n5 = sum(1 for idx in comp if len(candidate_rings[idx]) == 5)
+            n6 = sum(1 for idx in comp if len(candidate_rings[idx]) == 6)
+            if n5 < 1 or n6 < 1:
+                continue
+            steroid_nucleus = nucleus_atoms
+            nucleus_reason = f"Found fused nucleus (from {len(comp)} rings, union size {len(nucleus_atoms)}, carbon fraction {n_carbons/len(nucleus_atoms):.2f})"
+            break
 
     if steroid_nucleus is None:
         return False, "Steroid nucleus not found (no appropriate fused tetracyclic cluster detected)"
-
-    # (Optional) Also check that the nucleus constitutes a reasonable fraction of the molecule.
-    total_atoms = mol.GetNumAtoms()
-    if len(steroid_nucleus)/total_atoms < 0.20:
-        return False, "Steroid nucleus constitutes less than 20% of the molecule's atoms"
-
-    # Step 4: Search for beta-oriented hydroxyl groups.
-    # Use SMARTS "[C@@H](O)" which defines a chiral carbon with attached hydroxyl.
+    
+    # (Optional) Check that the nucleus is a reasonable fraction of the whole molecule.
+    if len(steroid_nucleus)/mol.GetNumAtoms() < 0.20:
+        return False, "Nucleus is too small relative to the molecule"
+    
+    # Look for beta–oriented hydroxyl group.
+    # SMARTS [C@@H](O) looks for a chiral carbon with an –OH.
     beta_oh_query = Chem.MolFromSmarts("[C@@H](O)")
     beta_matches = mol.GetSubstructMatches(beta_oh_query)
     if not beta_matches:
-        return False, "No beta-oriented hydroxyl group ([C@@H](O)) found"
+        return False, "No beta–oriented hydroxyl group ([C@@H](O)) found"
     
-    # Verify that at least one beta-OH is attached to an atom of the steroid nucleus.
+    # Require that at least one beta-OH is attached to an atom in the nucleus.
     for match in beta_matches:
-        # match[0] is the carbon with defined stereochemistry.
+        # match[0] gives the index of the chiral carbon (with –OH attached).
         if match[0] in steroid_nucleus:
-            return True, "Molecule contains a steroid nucleus with a beta-oriented (3β) hydroxyl group"
+            return True, "Molecule contains a steroid nucleus (" + nucleus_reason + ") with a beta-oriented (3β) hydroxyl group"
     
-    return False, "Beta–oriented hydroxyl group not attached to the steroid nucleus"
+    return False, "No beta–oriented hydroxyl group found on the steroid nucleus"
 
 # Example usage:
 # test_smiles = "[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CC[C@@H](O)C(C)C"
