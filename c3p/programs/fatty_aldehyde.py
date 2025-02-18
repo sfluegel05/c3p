@@ -3,7 +3,10 @@ Classifies: CHEBI:35746 fatty aldehyde
 """
 """
 Classifies: Fatty Aldehyde
-Definition: An aldehyde formally arising from reduction of the carboxylic acid group of its corresponding fatty acid, having a carbonyl group at one end of the carbon chain.
+Definition: An aldehyde formally arising from reduction of the carboxylic acid group 
+of its corresponding fatty acid, having a carbonyl group at one end of the carbon chain.
+We expect a fatty aldehyde to be acyclic, with most heavy atoms being carbons (and O’s from a few 
+hydroxyls), and a single terminal aldehyde group.
 """
 
 from rdkit import Chem
@@ -11,85 +14,97 @@ from rdkit import Chem
 def is_fatty_aldehyde(smiles: str):
     """
     Determines if a molecule is a fatty aldehyde based on its SMILES string.
-
-    A fatty aldehyde should have a long aliphatic carbon chain (we require at least 8 carbon atoms)
-    and must contain at least one terminal aldehyde group. A terminal aldehyde group is defined here as:
-      - An sp2 carbon that forms a C=O group,
-      - Carries one hydrogen (as in an aldehyde),
-      - Not part of a ring,
-      - And attached to a carbon which is part of an aliphatic chain.
+    
+    Checks performed:
+      1. The SMILES must be valid.
+      2. The molecule must contain at least 8 carbons.
+      3. The molecule must be acyclic (no rings), as fatty aldehydes are typically linear.
+      4. The molecule must contain at least one aldehyde group [CX3H1](=O) that is terminal:
+         - The aldehyde carbon should not be in a ring.
+         - It must have exactly one carbon neighbor (attached to the aliphatic chain).
+      5. The overall heavy-atom composition should be dominated by C (and allowed O) –
+         if the fraction of carbons among heavy atoms is low, the molecule likely contains other 
+         functionalities and is mis‐classified.
     
     Args:
-        smiles (str): SMILES string of the molecule.
-
+        smiles (str): SMILES representation of the molecule.
+    
     Returns:
-        bool: True if molecule is classified as fatty aldehyde, False otherwise.
-        str: Explanation/reason for the classification.
+        bool: True if molecule is classified as a fatty aldehyde, False otherwise.
+        str: Explanation for the decision.
     """
-    # Parse the SMILES string to generate a molecule
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Count total number of carbon atoms in the molecule
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 8:
-        return False, f"Not enough carbon atoms ({carbon_count} found; need at least 8) for a fatty chain"
-
-    # Define a SMARTS pattern for an aldehyde group (the carbonyl carbon with one H)
+    
+    # Count total number of carbon atoms
+    carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    n_carbons = len(carbons)
+    if n_carbons < 8:
+        return False, f"Not enough carbon atoms ({n_carbons} found; need at least 8) for a fatty chain"
+    
+    # Check if the molecule is acyclic (no rings); fatty aldehydes are expected to be linear
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains ring(s) which is not typical for a fatty aldehyde"
+    
+    # Compute heavy-atom count (exclude hydrogens) and carbon fraction.
+    heavy_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1]
+    n_heavy = len(heavy_atoms)
+    if n_heavy == 0:
+        return False, "No heavy atoms found"
+    carbon_fraction = n_carbons / n_heavy
+    # In typical fatty aldehydes most heavy atoms are carbons (and one or two oxygens)
+    if carbon_fraction < 0.75:
+        return False, "Molecule has a low carbon fraction (likely contains additional functionalities)"
+    
+    # Define aldehyde SMARTS: a carbon with one hydrogen and double-bonded to oxygen.
     aldehyde_smarts = "[CX3H1](=O)"
     aldehyde_pattern = Chem.MolFromSmarts(aldehyde_smarts)
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
     if not aldehyde_matches:
         return False, "No aldehyde group found"
-
-    # Check each aldehyde match for being terminal (i.e. at one end of a chain)
+    
+    # Check each aldehyde match to ensure it is terminal (i.e., attached to exactly one carbon)
     terminal_aldehyde_found = False
     for match in aldehyde_matches:
-        # match[0] will be the aldehyde carbon; match[1] is not explicitly provided by this SMARTS,
-        # so we identify it through neighbors.
+        # match[0] is the aldehyde carbon (the one bearing the hydrogen).
         aldehyde_c = mol.GetAtomWithIdx(match[0])
-        # Ensure the aldehyde carbon is not in a ring (it should be terminal)
         if aldehyde_c.IsInRing():
-            continue
-
-        # Find the neighbor that is not oxygen. In an aldehyde, the carbonyl is double-bonded to O.
+            continue  # must not be in a ring
+        
+        # Find non-oxygen neighbors (the C=O oxygen is not used to define the chain).
         neighbor_carbons = []
-        for neighbor in aldehyde_c.GetNeighbors():
-            # Oxygen neighbor is part of the C=O; skip it.
-            if neighbor.GetAtomicNum() == 8:
+        for nb in aldehyde_c.GetNeighbors():
+            if nb.GetAtomicNum() == 8:
                 continue
-            # We expect the other neighbor to be a carbon (attached to the fatty chain)
-            if neighbor.GetAtomicNum() == 6:
-                neighbor_carbons.append(neighbor)
-        # For a terminal aldehyde group, there should be exactly one carbon neighbor.
+            if nb.GetAtomicNum() == 6:
+                neighbor_carbons.append(nb)
+        # Terminal aldehyde should have exactly one carbon neighbor.
         if len(neighbor_carbons) != 1:
             continue
-
-        # Optionally, check that the attached carbon is part of a mostly linear aliphatic chain.
-        # Here we simply check that it is an sp3 (or sp2) carbon and not in a ring.
+        
+        # Additionally, check that the neighbor carbon (start of the chain) is not in a ring.
         chain_carbon = neighbor_carbons[0]
         if chain_carbon.IsInRing():
             continue
-
-        # If we reached here, we consider this aldehyde to be at the terminus of a fatty chain.
+        
+        # Passed the terminal aldehyde checks: we consider this aldehyde as valid.
         terminal_aldehyde_found = True
         break
-
+    
     if not terminal_aldehyde_found:
-        return False, "No terminal aldehyde group found; aldehyde group(s) may be internal or in a ring"
+        return False, "No valid terminal aldehyde group found; aldehyde may be internal or part of a ring"
+    
+    return True, "Molecule qualifies as a fatty aldehyde: has a long acyclic carbon chain with a terminal aldehyde group"
 
-    # Passed all checks: the molecule has a long carbon chain and a terminal aldehyde group.
-    return True, "Molecule qualifies as a fatty aldehyde: has a long carbon chain with a terminal aldehyde group."
-
-
-# Example test cases (uncomment to run)
+# Example test‐cases (uncomment to run):
 # test_smiles = [
-#     "[H]C(=CC=O)C(O)CCCCC",  # 4-hydroxynon-2-enal
-#     "O=CCCCCCCCCC/C=C\\CCCCCCCC",  # 11Z-Eicosenal
-#     "CCCCCCCCCCCC=O",  # dodecanal
-#     "O=CCCCCCCCC/C=C\\CCCC",  # example dialdehyde possibility (adipaldehyde = O=CCCCCC=O if linear)
+#     "[H]C(=CC=O)C(O)CCCCC",  # 4-hydroxynon-2-enal, true positive
+#     "O=CCCCCCCCCC/C=C\\CCCCCCCC",  # 11Z-Eicosenal, true positive
+#     "CCCCCCCCCCCC=O",  # dodecanal, true positive
+#     "[H]C(=O)C([H])=C([H])CCCC",  # hept-2-enal; false negative if chain has only 7 C's
 # ]
 # for s in test_smiles:
-#     result, reason = is_fatty_aldehyde(s)
-#     print(f"SMILES: {s} -> {result}: {reason}")
+#     res, reason = is_fatty_aldehyde(s)
+#     print(f"SMILES: {s} -> {res}: {reason}")
