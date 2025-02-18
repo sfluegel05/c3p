@@ -9,41 +9,51 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_mucopolysaccharide(smiles: str):
     """
-    Determines if a molecule is a mucopolysaccharide based on its SMILES string.
-    Mucopolysaccharides are polysaccharides with alternating uronic acid and glycosamine units,
-    often sulfated.
+    Determines if a molecule is a mucopolysaccharide (glycosaminoglycan).
+    Criteria: Alternating uronic acid and glycosamine units in a polysaccharide structure,
+    often sulfated. Uronic acid must be in a cyclic form (e.g., glucuronic acid).
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Uronic acid: carboxylic acid group (COOH)
-    uronic_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2H1]')
-    has_uronic = mol.HasSubstructMatch(uronic_pattern)
+    # Detect uronic acid (cyclic form with carboxylic acid)
+    # Pattern for pyranose ring with COOH (like glucuronic acid)
+    uronic_pattern = Chem.MolFromSmarts("[C;R][C](=O)[OH]")
+    uronic_matches = mol.GetSubstructMatches(uronic_pattern)
+    has_uronic = len(uronic_matches) > 0
 
-    # Glycosamine: amino group attached to carbon adjacent to oxygen (sugar-like)
-    glycosamine_pattern = Chem.MolFromSmarts('[N;H2,H1][C][O]')
-    has_glycosamine = mol.HasSubstructMatch(glycosamine_pattern)
+    # Detect glycosamine (hexosamine in a ring with NH2/OH groups)
+    # Pattern for amino sugar like glucosamine (ring with NH2 and adjacent O)
+    glycosamine_pattern = Chem.MolFromSmarts("[N;H2,H1][C;R][C;R][O;R]")
+    glycosamine_matches = mol.GetSubstructMatches(glycosamine_pattern)
+    has_glycosamine = len(glycosamine_matches) > 0
 
-    # Sulfate ester (O-SO3)
-    sulfate_pattern = Chem.MolFromSmarts('[OX2]S(=O)(=O)[OX2]')
+    # Check sulfate esters (optional but common)
+    sulfate_pattern = Chem.MolFromSmarts("[O]-S(=O)(=O)[O]")
     has_sulfate = mol.HasSubstructMatch(sulfate_pattern)
 
-    # Glycosidic bonds (O connecting two carbons with multiple oxygen attachments)
-    glycosidic_pattern = Chem.MolFromSmarts('[C;!$(C=O)]O[C;!$(C=O)]')
+    # Glycosidic bonds (O connecting two cyclic carbons)
+    glycosidic_pattern = Chem.MolFromSmarts("[C;R]@[O]@[C;R]")
     glycosidic_count = len(mol.GetSubstructMatches(glycosidic_pattern))
 
+    # Check for polysaccharide characteristics (multiple rings)
+    ring_info = mol.GetRingInfo()
+    sugar_rings = sum(1 for ring in ring_info.AtomRings() if len(ring) in [5,6])  # pyranose/furanose
     reasons = []
+    
     if not has_uronic:
         reasons.append("No uronic acid units detected")
     if not has_glycosamine:
         reasons.append("No glycosamine units detected")
-    if glycosidic_count < 1:
-        reasons.append("Insufficient glycosidic bonds")
+    if glycosidic_count < 2:  # At least two glycosidic bonds for a chain
+        reasons.append("Insufficient glycosidic bonds for polysaccharide")
+    if sugar_rings < 2:
+        reasons.append("Not enough sugar rings for polysaccharide")
 
-    # Core requirements: both components and at least one glycosidic bond
-    if has_uronic and has_glycosamine and glycosidic_count >= 1:
-        reason = "Contains uronic acid and glycosamine units with glycosidic bonds"
+    # Core criteria: presence of both units, sufficient glycosidic bonds, and rings
+    if (has_uronic and has_glycosamine and glycosidic_count >=2 and sugar_rings >=2):
+        reason = "Contains uronic acid and glycosamine units with glycosidic bonds in polysaccharide structure"
         if has_sulfate:
             reason += " and sulfate esters"
         return True, reason
