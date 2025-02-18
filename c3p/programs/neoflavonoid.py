@@ -2,10 +2,15 @@
 Classifies: CHEBI:71971 neoflavonoid
 """
 """
-Classifies: Neoflavonoid 
-Definition: A neoflavonoid is any 1-benzopyran (chromene) that has an aryl (e.g. phenyl) substituent at its 4-position.
-The core is defined as a fused bicyclic system of a 6-membered heterocycle (chromene, containing one oxygen)
-fused to a benzene ring. The aryl substituent must be attached at a carbon that is not part of the fused (shared) region.
+Classifies: Neoflavonoid
+Definition: Any 1-benzopyran with an aryl substituent at position 4.
+A neoflavonoid is defined here as a fused bicyclic system where
+  - a 6-membered heterocycle (the chromene/coumarin core) containing exactly one oxygen is fused
+    (i.e. sharing exactly 2 atoms, none of which is oxygen) with
+  - an aromatic benzene ring (a 6-membered ring of carbons flagged as aromatic).
+Furthermore, one of the non-fused carbons of the heterocycle (typically the one adjacent to the oxygen)
+must have an external aryl substituent – here, defined as being connected to a separate 6-membered aromatic ring.
+Note: Being “on the 4–position” is assumed to be the non-shared neighbor of the oxygen.
 """
 
 from rdkit import Chem
@@ -13,82 +18,113 @@ from rdkit import Chem
 def is_neoflavonoid(smiles: str):
     """
     Determines if a molecule is a neoflavonoid.
-    A neoflavonoid must have:
-      1. A 6-membered heterocyclic ring (chromene) containing exactly one oxygen.
-      2. A benzene ring (6 aromatic carbons) fused (sharing at least 2 atoms) with the heterocycle.
-      3. An aryl substituent attached to one of the non-fused positions of the heterocycle (heuristically the 4-position).
+    
+    Strategy:
+      1. Parse the molecule and extract ring information.
+      2. Identify candidate heterocycle rings that:
+           - are 6-membered,
+           - contain exactly one oxygen (assumed to be part of the pyran ring),
+         and candidate benzene rings that:
+           - are 6-membered,
+           - all atoms are aromatic carbons.
+      3. For each pair (heterocycle, benzene ring) that share exactly two atoms – and none of the shared atoms is oxygen –
+         assume that the heterocycle is our chromene/coumarin core.
+      4. In that heterocycle, find the oxygen atom. Among its neighbors in the heterocycle, at least one is expected to be “non-fused”
+         (i.e. not in the shared set). This atom is our candidate “position 4.”
+      5. Check that this candidate carbon has at least one neighbor (outside the heterocycle) that is aromatic and that
+         belongs to a 6-membered aromatic ring (i.e. a phenyl substituent).
+      6. If such a match is found, return True with an explanation; otherwise return False.
     
     Args:
-        smiles (str): SMILES representation of the molecule.
+       smiles (str): SMILES representation of the molecule.
     
     Returns:
-        bool: True if the molecule is a neoflavonoid, False otherwise.
-        str: Explanation for the classification.
+       bool: True if it matches the neoflavonoid definition, False otherwise.
+       str: Explanation of the decision.
     """
-    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
+    all_rings = ring_info.AtomRings()
     
-    chromene_ring = None  # candidate 6-membered heterocycle containing exactly one oxygen
-    benzene_ring = None   # candidate benzene ring: 6 atoms, all aromatic carbons
-    
-    # Search for candidate rings
-    for ring in rings:
-        if len(ring) == 6:
-            atoms = [mol.GetAtomWithIdx(i) for i in ring]
-            # Check for candidate benzene: all aromatic and atomic number=6 (C)
-            if all(a.GetIsAromatic() and a.GetAtomicNum() == 6 for a in atoms):
-                benzene_ring = ring
-            # Check for candidate heterocycle (chromene part): exactly one O and at least one C.
-            if sum(1 for a in atoms if a.GetAtomicNum() == 8) == 1 and sum(1 for a in atoms if a.GetAtomicNum() == 6) >= 1:
-                chromene_ring = ring
-    
-    if chromene_ring is None:
-        return False, "No 6-membered heterocycle (potential chromene) containing one oxygen was found"
-    if benzene_ring is None:
-        return False, "No benzene ring (aromatic 6-membered carbon ring) was found"
-    
-    # Check that the heterocycle and benzene ring are fused (share at least 2 atoms)
-    shared_atoms = set(chromene_ring).intersection(set(benzene_ring))
-    if len(shared_atoms) < 2:
-        return False, "Candidate chromene and benzene rings are not properly fused"
-    
-    # In the chromene ring, determine non-fused atoms (i.e. not shared with the benzene ring)
-    non_fused_atoms = set(chromene_ring) - shared_atoms
-    if not non_fused_atoms:
-        return False, "No non-fused positions found on the heterocycle"
-    
-    # Look for an external aryl substituent on any non-fused carbon atom
-    # (We interpret this as an external neighbor that is aromatic and belongs to a 6-membered aromatic ring.)
-    for idx in non_fused_atoms:
-        atom = mol.GetAtomWithIdx(idx)
-        # Consider only carbon atoms (position 4 should be a carbon)
-        if atom.GetAtomicNum() != 6:
+    # Gather candidate heterocycle rings (6-membered, with exactly one O) and candidate benzene rings
+    candidate_heterocycles = []
+    candidate_benzenes = []
+    for ring in all_rings:
+        if len(ring) != 6:
             continue
-        # Iterate over neighbors not in the chromene ring
-        for nbr in atom.GetNeighbors():
-            if nbr.GetIdx() in chromene_ring:
-                continue  # skip atoms that are part of the core
-            # Check if this neighbor is aromatic
-            if not nbr.GetIsAromatic():
+        atoms = [mol.GetAtomWithIdx(i) for i in ring]
+        # For benzene, all atoms must be aromatic carbons.
+        if all(a.GetIsAromatic() and a.GetAtomicNum() == 6 for a in atoms):
+            candidate_benzenes.append(set(ring))
+        # For a candidate chromene/coumarin ring, require exactly one oxygen and at least one carbon.
+        o_count = sum(1 for a in atoms if a.GetAtomicNum() == 8)
+        c_count = sum(1 for a in atoms if a.GetAtomicNum() == 6)
+        if o_count == 1 and c_count >= 1:
+            candidate_heterocycles.append(set(ring))
+    
+    if not candidate_heterocycles:
+        return False, "No 6-membered heterocycle with exactly one oxygen found (candidate chromene/coumarin core missing)"
+    if not candidate_benzenes:
+        return False, "No 6-membered fully aromatic benzene ring found"
+    
+    # Try to find a fused pair: heterocycle and benzene sharing exactly 2 atoms (and neither shared atom is oxygen)
+    for hetero in candidate_heterocycles:
+        for benzen in candidate_benzenes:
+            shared = hetero.intersection(benzen)
+            if len(shared) != 2:
                 continue
-            # Now check if the neighbor is part of a 6-membered aromatic ring (e.g. phenyl ring)
-            for ring in ring_info.AtomRings():
-                if nbr.GetIdx() in ring and len(ring) == 6:
-                    # Verify that every atom in the ring is aromatic
-                    if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
-                        return True, "Found chromene core fused with benzene and an aryl substituent at a candidate non-fused position"
-                        
-    return False, "No suitable aryl substituent attached at a non-fused position on the chromene core could be identified"
+            # Make sure none of the shared atoms is oxygen (the oxygen in a chromene is not fused to the benzene)
+            if any(mol.GetAtomWithIdx(i).GetAtomicNum() == 8 for i in shared):
+                continue
 
-# Example usage (for testing purposes)
+            # Now assume that hetero is the chromene core. Find the oxygen atom in the heterocycle.
+            oxygen_idx = None
+            for i in hetero:
+                if mol.GetAtomWithIdx(i).GetAtomicNum() == 8:
+                    oxygen_idx = i
+                    break
+            if oxygen_idx is None:
+                continue  # unexpected, but skip if none found
+            
+            oxygen_atom = mol.GetAtomWithIdx(oxygen_idx)
+            # Find neighbors of oxygen that lie in the heterocycle.
+            hetero_neighbors = [nbr.GetIdx() for nbr in oxygen_atom.GetNeighbors() if nbr.GetIdx() in hetero]
+            # We expect one of these neighbors to be non-fused (i.e. not in the shared set) – candidate for position 4.
+            candidate_pos4s = [idx for idx in hetero_neighbors if idx not in shared]
+            if not candidate_pos4s:
+                continue  # no non-fused neighbor of oxygen found in heterocycle
+            
+            # For each candidate position (there might be more than one if ring symmetry is broken)
+            for pos_idx in candidate_pos4s:
+                pos_atom = mol.GetAtomWithIdx(pos_idx)
+                # Skip if this atom is not carbon.
+                if pos_atom.GetAtomicNum() != 6:
+                    continue
+                # Check substituents attached to pos_atom that are NOT part of the heterocycle.
+                for nbr in pos_atom.GetNeighbors():
+                    if nbr.GetIdx() in hetero:
+                        continue  # skip atoms belonging to the core
+                    # We want an aryl substituent: first the neighbor should be aromatic.
+                    if not nbr.GetIsAromatic():
+                        continue
+                    # Now check if this neighbor belongs to a 6-membered aromatic ring (phenyl ring)
+                    for ring in all_rings:
+                        if nbr.GetIdx() in ring and len(ring) == 6:
+                            # Verify all atoms in that ring are aromatic carbons.
+                            if all(mol.GetAtomWithIdx(j).GetIsAromatic() and mol.GetAtomWithIdx(j).GetAtomicNum() == 6 for j in ring):
+                                return True, ("Found candidate 1-benzopyran core (heterocycle fused with benzene) "
+                                              "with an aryl substituent at a candidate non-fused position "
+                                              "(likely the 4-position)")
+    return False, "No suitable candidate 1-benzopyran core with an external aryl substituent at the 4-position was identified"
+
+
+# Example usage for testing:
 if __name__ == "__main__":
-    # Test with one of the provided example SMILES strings.
-    test_smiles = "CC1=CC(=CC2=C1C(CC3(O2)CC(NC(=S)N3)(C)C)C4=CC=C(C=C4)OC)O"
+    # Test with one of the provided SMILES strings
+    test_smiles = "ClC1=C(O)C(=C(C(=O)OC)C=C1OC)C(=O)C2=C(O)C(C=3C4=C(OC(C3)(C)C)C(=CC(=C4)O)CC=C(C)C)=C(C)C=C2O"  # Pestaloficiol U
     result, reason = is_neoflavonoid(test_smiles)
     print("Is neoflavonoid?", result)
     print("Reason:", reason)
