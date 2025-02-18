@@ -10,53 +10,48 @@ from rdkit.Chem import AllChem
 def is_galactosylceramide(smiles: str):
     """
     Determines if a molecule is a galactosylceramide (cerebroside with galactose).
-    Must have a galactose moiety linked via glycosidic bond to a ceramide structure.
-    Ceramide consists of sphingosine backbone with amide-linked fatty acid.
+    Structure must have:
+    - Galactose (pyranose form, any substitution pattern)
+    - Connected via glycosidic bond to ceramide:
+      - Sphingoid base (long chain with amino and hydroxyl groups)
+      - Amide-linked fatty acid chain (long aliphatic chain)
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Match galactose (beta or alpha, allowing substitutions like sulfates)
-    # Pattern captures pyranose ring with at least 4 hydroxyl groups (positions 2,3,4,6)
-    galactose = Chem.MolFromSmarts("[C@H]1[C@H]([C@@H]([C@H]([C@@H](O1)CO)O)O)O")
-    if not mol.HasSubstructMatch(galactose):
+    # Match galactose core (pyranose ring with at least 4 oxygen substituents, allowing modifications)
+    # Pattern accounts for possible substitutions (e.g. sulfates) on hydroxyl groups
+    galactose_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@@H]([C@H]([C@@H](O1)CO[*:1])[*:2])[*:3])[*:4]")
+    if not mol.HasSubstructMatch(galactose_pattern):
         return False, "No galactose moiety detected"
 
-    # Find oxygen atom connecting galactose to ceramide (glycosidic bond)
-    # Iterate through galactose atoms to find connecting O
-    gal_matches = mol.GetSubstructMatches(galactose)
-    for match in gal_matches:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() == 'C' and atom.GetTotalNumHs() == 0:  # Anomeric carbon
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetSymbol() == 'O' and neighbor.GetDegree() == 2:
-                        # Follow the glycosidic bond to ceramide part
-                        next_atom = [n for n in neighbor.GetNeighbors() if n.GetIdx() not in match]
-                        if not next_atom:
-                            continue
-                        next_atom = next_atom[0]
-                        
-                        # Check if connected to sphingosine backbone
-                        # Sphingosine pattern: adjacent amine and hydroxyl groups
-                        sphingo_pattern = Chem.MolFromSmarts("[CH2]-[CH](-O)-[CH2]-[CH](N)")
-                        sphingo_matches = mol.GetSubstructMatches(sphingo_pattern)
-                        if not sphingo_matches:
-                            continue
-                        
-                        # Verify amide-linked fatty acid
-                        # Amide group connected to long aliphatic chain
-                        amide_pattern = Chem.MolFromSmarts("[CX4][CX4][NH1][C](=O)[CX4][CX4,H2]")
-                        amide_matches = mol.GetSubstructMatches(amide_pattern)
-                        if not amide_matches:
-                            continue
-                        
-                        # Check chain lengths (at least 10 carbons in amide chain)
-                        for amide in amide_matches:
-                            fatty_acid = mol.GetAtomWithIdx(amide[3])  # Carbon in amide
-                            chain = AllChem.FindAtomEnvironmentOfRadiusN(mol, 12, fatty_acid.GetIdx())
-                            if len(chain) >= 10:  # Approximate chain length check
-                                return True, "Galactose linked to ceramide via glycosidic bond"
-    
-    return False, "No galactose-ceramide structure found"
+    # Find glycosidic bond between galactose and ceramide
+    # Look for O connecting galactose's anomeric carbon to another atom
+    anomeric_carbon = Chem.MolFromSmarts("[C@H](-[O]-[#6])-[C@H]")  # Anomeric C-O-C link
+    if not mol.HasSubstructMatch(anomeric_carbon):
+        return False, "No glycosidic bond detected"
+
+    # Check for ceramide structure: sphingosine + fatty acid amide
+    # Sphingosine base pattern: long chain with adjacent NH and OH groups
+    sphingo_pattern = Chem.MolFromSmarts("[C]([NH][C](=O)[C][C])[C][C][C@H](O)[C@H]")  # Approx sphingosine backbone
+    if not mol.HasSubstructMatch(sphingo_pattern):
+        return False, "No sphingosine base detected"
+
+    # Verify amide-linked fatty acid (long chain, at least 14 carbons)
+    amide_n = Chem.MolFromSmarts("[NX3][C](=O)[CX4][CX4,H2]")
+    amide_matches = mol.GetSubstructMatches(amide_n)
+    if not amide_matches:
+        return False, "No amide bond found"
+
+    # Check fatty acid chain length from amide
+    for match in amide_matches:
+        fatty_start = mol.GetAtomWithIdx(match[2])  # Carbon adjacent to amide
+        chain = AllChem.FindAtomEnvironmentOfRadiusN(mol, 20, fatty_start.GetIdx())
+        chain_atoms = {mol.GetBondWithIdx(i).GetBeginAtomIdx() for i in chain} | \
+                     {mol.GetBondWithIdx(i).GetEndAtomIdx() for i in chain}
+        carbon_count = sum(1 for idx in chain_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+        if carbon_count >= 14:
+            return True, "Galactose linked to ceramide with long-chain fatty acid"
+
+    return False, "Insufficient fatty acid chain length"
