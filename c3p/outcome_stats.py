@@ -72,6 +72,7 @@ def calculate_all_outcome_stats(
         DataFrame with two columns for each metric (micro_* and macro_*)
 
     Examples:
+
         >>> df = pd.DataFrame({
         ...     'num_true_positives': [10, 5],
         ...     'num_true_negatives': [20, 15],
@@ -141,6 +142,10 @@ def calculate_stats(
         >>> print(micro_metrics['accuracy'].round(2), micro_metrics['precision'].round(2))
         0.79 0.65
 
+        >>> macro_metrics = calculate_stats(multi_class, strategy="macro")
+        >>> print(macro_metrics['f1'].round(2), macro_metrics['precision'].round(2))
+        0.69 0.65
+
         >>> # Error cases
         >>> try:
         ...     calculate_stats(pd.Series(), strategy="invalid")
@@ -206,12 +211,13 @@ def calculate_stats(
         macro_metrics['max_precision'] = max_metrics['precision']
         macro_metrics['max_recall'] = max_metrics['recall']
         macro_metrics['max_accuracy'] = max_metrics['accuracy']
-        macro_metrics['max_num_f1_above_0_99'] = sum(data['f1'] > 0.99)
-        macro_metrics['max_num_f1_above_0_95'] = sum(data['f1'] > 0.95)
-        macro_metrics['max_num_f1_above_0_80'] = sum(data['f1'] > 0.80)
-        macro_metrics['pct_f1_above_0_99'] = sum(data['f1'] > 0.99) / len(data)
-        macro_metrics['pct_f1_above_0_95'] = sum(data['f1'] > 0.95) / len(data)
-        macro_metrics['pct_f1_above_0_80'] = sum(data['f1'] > 0.80) / len(data)
+        if 'f1' in data.columns:
+            macro_metrics['max_num_f1_above_0_99'] = sum(data['f1'] > 0.99)
+            macro_metrics['max_num_f1_above_0_95'] = sum(data['f1'] > 0.95)
+            macro_metrics['max_num_f1_above_0_80'] = sum(data['f1'] > 0.80)
+            macro_metrics['pct_f1_above_0_99'] = sum(data['f1'] > 0.99) / len(data)
+            macro_metrics['pct_f1_above_0_95'] = sum(data['f1'] > 0.95) / len(data)
+            macro_metrics['pct_f1_above_0_80'] = sum(data['f1'] > 0.80) / len(data)
 
         return macro_metrics.round(4)
 
@@ -242,7 +248,7 @@ def calculate_grouped_stats(df: pd.DataFrame, group_by: str) -> pd.DataFrame:
     return pd.concat(group_metrics).round(3)
 
 
-def assign_ranks_per_group(df: pd.DataFrame, group_by: str, metric="f1"):
+def assign_ranks_per_group(df: pd.DataFrame, group_by: str, metric="f1", col_name="rank"):
     """
 
     Example:
@@ -252,6 +258,10 @@ def assign_ranks_per_group(df: pd.DataFrame, group_by: str, metric="f1"):
         ...                    "f1": [1,0, 1, 0, 0, 1],
         ... })
         >>> assign_ranks_per_group(df, group_by="G")
+        >>> int(df[(df["chemical"] == "a") & (df["G"] == 1)]["rank"])
+        1
+        >>> int(df[(df["chemical"] == "a") & (df["G"] == 2)]["rank"])
+        2
 
     Args:
         df:
@@ -261,4 +271,4 @@ def assign_ranks_per_group(df: pd.DataFrame, group_by: str, metric="f1"):
 
     """
     for name, group in df.groupby(group_by):
-        df.loc[group.index, 'rank'] = group[metric].rank(method='min', ascending=False)
+        df.loc[group.index, col_name] = group[metric].rank(method='min', ascending=False)

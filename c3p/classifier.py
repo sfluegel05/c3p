@@ -96,7 +96,7 @@ def classify(
         if program.name.startswith("__"):
             continue
         chemical_name = program.name.replace(".py", "")
-        if chemical_classes is not None and chemical_name not in chemical_classes:
+        if chemical_classes and chemical_name not in chemical_classes:
             logger.debug(f"Skipping {chemical_name} as not in inclusion list: {chemical_classes}")
             continue
         logger.info(f"Running {chemical_name} on {len(smiles_list)} SMILES")

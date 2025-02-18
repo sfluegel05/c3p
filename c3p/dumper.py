@@ -119,11 +119,18 @@ def write_program_for_commits(result: EvaluationResult, result_dir: Path, script
             if r.message:
                 f.write(f"\n# PREVIOUS ATTEMPT:\n\n{r.message}\n")
             r_obj = r.model_dump()
+            tps = r_obj.get("true_positives")
+            if not tps:
+                tps = []
             del r_obj["code"]
             del r_obj["message"]
             del r_obj["reasoning"]
+            r_obj["sample_true_positives"] = tps[:5]
             del r_obj["true_positives"]
             del r_obj["false_positives"]
+            code_stats = r_obj.get("code_statistics", {})
+            if code_stats and "indent_by_line" in code_stats:
+                del code_stats["indent_by_line"]
             f.write("# INFORMATION:\n\n")
             f.write("\n\n---\n")
             f.write(yaml.dump(r_obj, sort_keys=False))
@@ -141,6 +148,9 @@ def write_program_for_commits(result: EvaluationResult, result_dir: Path, script
         del r_obj["reasoning"]
         del r_obj["true_positives"]
         del r_obj["false_positives"]
+        code_stats = r_obj.get("code_statistics", {})
+        if code_stats and "indent_by_line" in code_stats:
+            del code_stats["indent_by_line"]
         f.write("\n\n---\n")
         f.write(yaml.dump(r_obj, sort_keys=False))
     script_f.write(f"cp {path} {learned_dir}/{cn}.py\n")

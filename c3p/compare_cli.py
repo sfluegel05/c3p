@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import combinations
 from pathlib import Path
 from typing import List, Optional, Annotated
 
@@ -71,73 +72,121 @@ def combine(
     df.to_csv(output_dir / "combined_results.csv", index=False)
     df.to_excel(output_dir / "combined_results.excel", index=False)
 
+    pairwise_data = []
+    for chem_class in df["chemical_class"].unique():
+        subset = df[df["chemical_class"] == chem_class]
+        for (left, right) in combinations(subset.itertuples(index=False), 2):
+            pairwise_data.append({
+                "chemical_class": chem_class,
+                "left_method": left.experiment_name,
+                "right_method": right.experiment_name,
+                "f1_left": left.f1,
+                "f1_right": right.f1,
+                "difference": left.f1 - right.f1
+            })
+
+    # if a chemical count is < num_expts, exclude it
     expts = list(df["experiment_name"].unique())
     num_expts = len(expts)
-    # if a chemical count is < num_expts, exclude it
     if exclude_incomplete:
         df = df.groupby("chemical_name").filter(lambda x: len(x) == num_expts)
         print(f"Filtering to {len(df)} rows with complete data")
-    assign_ranks_per_group(df, "experiment_name")
-    rank_stats = df.groupby('chemical_class').agg({
-        'rank': ['mean', 'std', 'min', 'max']
-    }).round(2)
+
+    # Create the pairwise comparison dataframe
+    pairwise_df = pd.DataFrame(pairwise_data)
+    pairwise_df.to_csv(output_dir / "pairwise_comparison.csv", index=False)
+
+    top_n_threshold = 10
+    top_differences1 = pairwise_df.groupby(["left_method", "right_method"]).apply(
+        lambda x: x.nlargest(top_n_threshold, "difference")
+    ).reset_index(drop=True)
+    top_differences2 = pairwise_df.groupby(["right_method", "left_method"]).apply(
+        lambda x: x.nlargest(top_n_threshold, "difference")
+    ).reset_index(drop=True)
+    top_differences = pd.concat([top_differences1, top_differences2])
+    top_differences.to_csv(output_dir / "top_pairwise_differences.csv", index=False)
 
     fig = create_scatter_matrix(df)
     fig.savefig(output_dir / "scatter_matrix.png")
 
-    df_sorted = df.sort_values('rank')
+    # ranking
 
-    all_cls = list(df_sorted["chemical_class"].unique())
-    num_cls = len(all_cls)
+    for tt in ["test", "train"]:
+
+        metric = "f1" if tt == "test" else "train_f1"
+        rank_col = "rank" if tt == "test" else "train_rank"
+
+        expt_stats = df.groupby('experiment_name').agg({
+            metric: ['mean', 'std', 'min', 'max']
+        }).round(2)
+        expt_stats_by_mean = expt_stats.sort_values((metric, 'mean'))
+
+        plt.figure(figsize=(8, 12))
+        sns.violinplot(data=df, y=metric, x="experiment_name", order=expt_stats_by_mean.index, inner="box")
+        plt.title(f'Distribution of {metric} by Experiment')
+        plt.xticks(rotation=90, ha="center")  # `ha="center"` ensures text stays aligned
+        plt.tight_layout()
+        plt.savefig(output_dir / f"{metric}_distribution.png")
+
+        assign_ranks_per_group(df, "experiment_name", metric=metric, col_name=rank_col)
+        rank_stats = df.groupby('chemical_class').agg({
+            rank_col: ['mean', 'std', 'min', 'max']
+        }).round(2)
+
+        df_sorted = df.sort_values('rank')
+        df.to_csv(output_dir / f"combined_results_with_{rank_col}.csv", index=False)
+
+        all_cls = list(df_sorted["chemical_class"].unique())
+        num_cls = len(all_cls)
 
 
-    # Add range column
-    rank_stats['rank', 'range'] = rank_stats['rank', 'max'] - rank_stats['rank', 'min']
+        # Add range column
+        rank_stats[rank_col, 'range'] = rank_stats[rank_col, 'max'] - rank_stats[rank_col, 'min']
 
-    rank_stats_by_std = rank_stats.sort_values(('rank', 'std'))
-    rank_stats_by_mean = rank_stats.sort_values(('rank', 'mean'))
-    print("Rank stats by std")
-    print(rank_stats_by_std)
-    print("Rank stats by mean")
-    print(rank_stats_by_mean)
-    with open(output_dir / "rank_stats_by_std.csv", "w") as f:
-        rank_stats_by_std.to_csv(f)
-    with open(output_dir / "rank_stats_by_mean.csv", "w") as f:
-        rank_stats_by_mean.to_csv(f)
+        rank_stats_by_std = rank_stats.sort_values((rank_col, 'std'))
+        rank_stats_by_mean = rank_stats.sort_values((rank_col, 'mean'))
+        print(f"Rank stats by std ({tt})")
+        print(rank_stats_by_std)
+        print(f"Rank stats by mean ({tt})")
+        print(rank_stats_by_mean)
+        with open(output_dir / f"{rank_col}_stats_by_std.csv", "w") as f:
+            rank_stats_by_std.to_csv(f)
+        with open(output_dir / f"{rank_col}_stats_by_mean.csv", "w") as f:
+            rank_stats_by_mean.to_csv(f)
 
-    plt.figure(figsize=(8, 50))
-    sns.boxplot(data=df_sorted, y='chemical_class', x='rank', order=rank_stats_by_mean.index)
-    #plt.xticks(rotation=90, ha='right')
-    plt.title('Rank Distribution by Chemical Class, sorted by mean rank')
-    plt.tight_layout()
-    plt.savefig(output_dir / "rank_distribution.png")
+        plt.figure(figsize=(8, 50))
+        sns.boxplot(data=df_sorted, y='chemical_class', x='rank', order=rank_stats_by_mean.index)
+        #plt.xticks(rotation=90, ha='right')
+        plt.title(f'Rank ({tt}) Distribution by Chemical Class, sorted by mean rank')
+        plt.tight_layout()
+        plt.savefig(output_dir / f"{rank_col}_distribution.png")
 
-    top_n_variable = rank_stats.nsmallest(50, ('rank', 'mean')).index
-    df_subset = df[df['chemical_class'].isin(top_n_variable)]
-    plt.figure(figsize=(8, 12))
-    sns.boxplot(data=df_subset, y='chemical_class', x='rank', order=top_n_variable)
-    # plt.xticks(rotation=90, ha='right')
-    plt.title('Rank Distribution, top 50')
-    plt.tight_layout()
-    plt.savefig(output_dir / "rank_distribution_top_50.png")
+        top_n_variable = rank_stats.nsmallest(50, (rank_col, 'mean')).index
+        df_subset = df[df['chemical_class'].isin(top_n_variable)]
+        plt.figure(figsize=(8, 12))
+        sns.boxplot(data=df_subset, y='chemical_class', x=rank_col, order=top_n_variable)
+        # plt.xticks(rotation=90, ha='right')
+        plt.title(f'Rank ({tt}) Distribution, top 50')
+        plt.tight_layout()
+        plt.savefig(output_dir / f"{rank_col}_distribution_top_50.png")
 
-    plt.figure(figsize=(8, 50))
-    sns.boxplot(data=df, y='chemical_class', x='rank', order=rank_stats_by_std.index)
-    # plt.xticks(rotation=90, ha='right')
-    plt.title('Rank Distribution by Chemical Class, sorted by std')
-    plt.tight_layout()
-    plt.savefig(output_dir / "rank_distribution_by_std.png")
+        plt.figure(figsize=(8, 50))
+        sns.boxplot(data=df, y='chemical_class', x=rank_col, order=rank_stats_by_std.index)
+        # plt.xticks(rotation=90, ha='right')
+        plt.title(f'Rank ({tt}) Distribution by Chemical Class, sorted by std')
+        plt.tight_layout()
+        plt.savefig(output_dir / f"{rank_col}_distribution_by_std.png")
 
-    # Print summary stats
-    print("Chemical classes with most consistent rankings (lowest std):")
-    print(rank_stats.nsmallest(5, ('rank', 'std')))
+        # Print summary stats
+        print(f"Chemical classes with most consistent rankings (lowest std) ({tt}):")
+        print(rank_stats.nsmallest(5, (rank_col, 'std')))
 
-    print("\nChemical classes with most variable rankings (highest std):")
-    print(rank_stats.nlargest(5, ('rank', 'std')))
+        print(f"\nChemical classes with most variable rankings (highest std) ({tt}):")
+        print(rank_stats.nlargest(5, (rank_col, 'std')))
 
-    # Optional: Calculate correlation between mean rank and rank variability
-    correlation = rank_stats['rank']['mean'].corr(rank_stats['rank']['std'])
-    print(f"\nCorrelation between mean rank and rank std: {correlation:.3f}")
+        # Optional: Calculate correlation between mean rank and rank variability
+        correlation = rank_stats[rank_col]['mean'].corr(rank_stats[rank_col]['std'])
+        print(f"\nCorrelation between mean {rank_col} and rank std: {correlation:.3f}")
 
     df_sorted = df.sort_values('complexity')
     plt.clf()
@@ -198,6 +247,8 @@ def combine(
         ax.set_xticklabels(df_sorted['model'])
         ax.legend()
 
+        plt.xticks(rotation=90, ha="center")  # `ha="center"` ensures text stays aligned
+
         # Display the plot
         plt.tight_layout()
         #plt.show()
@@ -219,6 +270,7 @@ def combine(
     plt.xlabel('Model')
     plt.ylabel('Value')
     plt.legend(title='Metric')
+    plt.xticks(rotation=90, ha='center')
     #plt.show()
     plt.savefig(output_dir / f"complexity_comparison.png")
 
