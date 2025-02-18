@@ -1,17 +1,60 @@
 """
 Classifies: CHEBI:48927 N-acyl-L-alpha-amino acid
 """
-</think>
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Okay, I need to create a function called is_N_acyl_L_alpha_amino_acid that checks if a given SMILES string represents an N-acyl-L-alpha-amino acid. The definition is any L-alpha-amino acid with an N-acyl substituent. Let's break this down.
+def is_N_acyl_L_alpha_amino_acid(smiles: str):
+    """
+    Determines if a molecule is an N-acyl-L-alpha-amino acid based on its SMILES string.
+    Criteria: L-alpha-amino acid structure with at least one N-acyl (amide) substituent.
 
-First, an L-alpha-amino acid has a specific structure: a central carbon (the alpha carbon) bonded to an amino group, a carboxyl group, a hydrogen, and a side chain. The L-configuration refers to the stereochemistry, so the amino group should be in the correct orientation.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-The N-acyl part means that the amino group (NH2) is modified with an acyl group, turning it into an amide (N-C=O). So the molecule should have an amide group attached to the alpha nitrogen.
+    Returns:
+        bool: True if molecule matches criteria, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
 
-Steps to check:
-1. Parse the SMILES into a molecule. If invalid, return False.
-2. Identify the alpha carbon. This is the carbon adjacent to both the amino and carboxyl groups.
-3. Check that the amino group is part of an amide (acyl group attached). So look for a nitrogen connected to a carbonyl group (C=O).
-4. Ensure the amino acid is in the L-configuration. RDKit can help with stereochemistry checks.
-5. Verify the presence of a carboxyl group (
+    # Check for at least one N-acyl group (amide)
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
+    if not mol.HasSubstructMatch(amide_pattern):
+        return False, "No N-acyl group found"
+
+    # Find potential alpha carbons (connected to carboxyl group)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX2H1]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_matches:
+        return False, "No carboxyl group found"
+
+    # Check each carboxyl group's alpha carbon for amino acid structure
+    for match in carboxyl_matches:
+        carboxyl_c = match[0]
+        alpha_c = None
+        
+        # Find alpha carbon (adjacent to carboxyl carbon)
+        for neighbor in mol.GetAtomWithIdx(carboxyl_c).GetNeighbors():
+            if neighbor.GetSymbol() == 'C':
+                alpha_c = neighbor.GetIdx()
+                break
+        if alpha_c is None:
+            continue
+
+        # Verify alpha carbon has nitrogen connection (amino/amide)
+        has_nitrogen = any(atom.GetSymbol() == 'N' 
+                          for atom in mol.GetAtomWithIdx(alpha_c).GetNeighbors())
+        if not has_nitrogen:
+            continue
+
+        # Check stereochemistry (L-configuration = S)
+        mol_h = Chem.AddHs(mol)
+        chiral_centers = Chem.FindMolChiralCenters(mol_h)
+        for center, chirality in chiral_centers:
+            if center == alpha_c and chirality == 'S':
+                return True, "L-alpha-amino acid with N-acyl substituent"
+
+    return False, "Not an L-alpha-amino acid or missing N-acyl group"
