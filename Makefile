@@ -17,7 +17,8 @@ doctest:
 
 DATASET = results/2025/benchmark/dataset.json
 VERBOSE = 1
-EXPTS = claude-3-sonnet-undef gpt-4o-undef gpt-4o-hi gpt-4o-nodefs ensembl-5 o1-preview-undef deepseek-coder-undef
+EX_CORE = claude-3-sonnet-undef o1-undef claude-3-sonnet-force  gpt-4o-undef gpt-4o-hi gemini-2.0-flash-exp-undef o3-mini-undef o3-mini-hi DeepSeek-R1-undef ensemble-9
+
 LEARN = $(RUN) c3p-learn --verbose $(VERBOSE)
 
 2025-llama-405b:
@@ -56,6 +57,9 @@ LEARN = $(RUN) c3p-learn --verbose $(VERBOSE)
 2025-gpt-4o-hi:
 	$(LEARN)  -e hi -m gpt-4o -f 0.9 -a 6 --dataset $(DATASET) -w results/2025 -x -
 
+2025-o3-mini-hi:
+	$(LEARN)  -e hi -m o3-mini -f 0.9 -a 6 --dataset $(DATASET) -w results/2025 -x -
+
 2025-deepseek-hi:
 	$(LEARN)  -e hi -m deepseek-coder -f 0.9 -a 6 --dataset $(DATASET) -w results/2025 -x -X "carbamate ester" -
 
@@ -78,7 +82,7 @@ LEARN = $(RUN) c3p-learn --verbose $(VERBOSE)
 # Create ensemble model
 
 create-ensemble:
-	$(RUN) c3p-combine --verbose 2 results/2025/* -o results/2025/ensembl-5 -m 5
+	$(RUN) c3p-combine --verbose 2 results/2025/* -o results/2025/ensemble-9 -m 9
 
 create-ensemble-6:
 	$(RUN) c3p-combine --verbose 2 results/2025/* -o results/2025/ensemble-6 -m 6
@@ -95,17 +99,16 @@ create-ensemble-4:
 eval:
 	$(RUN) c3p-validate --verbose 1 -w results/2025/ensembl-5/cache -d $(DATASET)
 
-all-validate: $(patsubst %, validate-%, $(EXPTS))
+all-validate: $(patsubst %, validate-%, $(EX_CORE))
 validate-%:
 	$(RUN) c3p-validate --verbose 1 -w results/2025/$*/cache -d $(DATASET)
 
 summarize-%:
 	$(RUN) c3p-summarize --verbose 1 -w results/2025/$*/eval -o results/2025/$*/summary
 
-EX_CORE = claude-3-sonnet-undef o1-undef claude-3-sonnet-force  gpt-4o-undef gpt-4o-hi gemini-2.0-flash-exp-undef o3-mini-undef ensemble-7
-EX_ORIGINAL = claude-3-sonnet-undef  gpt-4o-undef o1-preview-undef gpt-4o-nodefs gpt-4o-hi ensembl-5 deepseek-coder-undef
+EX_ORIGINAL = claude-3-sonnet-undef  gpt-4o-undef o1-undef gpt-4o-nodefs gpt-4o-hi ensembl-5 deepseek-coder-undef
 EX_COMPLETED = $(EX_ORIGINAL) 
-PARTIAL =  gpt-4o-hi o1-preview-undef deepseek-coder-undef deepseek-reasoner-undef deepseek-reasoner-force deepseek-chat-hi ensembl-7
+PARTIAL =  gpt-4o-hi  deepseek-coder-undef deepseek-reasoner-undef deepseek-reasoner-force deepseek-chat-hi ensembl-7
 
 compare:
 	$(RUN) c3p-compare -o results/2025/comparison $(patsubst %,results/2025/%, $(EX_CORE))
@@ -118,11 +121,20 @@ compare-chebifier:
 
 
 compare-llama:
-	$(RUN) c3p-compare -x -o results/2025/comparison-partial results/2025/claude-3-sonnet-undef  results/2025/gpt-4o-undef results/2025/o1-preview-undef results/2025/gpt-4o-nodefs results/2025/gpt-4o-hi results/2025/ensembl-5 results/2025/deepseek-coder-undef results/2025/llama-undef
+	$(RUN) c3p-compare -x -o results/2025/comparison-partial results/2025/claude-3-sonnet-undef  results/2025/gpt-4o-undef results/2025/o1-undef results/2025/gpt-4o-nodefs results/2025/gpt-4o-hi results/2025/ensembl-5 results/2025/deepseek-coder-undef results/2025/llama-undef
 
+
+compare-test:
+	$(RUN) c3p-compare -x -o results/2025/comparison-test results/2025/deepseek-reasoner-undef  results/2025/deepseek-reasoner-force
 
 compare-reasoners:
 	$(RUN) c3p-compare -x -o results/2025/comparison-reasoners results/2025/o1-undef results/2025/o3-mini-undef results/2025/claude-3-sonnet-undef results/2025/deepseek-reasoner-undef 
+
+compare-reasoners2:
+	$(RUN) c3p-compare -x -o results/2025/comparison-reasoners2 results/2025/o1-undef results/2025/o3-mini-undef results/2025/DeepSeek-R1-undef 
+
+compare-reasoners3:
+	$(RUN) c3p-compare -x -o results/2025/comparison-reasoners3 results/2025/o1-undef results/2025/o3-mini-undef results/2025/DeepSeek-R1-undef results/2025/deepseek-reasoner-undef 
 
 compare-force:
 	$(RUN) c3p-compare -x -o results/2025/comparison-force results/2025/claude-3-sonnet-undef results/2025/claude-3-sonnet-force
