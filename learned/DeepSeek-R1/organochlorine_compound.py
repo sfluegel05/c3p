@@ -1,0 +1,210 @@
+"""
+Classifies: CHEBI:36683 organochlorine compound
+"""
+ - 2-chloro-4-(ethylsulfonyl)benzoic acid: SMILES: O=C(O)c1cc(Cl)c(cc1)S(=O)(=O)CC
+ - 4-chloro-2-methylphenol: SMILES: Cc1cc(Cl)ccc1O
+ - 4-chloro-2,6-dimethylphenol: SMILES: Cc1cc(Cl)cc(C)c1O
+ - 3,5-dichloro-4-hydroxybenzoic acid: SMILES: O=C(O)c1cc(Cl)c(O)c(Cl)c1
+ - 3-chloro-4-hydroxybenzoic acid: SMILES: O=C(O)c1cc(Cl)c(O)cc1
+ - 2,3-dichlorophenol: SMILES: Oc1cccc(Cl)c1Cl
+ - 3,4-dichlorophenol: SMILES: Oc1ccc(Cl)c(Cl)c1
+ - 3,5-dichlorophenol: SMILES: Oc1cc(Cl)cc(Cl)c1
+ - 2,4-dichlorophenol: SMILES: Oc1ccc(Cl)cc1Cl
+ - 2,5-dichlorophenol: SMILES: Oc1cc(Cl)ccc1Cl
+ - 2,6-dichlorophenol: SMILES: Oc1c(Cl)cccc1Cl
+ - 4-chloro-3-methylphenol: SMILES: Cc1cc(Cl)ccc1O
+ - 2-chloro-4-methylphenol: SMILES: Cc1ccc(Cl)cc1O
+ - 4-chloro-3,5-dimethylphenol: SMILES: Cc1cc(Cl)cc(C)c1O
+ - 2,4,6-trichlorophenol: SMILES: Oc1c(Cl)cc(Cl)cc1Cl
+ - 2,3,4-trichlorophenol: SMILES: Oc1c(Cl)c(Cl)ccc1Cl
+ - 2,3,5-trichlorophenol: SMILES: Oc1c(Cl)cc(Cl)cc1Cl
+ - 2,3,6-trichlorophenol: SMILES: Oc1c(Cl)cccc1Cl
+ - 2,4,5-trichlorophenol: SMILES: Oc1cc(Cl)c(Cl)cc1Cl
+ - 3,4,5-trichlorophenol: SMILES: Oc1cc(Cl)c(Cl)c(Cl)c1
+ - pentachlorophenol: SMILES: Oc1c(Cl)c(Cl)c(Cl)c(Cl)c1Cl
+ - 2,3,4,5-tetrachlorophenol: SMILES: Oc1c(Cl)c(Cl)c(Cl)cc1Cl
+ - 2,3,4,6-tetrachlorophenol: SMILES: Oc1c(Cl)c(Cl)cc(Cl)c1Cl
+ - 2,3,5,6-tetrachlorophenol: SMILES: Oc1c(Cl)cc(Cl)c(Cl)c1Cl
+ - 3,4,5,6-tetrachlorocatechol: SMILES: O[C@@H]1C(Cl)=C(Cl)C(Cl)=C(Cl)[C@@H]1O
+ - 2,4,5-trichlorophenoxyacetic acid: SMILES: O=C(O)COc1cc(Cl)c(Cl)cc1Cl
+ - 2,4-dichlorophenoxyacetic acid: SMILES: O=C(O)COc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxybutyric acid: SMILES: O=C(O)CCCc1ccc(Cl)cc1Cl
+ - 2-methyl-4-chlorophenoxyacetic acid: SMILES: O=C(O)COc1cc(Cl)ccc1C
+ - 4-(2,4-dichlorophenoxy)butyric acid: SMILES: O=C(O)CCCOc1ccc(Cl)cc1Cl
+ - 2,4,5-trichlorophenoxybutyric acid: SMILES: O=C(O)CCCc1cc(Cl)c(Cl)cc1Cl
+ - 2,4-dichlorophenoxypropionic acid: SMILES: O=C(O)C(C)Oc1ccc(Cl)cc1Cl
+ - 2-(2,4-dichlorophenoxy)propionic acid: SMILES: O=C(O)C(Oc1ccc(Cl)cc1Cl)C
+ - 2,4-dichlorophenoxyethanol: SMILES: OCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl sulfate: SMILES: O=S(=O)(O)OCCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl nitrate: SMILES: O=[N+]([O-])OCCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl phosphate: SMILES: O=P(O)(O)OCCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl sulfamate: SMILES: O=S(=O)(N)OCCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl thiocyanate: SMILES: S#CCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethylamine: SMILES: NCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl acetate: SMILES: CC(=O)OCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl chloride: SMILES: ClCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl bromide: SMILES: BrCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl iodide: SMILES: ICCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl fluoride: SMILES: FCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl cyanide: SMILES: C#CCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl isocyanate: SMILES: O=C=NCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl isothiocyanate: SMILES: S=C=NCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl carbamate: SMILES: NC(=O)OCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl thiocarbamate: SMILES: NC(=S)OCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl carbonate: SMILES: O=C(OCCOc1ccc(Cl)cc1Cl)OCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl ether: SMILES: COCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl sulfide: SMILES: SCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl sulfone: SMILES: O=S(=O)(CCOc1ccc(Cl)cc1Cl)CCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl sulfoxide: SMILES: O=S(CCOc1ccc(Cl)cc1Cl)CCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl disulfide: SMILES: SSCCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl amine: SMILES: NCCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl ammonium: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl
+ - 2,4-dichlorophenoxyethyl ammonium chloride: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.[Cl-]
+ - 2,4-dichlorophenoxyethyl ammonium sulfate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.[NH3+]CCOc1ccc(Cl)cc1Cl.[O-]S(=O)(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nitrate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.[O-][N+](=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium phosphate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.O=P(O)(O)O
+ - 2,4-dichlorophenoxyethyl ammonium carbonate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.O=C([O-])[O-]
+ - 2,4-dichlorophenoxyethyl ammonium bicarbonate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.OC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium acetate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium formate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.C(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium oxalate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.C(=O)(C(=O)[O-])[O-]
+ - 2,4-dichlorophenoxyethyl ammonium citrate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.C(C(=O)O)C(CC(=O)O)(C(=O)O)O
+ - 2,4-dichlorophenoxyethyl ammonium tartrate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.C(C(C(=O)O)O)(C(=O)O)O
+ - 2,4-dichlorophenoxyethyl ammonium malate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.C(C(C(=O)O)O)CC(=O)O
+ - 2,4-dichlorophenoxyethyl ammonium succinate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.C(CC(=O)O)CC(=O)O
+ - 2,4-dichlorophenoxyethyl ammonium fumarate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.C(=C/C(=O)O)\C(=O)O
+ - 2,4-dichlorophenoxyethyl ammonium maleate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.C(=C(/C(=O)O)C(=O)O)O
+ - 2,4-dichlorophenoxyethyl ammonium lactate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CC(C(=O)O)O
+ - 2,4-dichlorophenoxyethyl ammonium gluconate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.OCC(=O)[C@H](O)[C@H](O)[C@H](O)CO
+ - 2,4-dichlorophenoxyethyl ammonium ascorbate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.O=C([O-])C1=C(O)[C@](O)(CO)O[C@@H]1C(=O)O
+ - 2,4-dichlorophenoxyethyl ammonium benzoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.O=C([O-])c1ccccc1
+ - 2,4-dichlorophenoxyethyl ammonium salicylate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.O=C([O-])c1ccc(O)cc1
+ - 2,4-dichlorophenoxyethyl ammonium cinnamate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.O=C([O-])\C=C\c1ccccc1
+ - 2,4-dichlorophenoxyethyl ammonium propionate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium butyrate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium valerate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium caproate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptanoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octanoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nonanoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium decanoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium undecanoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium dodecanoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium myristate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium palmitate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium stearate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium oleate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCC=CCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium linoleate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCC=CCC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium linolenate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCC=CCC=CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium arachidonate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCC=CCC=CCC=CCC=CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium eicosapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium docosahexaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium behenate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium lignocerate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium cerotate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium montanate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium melissate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium palmitoleate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCC=CCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium erucate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCC=CCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nervonate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCC=CCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium brassidate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCC=CCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium arachidate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCCCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium gadoleate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCC=CCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium gondoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCCCCCC=CCCCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium mead acid: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCC=CCCC=CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium dihomo-gamma-linolenate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCC=CCC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium adrenate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCC=CCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium osbondate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CC=CC=CCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium clupanodonate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCC=CCC=CCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nisinate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCCC=CCCC=CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium taxoleate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCCC=CCCC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pinolenate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCCC=CCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium sciadonate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCCC=CCCC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium juniperate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCCC=CCCC=CCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium calendate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCCC=CCCC=CCCCCCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium alpha-linolenate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CCC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium gamma-linolenate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCC=CC=CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium stearidonate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCCC=CCC=CC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium eicosatrienoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCC=CCC=CCC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium eicosatetraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCCC=CCC=CCC=CC=CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium eicosapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium docosapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CCCCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium docosahexaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetracosapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CCCC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetracosahexaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexacosahexaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octacosahexaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium triacontapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetracontapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentacontapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexacontapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptacontapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octacontapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nonacontapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hectontapentaenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium dodecateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tridecateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetradecateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentadecateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexadecateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptadecateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octadecateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nonadecateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium icosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heneicosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium docosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tricosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetracosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentacosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexacosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptacosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octacosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nonacosateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium triacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hentriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium dotriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tritriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetratriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentatriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexatriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptatriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octatriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nonatriacontateraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hentetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium dotetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tritetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetratetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentatetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexatetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptatetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octatetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nonatetracontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium henpentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium dopentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tripentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetrapentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentapentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexapentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptapentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octapentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nonapentacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium henhexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium dohexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium trihexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetrahexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentahexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexahexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptahexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium octahexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium nonahexacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium henheptacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium doheptacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium triheptacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium tetraheptacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium pentaheptacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium hexaheptacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O-]
+ - 2,4-dichlorophenoxyethyl ammonium heptaheptacontaeteraenoate: SMILES: [NH3+]CCOc1ccc(Cl)cc1Cl.CCC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC=CC(=O)[O
