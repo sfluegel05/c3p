@@ -23,26 +23,27 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Improved indole detection: fused benzene + pyrrole (allowing substitutions)
-    indole_pattern = Chem.MolFromSmarts("[#7]1~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]~[#6]~2~1")
+    # Corrected indole detection: fused benzene and pyrrole (nH in 5-membered ring)
+    indole_pattern = Chem.MolFromSmarts("[nH]1ccc2ccccc12")
     if not mol.HasSubstructMatch(indole_pattern):
         return False, "No indole moiety detected"
     
-    # Check for monoterpenoid features (isoprenoid patterns)
-    # Look for at least two isoprene units (C10 skeleton) - approximate via branching
-    # Pattern for head-to-tail isoprene units: CH2-C(CH2)-CH2-CH2 (approximate)
-    isoprene_pattern = Chem.MolFromSmarts("[CH2][CH]([CH2])[CH2][CH2]")
-    if not mol.HasSubstructMatch(isoprene_pattern):
-        return False, "No diisoprenoid (terpenoid) features detected"
+    # Check for monoterpenoid features (approximate C10 skeleton with branching)
+    # Look for at least two methyl groups attached to non-terminal carbons as proxy for isoprenoid
+    methyl_branch = Chem.MolFromSmarts("[CH3;!$(C[OH,O,NH1,NH2])]")
+    methyl_matches = len(mol.GetSubstructMatches(methyl_branch))
+    if methyl_matches < 2:
+        return False, "Insufficient methyl groups for monoterpenoid"
     
-    # Check for typical linkage between indole and terpenoid (e.g., ester/amine)
-    ester_amine_linkage = Chem.MolFromSmarts("[#7,#8]-[#6]-[#6](-[#6](-[#6])-[#6])")  # Approx
-    if not mol.HasSubstructMatch(ester_amine_linkage):
+    # Check for typical linkage between indole and terpenoid (e.g., C-C bridge)
+    # Pattern matches a chain of at least 3 carbons connecting two rings
+    linker_pattern = Chem.MolFromSmarts("[*]!@[CX4]!@[CX4]!@[CX4]!@[*]")
+    if not mol.HasSubstructMatch(linker_pattern):
         return False, "Missing indole-terpenoid linkage"
     
-    # Adjusted carbon count (monoterpene C10 + indole C9 ~19, allow some variation)
+    # Adjusted carbon count (monoterpene C10 + indole C9 ~19, allow higher)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18:  # Some examples have lower (e.g., yohimban has 19)
+    if c_count < 19:
         return False, f"Insufficient carbons ({c_count}) for monoterpenoid indole alkaloid"
     
     # Check for nitrogen presence (alkaloid characteristic)
@@ -50,4 +51,4 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if n_count < 1:
         return False, "No nitrogen atoms (not an alkaloid)"
     
-    return True, "Contains indole moiety with diisoprenoid features and alkaloid characteristics"
+    return True, "Contains indole moiety with monoterpenoid features and alkaloid characteristics"
