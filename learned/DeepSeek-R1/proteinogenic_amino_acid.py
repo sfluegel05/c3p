@@ -1,77 +1,34 @@
 """
 Classifies: CHEBI:83813 proteinogenic amino acid
 """
-"""
-Classifies: proteinogenic amino acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+</think>
 
-# Predefined L-amino acid templates (including modified ones)
-L_AMINO_TEMPLATES = {
-    'alanine': 'C[C@H](N)C(=O)O',
-    'arginine': 'N[C@@H](CCCNC(=N)N)C(=O)O',
-    'asparagine': 'N[C@@H](CC(N)=O)C(=O)O',
-    'aspartic_acid': 'N[C@@H](CC(=O)O)C(=O)O',
-    'cysteine': 'N[C@@H](CS)C(=O)O',
-    'glutamic_acid': 'N[C@@H](CCC(=O)O)C(=O)O',
-    'glutamine': 'N[C@@H](CCC(N)=O)C(=O)O',
-    'glycine': 'NCC(=O)O',
-    'histidine': 'N[C@@H](CC1=CN=CN1)C(=O)O',
-    'isoleucine': 'CC[C@H](C)[C@H](N)C(=O)O',
-    'leucine': 'CC(C)C[C@H](N)C(=O)O',
-    'lysine': 'NCCCC[C@H](N)C(=O)O',
-    'methionine': 'CSCC[C@H](N)C(=O)O',
-    'phenylalanine': 'N[C@@H](CC1=CC=CC=C1)C(=O)O',
-    'proline': 'OC(=O)[C@@H]1CCCN1',
-    'pyrrolysine': 'C(=O)([C@@H](N)CCCCNC([C@H]1[C@@H](CC=N1)C)=O)O',
-    'selenocysteine': 'N[C@@H](C[SeH])C(=O)O',
-    'serine': 'N[C@@H](CO)C(=O)O',
-    'threonine': 'C[C@H](O)[C@H](N)C(=O)O',
-    'tryptophan': 'N[C@@H](CC1=CNC2=CC=CC=C12)C(=O)O',
-    'tyrosine': 'N[C@@H](CC1=CC=C(O)C=C1)C(=O)O',
-    'valine': 'CC(C)[C@H](N)C(=O)O',
-    'n-formylmethionine': 'CN(C(=O)SCCC[C@H](N)C(=O)O)C=O',  # Example, adjust as needed
-}
+Okay, let's figure out why the previous code failed and how to fix it. Looking at the false positives and false negatives, here's what I notice:
 
-def is_proteinogenic_amino_acid(smiles: str):
-    """
-    Determines if a molecule is a proteinogenic amino acid.
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if not mol:
-        return False, "Invalid SMILES"
+The false negatives include aspartic acid, glutamic acid, and their deuterated versions. The previous code checked for exactly one carboxyl group, but these amino acids have two (aspartic has two, glutamic has two). So the check on carboxyl_count != 1 is wrong here. Those are valid proteinogenic amino acids but have multiple carboxyl groups. That's a big mistake. The code should allow for more than one carboxyl group as long as they are part of the structure.
 
-    # Check for exactly one amino group and one carboxyl group
-    amino_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[NX3&!$(NC=O)]")))
-    carboxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=O)[OX2H1]")))
-    
-    # Allow N-formyl (pyrrolysine, N-formylmethionine) and other modifications
-    if amino_count != 1 and not any('n-formyl' in k for k in L_AMINO_TEMPLATES if 'methionine' in k):
-        return False, "Multiple amino groups"
-    if carboxyl_count != 1:
-        return False, "Multiple carboxyl groups"
+Then, glycine-d5 and glycine-13C2,15N were missed. The previous code checked for the glycine template, which was 'NCC(=O)O'. But in the examples, glycine-d5 has the structure C(C(N([2H])[2H])([2H])[2H])(=O)O[2H], which is NCC(=O)O with deuteriums. The SMARTS pattern might not account for possible isotopic substitutions or different hydrogen counts. Also, the glycine template in the code might not match because of the way the SMILES is written. The code's glycine template uses 'NCC(=O)O' but the actual glycine is 'C(C(=O)O)N', which is the same but maybe the substructure match isn't capturing all variations. Also, the code's check for exactly one amino group might have failed if there are deuteriums attached to the amino group, like N([2H])[2H].
 
-    # Check alpha-amino acid pattern with possible N-substituents (like formyl)
-    pattern = Chem.MolFromSmarts("[NX3][C@@H]([CX3](=O)[OX2H1])*")
-    if not mol.HasSubstructMatch(pattern):
-        return False, "No alpha-amino acid backbone with proper stereochemistry"
+For false positives, the code incorrectly classified dipeptides and other peptides. The code tried to check for peptide bonds with the pattern [CX3](=O)[NX3], but maybe that's not sufficient. Dipeptides have an amide bond between amino acids, so the code should ensure that there's only one amino and one carboxyl group that's part of the alpha-amino acid structure, and any additional ones would indicate a peptide.
 
-    # Check against known L-amino acid templates (including modified ones)
-    for template_smiles in L_AMINO_TEMPLATES.values():
-        template = Chem.MolFromSmiles(template_smiles)
-        if template is None:
-            continue
-        if mol.HasSubstructMatch(template):
-            return True, "Matches known proteinogenic amino acid structure"
+So the plan is:
 
-    # Special case for glycine (non-chiral)
-    glycine = Chem.MolFromSmiles(L_AMINO_TEMPLATES['glycine'])
-    if mol.HasSubstructMatch(glycine):
-        return True, "Glycine structure detected"
+1. Remove the check for exactly one carboxyl group. Instead, ensure that there's at least one carboxyl group in the correct position (alpha to the amino group).
+2. Adjust the amino group check to allow for modified groups (like N-formyl) but still ensure that the main amino group is present.
+3. Improve the alpha-amino acid pattern to capture the core structure correctly, including possible deuterium substitutions.
+4. Better handle glycine by checking its structure without stereochemistry and allowing for isotopic substitutions.
+5. Strengthen the check against peptides by ensuring there's only one amino and one carboxyl group that are part of the amino acid backbone, and no additional peptide bonds.
 
-    # Check for peptide bonds to exclude dipeptides
-    if mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=O)[NX3]")):
-        return False, "Contains peptide bond"
+Let's adjust the code accordingly. Use SMARTS patterns to identify the alpha-amino acid structure, allow for multiple carboxyl groups (like in aspartic acid), and exclude molecules with peptide bonds or multiple amino groups not part of the main structure.
 
-    return False, "Does not match any known proteinogenic amino acid structure"
+Another issue: the previous code used a list of templates, but maybe some templates weren't matching due to different representations (like whether the carboxyl is -C(=O)O or -C(O)=O). Using SMARTS with more generic patterns could help. Also, checking the stereochemistry for all except glycine is crucial.
+
+So, the revised approach:
+
+- Check for the presence of an alpha-amino group (NH2 or substituted, but not part of an amide) adjacent to a carbon connected to a carboxyl group.
+- Ensure that the amino and carboxyl groups are in the correct positions (alpha-amino acid structure).
+- Allow for side chains with any structure except another amino or carboxyl group that's not part of the main chain.
+- Exclude molecules with peptide bonds (amide linkages beyond the main carboxyl group).
+- Specifically handle glycine as a special case without chiral centers.
+
+Let's implement these changes. Use SMARTS patterns to capture the core structure, check for the presence of only the necessary functional groups, and avoid over-restrictive checks on the number of carboxyl groups. Also, improve the peptide bond detection to catch dipeptides and larger peptides.
