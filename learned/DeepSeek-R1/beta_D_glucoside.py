@@ -5,6 +5,7 @@ Classifies: CHEBI:22798 beta-D-glucoside
 Classifies: CHEBI:XXXXX beta-D-glucoside
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_beta_D_glucoside(smiles: str):
     """
@@ -23,9 +24,10 @@ def is_beta_D_glucoside(smiles: str):
         return False, "Invalid SMILES"
     
     # Define SMARTS pattern for beta-D-glucoside
-    # Pattern matches the anomeric carbon (C1) with beta configuration (C@@) and D-glucose stereochemistry
+    # Matches beta-D-glucopyranose core with correct stereochemistry
+    # Allows substituents on hydroxyl groups (e.g., acetylations)
     beta_D_glucoside_pattern = Chem.MolFromSmarts(
-        "[OX2;!H0]-[C@@H]1[C@@H]([!#1])[C@H]([!#1])[C@@H]([!#1])[C@H](CO)O1"
+        "[OX2;!H0]-[C@@H]1[C@@H]([OX2])[C@H]([OX2])[C@@H]([OX2])[C@H](C[OX2])O1"
     )
     
     if beta_D_glucoside_pattern is None:
@@ -33,6 +35,16 @@ def is_beta_D_glucoside(smiles: str):
     
     # Check for the presence of the beta-D-glucoside pattern
     if mol.HasSubstructMatch(beta_D_glucoside_pattern):
+        return True, "Beta-D-glucoside detected: anomeric carbon in beta configuration with D-glucose stereochemistry"
+    
+    # Additional check for possible modifications (e.g., C6 as CH2OR)
+    # This pattern allows any substituent on the C6 oxygen
+    # Ensure the glucose stereochemistry is maintained
+    # Alternative pattern to capture different substitution scenarios
+    alt_pattern = Chem.MolFromSmarts(
+        "[OX2;!H0]-[C@@H]1[C@@H]([!#1])[C@H]([!#1])[C@@H]([!#1])[C@H](C[OX2])O1"
+    )
+    if alt_pattern and mol.HasSubstructMatch(alt_pattern):
         return True, "Beta-D-glucoside detected: anomeric carbon in beta configuration with D-glucose stereochemistry"
     
     return False, "No beta-D-glucoside substructure found"
