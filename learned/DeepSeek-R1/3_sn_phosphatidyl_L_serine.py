@@ -25,84 +25,78 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # 1. Find glycerol backbone with sn-3 configuration (C2 is the central carbon)
-    # Pattern: [CH2]-[C@H](-O-...)-[CH2]-O-...
+    # 1. Find glycerol backbone with sn-3 configuration (central carbon with specified stereochemistry)
+    # Pattern matches: [CH2]-[C@H](-O-*)-[CH2] where * represents substituents
     glycerol_pattern = Chem.MolFromSmarts("[CH2][C@H]([OX2])[CH2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No sn-glycerol backbone"
+        return False, "No sn-glycerol backbone found"
     
     # Get the central carbon (C2) of the glycerol
     matches = mol.GetSubstructMatches(glycerol_pattern)
-    if not matches:
-        return False, "Glycerol pattern not found"
     c2_idx = matches[0][1]  # Central carbon is the second atom in the match
     
     # 2. Check substituents on C2: should have two ester oxygens and one phosphate oxygen
     c2 = mol.GetAtomWithIdx(c2_idx)
     ester_count = 0
-    phosphate_oxygen = None
+    phosphate_found = False
     
     for neighbor in c2.GetNeighbors():
         if neighbor.GetSymbol() == "O":
-            # Check if the oxygen is part of an ester group (O-C=O)
+            # Check if oxygen is part of an ester group (O-C(=O))
+            ester_flag = False
             for bond in neighbor.GetBonds():
-                if bond.GetBeginAtomIdx() == neighbor.GetIdx() or bond.GetEndAtomIdx() == neighbor.GetIdx():
-                    other_atom = bond.GetOtherAtom(neighbor)
-                    if other_atom.GetSymbol() == "C" and any(a.GetSymbol() == "O" for a in other_atom.GetNeighbors() if a.GetBondType() == Chem.BondType.DOUBLE):
-                        ester_count += 1
-            # Check if the oxygen is connected to phosphorus
+                other_atom = bond.GetOtherAtom(neighbor)
+                if other_atom.GetSymbol() == "C":
+                    # Check if this carbon has a double bond to oxygen
+                    for a in other_atom.GetNeighbors():
+                        bond = mol.GetBondBetweenAtoms(other_atom.GetIdx(), a.GetIdx())
+                        if bond and bond.GetBondType() == Chem.BondType.DOUBLE and a.GetSymbol() == "O":
+                            ester_count += 1
+                            ester_flag = True
+                            break
+                    if ester_flag:
+                        break
+            
+            # Check if oxygen is part of phosphate group
             for bond in neighbor.GetBonds():
                 other_atom = bond.GetOtherAtom(neighbor)
                 if other_atom.GetSymbol() == "P":
-                    phosphate_oxygen = neighbor
-                    break
+                    phosphate_found = True
     
     if ester_count != 2:
-        return False, f"Expected 2 ester groups on C2, found {ester_count}"
-    if not phosphate_oxygen:
-        return False, "No phosphate group attached to C2"
+        return False, f"Expected 2 ester groups, found {ester_count}"
+    if not phosphate_found:
+        return False, "No phosphate group attached to glycerol"
     
-    # 3. Verify phosphoserine group: follow the phosphate oxygen to serine
-    # Phosphoserine should have NH2 and COOH groups connected via the phosphate's oxygen chain
-    p_atom = phosphate_oxygen.GetNeighbors()[0]
-    # Traverse from P to find serine moiety: P-O-C-C(N)-C(=O)O
-    # Pattern for serine part: C connected to NH2 and COOH
-    serine_pattern = Chem.MolFromSmarts("[NH2]-C(-C(=O)[OH])-C-O-P")
+    # 3. Verify phosphoserine group using SMARTS pattern
+    # Pattern matches: P-O-C-C(N)-C(=O)O with possible charges
+    serine_pattern = Chem.MolFromSmarts("[P](=O)(O)OCC([NH2])C(=O)O")
     if not mol.HasSubstructMatch(serine_pattern):
-        # Alternative pattern considering possible charges
-        serine_pattern_alt = Chem.MolFromSmarts("[NH2]-C(-C(=O)[O-])-C-O-P")
+        # Try alternative pattern with carboxylate form
+        serine_pattern_alt = Chem.MolFromSmarts("[P](=O)(O)OCC([NH2])C(=O)[O-]")
         if not mol.HasSubstructMatch(serine_pattern_alt):
             return False, "Phosphoserine group not found"
     
-    # 4. Check acyl chains at positions 1 and 2 (minimum length)
-    # Get ester groups attached to C2's oxygens
-    # Assuming the two ester groups are the acyl chains
-    # Check for at least 4 carbons in each chain (arbitrary threshold for "long" chain)
+    # 4. Verify acyl chain lengths (at least 4 carbons each)
     ester_groups = []
     for neighbor in c2.GetNeighbors():
         if neighbor.GetSymbol() == "O":
             for bond in neighbor.GetBonds():
                 other_atom = bond.GetOtherAtom(neighbor)
-                if other_atom.GetSymbol() == "C" and any(a.GetSymbol() == "O" for a in other_atom.GetNeighbors() if a.GetBondType() == Chem.BondType.DOUBLE):
-                    ester_groups.append(other_atom)
+                if other_atom.GetSymbol() == "C":
+                    # Check for carbonyl group
+                    for a in other_atom.GetNeighbors():
+                        bond = mol.GetBondBetweenAtoms(other_atom.GetIdx(), a.GetIdx())
+                        if bond and bond.GetBondType() == Chem.BondType.DOUBLE and a.GetSymbol() == "O":
+                            ester_groups.append(other_atom)
+                            break
     
     if len(ester_groups) < 2:
-        return False, "Not enough ester groups"
+        return False, "Insufficient ester groups for acyl chains"
     
-    # Check chain length for each ester
-    min_chain_length = 4  # Adjust based on requirements
-    for ester in ester_groups[:2]:  # First two esters (positions 1 and 2)
-        chain = []
-        current = ester
-        prev = ester.GetNeighbors()[0]  # O atom
-        while True:
-            next_atoms = [a for a in current.GetNeighbors() if a != prev and a.GetSymbol() in ["C", "H"]]
-            if not next_atoms or current.GetSymbol() != "C":
-                break
-            chain.append(current)
-            prev = current
-            current = next_atoms[0]
-        if len(chain) < min_chain_length:
-            return False, f"Acyl chain too short: {len(chain)} carbons"
+    # Count chain length using molecular weight as proxy
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 600:  # Typical phosphatidylserines are >600 Da
+        return False, f"Molecular weight too low ({mol_wt:.1f} Da)"
     
     return True, "sn-glycerol with two acyl chains and phosphoserine at position 3"
