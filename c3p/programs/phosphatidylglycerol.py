@@ -22,49 +22,34 @@ def is_phosphatidylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for a glycerol backbone
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Check for the phosphatidylglycerol core structure in one SMARTS pattern
+    # This pattern matches the glycerol with two ester groups, a phosphate, and another glycerol.
+    # [CH2][CH]([CH2]O[P](=O)(O)-O[CH2][CH](O)[CH2]O)
+    pg_core_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([CH2X4][OX2][P](=[OX1])([OX2])[OX2][CH2X4][CHX4]([OX2])[CH2X4][OX2])")
+    if not mol.HasSubstructMatch(pg_core_pattern):
+        return False, "Phosphatidylglycerol core not found"
 
-    # Look for two ester groups attached to the glycerol backbone
+    # Check for two fatty acid chains (long carbon chains attached to esters)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups on glycerol, need at least 2"
-
-    # Look for the phosphatidyl group, which contains a phosphate diester connecting to a glycerol
-    phospho_glycerol_pattern = Chem.MolFromSmarts("[OX2][P](=[OX1])([OX2])[OX2][CH2X4][CHX4][CH2X4][OX2]")
-    phospho_glycerol_matches = mol.GetSubstructMatches(phospho_glycerol_pattern)
-    if len(phospho_glycerol_matches) < 1:
-         return False, f"Found {len(phospho_glycerol_matches)} phosphoglycerol groups, expected at least 1"
-
-
-    # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
-
+    if len(ester_matches) < 2 or len(fatty_acid_matches) < 2:
+      return False, f"Must have at least 2 ester groups and 2 fatty acid chains"
 
     #Check rotatable bonds
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    if n_rotatable < 8 : #Reduced threshold to 8 to accommodate shorter chains
         return False, "Chains too short to be fatty acids"
 
-    # Check molecular weight - PGs are typically >500 Da
+    # Check molecular weight - PGs are typically >500 Da, but reducing to allow smaller PGs
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 400:
         return False, "Molecular weight too low for phosphatidylglycerol"
+    
 
-    # Count carbons, oxygens and phosphorus
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Count phosphorus
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    if c_count < 15:
-         return False, "Too few carbons for phosphatidylglycerol"
-    if o_count < 8:
-        return False, "Too few oxygens for phosphatidylglycerol"
     if p_count < 1:
         return False, "Must have at least one phosphorus"
 
