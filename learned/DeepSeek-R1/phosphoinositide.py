@@ -2,40 +2,44 @@
 Classifies: CHEBI:18179 phosphoinositide
 """
 """
-Classifies: CHEBI_xxxxx phosphoinositide
+Classifies: CHEBI:18179 phosphoinositide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 def is_phosphoinositide(smiles: str):
     """
-    Determines if a molecule is a phosphoinositide based on its SMILES string.
-    A phosphoinositide is a phosphatidylinositol with at least one additional phosphate on the inositol ring.
+    Determines if a molecule is a phosphoinositide (phosphorylated phosphatidylinositol).
     
     Args:
         smiles (str): SMILES string of the molecule
         
     Returns:
-        bool: True if molecule is a phosphoinositide, False otherwise
+        bool: True if phosphoinositide, False otherwise
         str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Check for phosphatidylinositol core structure: glycerol with two esters and a phosphate connected to inositol
-    # Glycerol pattern: C-C-C with two ester groups and one phosphate group
-    # Inositol is a cyclohexane with multiple hydroxyls connected via phosphate
-    pi_pattern = Chem.MolFromSmarts(
-        "[CH2]-[CH](-[OX2]-C(=O)-[!O])-[CH2]-[OX2]-P(=O)(-[OX2])-[OX2][C]1(-[OH])[C](-[OH])[C](-[OH])[C](-[OH])[C](-[OH])[C]1(-[OH])"
+    # Step 1: Verify phosphatidylinositol core structure
+    # Glycerol backbone with two ester groups and a phosphate linked to inositol
+    # Inositol is a 6-membered carbocycle with multiple oxygen substituents
+    # SMARTS pattern allows variable substitution on inositol (OH or phosphate groups)
+    pi_core_pattern = Chem.MolFromSmarts(
+        "[CH2]-[CH](-[OX2]-C(=O)[!O])-[CH2]-[OX2]-P(=[OX1])(-[OX2])-[OX2][C@H]1[C@H]([OX2,OX1,C(=O),P])[C@H]([OX2,OX1,C(=O),P])[C@H]([OX2,OX1,C(=O),P])[C@H]([OX2,OX1,C(=O),P])[C@H]1[OX2,OX1,C(=O),P]"
     )
-    if not mol.HasSubstructMatch(pi_pattern):
+    if not mol.HasSubstructMatch(pi_core_pattern):
         return False, "Not a phosphatidylinositol"
     
-    # Check for additional phosphate groups on the inositol ring
-    # Look for O-P groups attached to the inositol (excluding the connecting phosphate)
-    inositol_phosphate_pattern = Chem.MolFromSmarts("[C](-[OH])-O-P(=O)([OX2])-[OX2]")
-    if mol.HasSubstructMatch(inositol_phosphate_pattern):
-        return True, "Phosphorylated inositol detected"
+    # Step 2: Check for at least one additional phosphate group on inositol
+    # Look for O-P(=O)(O) groups attached to the inositol ring (excluding the connecting phosphate)
+    # The connecting phosphate is part of the glycerol-phospho-inositol linkage
+    phosphate_pattern = Chem.MolFromSmarts("[C][OX2]-P(=[OX1])(-[OX2])-[OX2]")
+    matches = mol.GetSubstructMatches(phosphate_pattern)
     
-    return False, "No additional phosphates on inositol"
+    # The core structure includes one phosphate (glycerol-inositol link), so need at least two in total
+    if len(matches) < 2:
+        return False, f"Only {len(matches)} phosphate groups found (needs ≥2)"
+    
+    return True, "Phosphatidylinositol with additional phosphorylation"
