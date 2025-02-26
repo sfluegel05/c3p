@@ -111,13 +111,17 @@ EX_COMPLETED = $(EX_ORIGINAL)
 PARTIAL =  gpt-4o-hi  deepseek-coder-undef deepseek-reasoner-undef deepseek-reasoner-force deepseek-chat-hi ensembl-7
 
 compare:
-	$(RUN) c3p-compare -o results/2025/comparison $(patsubst %,results/2025/%, $(EX_CORE))
+	$(RUN) c3p-compare -o results/2025/comparison $(patsubst %,results/2025/%, $(EX_CORE)) results/2025/smartifier
 
 compare-all:
 	$(RUN) c3p-compare -x -o results/2025/comparison $(patsubst %,results/2025/%, $(EX_COMPLETED) $(PARTIAL) chebifier)
 
 compare-chebifier:
-	$(RUN) c3p-compare -x -o results/2025/comparison-chebifier $(patsubst %,results/2025/%, $(EX_CORE) chebifier)
+	$(RUN) c3p-compare -x -o results/2025/comparison-chebifier $(patsubst %,results/2025/%, ensemble-9 chebifier)
+
+
+compare-all-chebifier:
+	$(RUN) c3p-compare -x -o results/2025/comparison-all-chebifier $(patsubst %,results/2025/%, $(EX_CORE) chebifier)
 
 
 compare-llama:
@@ -126,6 +130,12 @@ compare-llama:
 
 compare-test:
 	$(RUN) c3p-compare -x -o results/2025/comparison-test results/2025/deepseek-reasoner-undef  results/2025/deepseek-reasoner-force
+
+compare-main:
+	$(RUN) c3p-compare -x -o results/2025/comparison-main results/2025/ensemble-9 results/2025/chebifier results/2025/smartifier
+
+compare-smartifier:
+	$(RUN) c3p-compare -x -o results/2025/comparison-smartifier results/2025/ensemble-9 results/2025/smartifier
 
 compare-reasoners:
 	$(RUN) c3p-compare -x -o results/2025/comparison-reasoners results/2025/o1-undef results/2025/o3-mini-undef results/2025/claude-3-sonnet-undef results/2025/deepseek-reasoner-undef 

@@ -5,6 +5,8 @@ from dataclasses import field, dataclass
 from typing import List, Iterator, Set
 
 from requests_cache import CachedSession
+
+from c3p.classifier import Classifier
 from c3p.datamodel import SMILES_STRING, ClassificationResult, Dataset, EvaluationResult, Result, ChemicalClass, \
     ResultSet, Outcome
 from c3p.learn import get_positive_and_negative_validate_instances
@@ -15,7 +17,7 @@ CHEBIFIER_BASE_URL = "https://chebifier.hastingslab.org/api"
 
 
 @dataclass
-class ChebifierClient:
+class ChebifierClient(Classifier):
     session: CachedSession = field(
         default_factory=lambda: CachedSession(
             'requests_cache.sqlite',

@@ -427,40 +427,7 @@ def randomize_and_split_list(l: List, proportion: float) -> Tuple[List, List]:
     n = int(len(l) * proportion)
     return l[:n], l[n:]
 
-def xxxlearn_and_evaluate_for_class(cls: ChemicalClass, config: Config, dataset: Dataset) -> Optional[EvaluationResult]:
-    """
-    Evaluate a classifier for a single class.
 
-    TODO: split Dataset into train and test sets ahead of time
-
-    Args:
-        cls:
-        config:
-
-    Returns:
-
-    """
-    pos_train, pos_test = randomize_and_split_list(cls.positive_instances, config.test_proportion)
-    if len(pos_test) < 1:
-        return
-    negative_instances = infer_negative_train_examples(dataset, cls)
-    # neg_train, neg_test = randomize_and_split_list(negative_instances, config.test_proportion)
-    train_cls = copy(cls)
-    train_cls.positive_instances = pos_train
-    train_cls.negative_instances = negative_instances
-    test_cls = copy(cls)
-    test_cls.positive_instances = pos_test
-    test_cls.negative_instances = negative_instances
-    train_result_set = learn_program(train_cls, config)
-    if not train_result_set.results:
-        return
-    prog = train_result_set.best_result.code
-    test_results = list(learn_program_single_iter(test_cls, config=config, prog=prog, suppress_llm=True))
-    if not test_results:
-        return
-    test_result = test_results[-1]
-    test_result.calculate()
-    return EvaluationResult(train_results=train_result_set, test_result=test_result)
 
 def get_positive_and_negative_train_instances(cls: ChemicalClass, dataset: Dataset) -> Tuple[List[ChemicalStructure], List[ChemicalStructure]]:
     """
@@ -528,21 +495,6 @@ def evaluate_class(rset: ResultSet, dataset: Dataset) -> EvaluationResult:
     logger.info(f"Test Result F1: {test_result.f1} Train F1: {br.f1}")
     return EvaluationResult(train_results=rset, test_result=test_result)
 
-
-def xxxinfer_negative_train_examples(dataset: Dataset, cc: ChemicalClass, all_smiles: Optional[Set[SMILES_STRING]] = None) -> List[SMILES_STRING]:
-    """
-    Get negative examples for a chemical class.
-
-    Args:
-        dataset:
-        cc:
-
-    Returns:
-
-    """
-    if all_smiles is None:
-        all_smiles = {s.smiles for s in dataset.structures}
-    return list(all_smiles - set(cc.train_positive) - set(cc.validate_positive) - set(cc.validate_negative))
 
 def learn_ontology_iter(dataset: Dataset, config: Config, working_dir: Optional[Path] = None, include_only: Optional[List[str]] = None, exclude: Optional[List[str]] = None, mapped_only = False) -> Iterator[ResultSet]:
     """
