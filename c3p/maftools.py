@@ -40,6 +40,8 @@ def enrich_maf(objs: List[Dict[str, Any]], **kwargs)-> int:
     """
     n = 0
     for obj in objs:
+        if C3P_CLASSIFICATIONS in obj:
+            break
         enriched = enrich_maf_row(obj, **kwargs)
         if enriched:
             n += 1
