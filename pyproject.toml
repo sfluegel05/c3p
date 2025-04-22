@@ -27,6 +27,18 @@ pydantic-ai = "^0.0.23"
 pytest = {version = ">=7.1.2"}
 tox = {version = ">=3.25.1"}
 
+[tool.poetry.group.docs.dependencies]
+mkdocs = "*"
+mkdocs-material = "*"
+mkdocs-mermaid2-plugin = "*"
+mkdocs-gen-files = "*"
+mkdocs-literate-nav = "*"
+mknotebooks = ">=0.8.0"
+mkdocs-windmill = "*"
+mkdocs-click = "*"
+mkdocstrings = {extras = ["crystal", "python"], version = "*"}
+
+
 [tool.poetry.extras]
 eval = ["pandas", "matplotlib", "plotly", "seaborn", "jupyter", "papermill", "scikit-learn"]
 learn = ["llm"]
