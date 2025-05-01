@@ -23,4 +23,4 @@ We use the following to partition ChEBI entries into two groupings, structures a
 
 ## Summary Statistics
 
-* See [notebooks/Summarize-Benchmark](../notebooks/Summarize-Benchmark.ipynb)
+* See [notebooks/Summarize-Benchmark](notebooks/Summarize-Benchmark.ipynb)

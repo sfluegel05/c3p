@@ -4,7 +4,8 @@ Learning classification programs to categorize SMILES strings into [CHEBI](https
 
 ![logo](docs/assets/c3p-small.png)
 
-See [Slides](https://docs.google.com/presentation/d/1VJvRptWu6FhTTmZGM4X3ymbxn9JwYPWDUp9djfMfDao/edit#slide=id.p)
+- Documentation: [c3p docs](https://chemkg.github.io/c3p/)
+- [Slides](https://docs.google.com/presentation/d/1VJvRptWu6FhTTmZGM4X3ymbxn9JwYPWDUp9djfMfDao/edit#slide=id.p)
 
 ## Usage
 
