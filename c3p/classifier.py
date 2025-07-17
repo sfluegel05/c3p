@@ -46,6 +46,14 @@ def check_class_membership(smiles_list: List[SMILES_STRING], name: str, code: st
                             tn = metadata.get("num_true_negatives", 0)
                             fn = metadata.get("num_false_negatives", 0)
                             confidence = tn / (tn + fn) if tn + fn > 0 else None
+                        chebai_style_metrics = {
+                            "PPV": metadata.get("precision"),
+                            "NPV": metadata.get("num_true_negatives", 0) / (metadata.get("num_true_negatives", 0) + metadata.get("num_false_negatives", 0)) if metadata.get("num_true_negatives", 0) + metadata.get("num_false_negatives", 0) > 0 else 0,
+                            "TN": metadata.get("num_true_negatives", 0),
+                            "FP": metadata.get("num_false_positives", 0),
+                            "FN": metadata.get("num_false_negatives", 0),
+                            "TP": metadata.get("num_true_positives", 0),
+                        }
                         logger.info(f"{name} {function_name} {smiles} -> {satisfies}")
                         yield ClassificationResult(
                             input_smiles=smiles,
@@ -53,7 +61,8 @@ def check_class_membership(smiles_list: List[SMILES_STRING], name: str, code: st
                             class_name=cc.get("name", "-"),
                             is_match=satisfies,
                             reason=reason,
-                            confidence=confidence
+                            confidence=confidence,
+                            chebai_style_metrics=chebai_style_metrics
                         )
                 except Exception as e:
                     if strict:
@@ -100,7 +109,7 @@ def classify(
             logger.debug(f"Skipping {chemical_name} as not in inclusion list: {chemical_classes}")
             continue
         logger.info(f"Running {chemical_name} on {len(smiles_list)} SMILES")
-        with open(program, "r") as f:
+        with open(program, "r", encoding="utf-8") as f:
             code = f.read()
         yield from check_class_membership(smiles_list, chemical_name, code, strict=strict)
 

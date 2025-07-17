@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Annotated, List, Optional
 
+import json
 import typer
 import yaml
 
@@ -101,16 +102,23 @@ def classify(
 
     logger.info(f"Starting classification for SMILES: {smiles_list}")
     logger.debug(f"Searching for programs in: {program_directory}")
-    for result in classifier.classify(smiles_list, program_directory=program_directory, chemical_classes=chemical_classes, strict=False):
+    chebai_style_metrics = dict()
+    for result in classifier.classify(smiles_list, program_directory=program_directory, chemical_classes=chemical_classes, strict=True):
         if result.confidence is not None and confidence_cutoff is not None and result.confidence < confidence_cutoff:
             continue
         if exclude_negative and not result.is_match:
             continue
         typer.echo(yaml.dump(result.model_dump()))
         typer.echo("---")
+        chebai_style_metrics[result.class_id.split(":")[-1]] = result.chebai_style_metrics
         n += 1
     if n == 0:
         typer.echo("No results found.")
+    json.dump(
+        chebai_style_metrics,
+        open("chebai_style_metrics.json", "w"),
+        indent=2,
+    )
     logger.warning("PROGRAM CLASSIFICATION IS PARTIAL")
     logger.warning("RESULTS ARE EXPECTED TO BE HIGHLY INCOMPLETE")
 

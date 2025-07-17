@@ -369,3 +369,4 @@ class ClassificationResult(BaseModel):
     is_match: bool
     reason: Optional[str] = None
     confidence: Optional[float] = None
+    chebai_style_metrics: Optional[Dict[str, float]] = None
