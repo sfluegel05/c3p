@@ -100,7 +100,7 @@ def classify(
             logger.debug(f"Skipping {chemical_name} as not in inclusion list: {chemical_classes}")
             continue
         logger.info(f"Running {chemical_name} on {len(smiles_list)} SMILES")
-        with open(program, "r") as f:
+        with open(program, "r", encoding="utf-8") as f:
             code = f.read()
         yield from check_class_membership(smiles_list, chemical_name, code, strict=strict)
 

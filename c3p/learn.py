@@ -153,7 +153,7 @@ def run_code(code_str: str, function_name: str, args: List[Any], neg_args: List[
             func_exec_str = f"{function_name}({arg_encoded})"
             logger.debug(f"Executing: {func_exec_str}")
             try:
-                is_cls, reason = eval_with_timeout(func_exec_str)
+                is_cls, reason = eval(func_exec_str)
             except Exception as e:
                 raise RuntimeError(f"Error executing {func_exec_str}:\n {e}")
             if is_cls and i >= len(args):
